@@ -108,6 +108,16 @@
             <div class="buttons-container" id="bill-carrier-container"></div>
         </div>
 
+        <div class="section">
+            <h3>Meeting Actions</h3>
+            <div class="buttons-container">
+                <button onclick="appendAction('Closed Hearing')">Closed Hearing</button>
+                <button onclick="appendAction('Recessed Meeting')">Recessed Meeting</button>
+                <button onclick="appendAction('Adjourned Meeting')">Adjourned Meeting</button>
+                <button onclick="appendAction('Reconvened Meeting')">Reconvened Meeting</button>
+            </div>
+        </div>
+
         <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
 
         <h3>Constructed Statement:</h3>
@@ -222,10 +232,8 @@
         function appendBillCarrier(button, member) {
             if (selectedCarrier === member) return;
             selectedCarrier = member;
-            constructedStatement += ` - Senator ${member} Carried the Bill`;
+            constructedStatement = `${selectedMember} - ${mainAction} - Senator ${member} Carried the Bill`;
             updateLog();
-            document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
-            button.classList.add("selected");
         }
 
         function resetSelections() {
