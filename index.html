@@ -19,12 +19,12 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 15px;
         }
         button {
-            padding: 10px 15px;
-            font-size: 16px;
+            padding: 10px 12px;
+            font-size: 14px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
@@ -57,6 +57,20 @@
         .copy-btn:hover {
             background-color: #c82333;
         }
+        .section {
+            width: 90%;
+            max-width: 600px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #f1f1f1;
+            text-align: center;
+        }
+        select {
+            font-size: 16px;
+            padding: 5px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -64,11 +78,55 @@
     <h2>Committee Quick Actions</h2>
 
     <div class="container">
+        <label for="committeeSelect"><b>Select Committee:</b></label>
+        <select id="committeeSelect" onchange="updateMembers()">
+            <option value="energy">Energy & Natural Resources</option>
+            <option value="judiciary">Judiciary</option>
+        </select>
+
         <h3>Select Member:</h3>
         <div class="buttons-container" id="members-container"></div>
 
-        <h3>Select Action:</h3>
-        <div class="buttons-container" id="actions-container"></div>
+        <div class="section">
+            <h3>Bill Actions</h3>
+            <div class="buttons-container">
+                <button onclick="appendAction('Introduced SB')">Introduced SB</button>
+                <button onclick="appendAction('Moved a Do Pass on SB')">Moved a Do Pass on SB</button>
+                <button onclick="appendAction('Seconded')">Seconded</button>
+                <button onclick="appendAction('Carried SB')">Carried SB</button>
+                <button onclick="appendAction('Moved to Reconsider')">Moved to Reconsider</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Roll Call Votes</h3>
+            <div class="buttons-container">
+                <button onclick="setMotionStatus('SB', 'Passed')">SB - Motion Passed</button>
+                <button onclick="setMotionStatus('SB', 'Failed')">SB - Motion Failed</button>
+                <button onclick="setMotionStatus('SB as Amended', 'Passed')">SB as Amended - Passed</button>
+                <button onclick="setMotionStatus('SB as Amended', 'Failed')">SB as Amended - Failed</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Amendments</h3>
+            <div class="buttons-container">
+                <button onclick="appendAction('Moved Amendment LC#')">Moved Amendment LC#</button>
+                <button onclick="appendAction('Moved a Do Pass on Amendment LC#')">Do Pass on Amendment LC#</button>
+                <button onclick="setMotionStatus('Amendment LC#', 'Passed')">Amendment LC# - Passed</button>
+                <button onclick="setMotionStatus('Amendment LC#', 'Failed')">Amendment LC# - Failed</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Meeting Actions</h3>
+            <div class="buttons-container">
+                <button onclick="appendAction('Closed Hearing')">Closed Hearing</button>
+                <button onclick="appendAction('Recessed Meeting')">Recessed Meeting</button>
+                <button onclick="appendAction('Adjourned Meeting')">Adjourned Meeting</button>
+                <button onclick="appendAction('Reconvened Meeting')">Reconvened Meeting</button>
+            </div>
+        </div>
 
         <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
 
@@ -80,68 +138,47 @@
         let selectedMember = "";
         let constructedStatement = "";
 
-        // Committee members
-        const members = [
-            "Chairman Dale Patton",
-            "Vice Chairman Greg Kessel",
-            "Senator Todd Beard",
-            "Senator Keith Boehm",
-            "Senator Mark Enget",
-            "Senator Justin Gerhardt",
-            "Senator Desiree Van Oosting"
-        ];
+        const committees = {
+            energy: [
+                "Chairman Dale Patton",
+                "Vice Chairman Greg Kessel",
+                "Senator Todd Beard",
+                "Senator Keith Boehm",
+                "Senator Mark Enget",
+                "Senator Justin Gerhardt",
+                "Senator Desiree Van Oosting"
+            ],
+            judiciary: [
+                "Chairwoman Diane Larson",
+                "Vice Chairman Bob Paulson",
+                "Senator Jose Castaneda",
+                "Senator Claire Cory",
+                "Senator Larry Luick",
+                "Senator Janne Myrdal",
+                "Senator Ryan Braunberger"
+            ]
+        };
 
-        // Actions
-        const actions = [
-            "Introduced SB",
-            "Moved a Do Pass on SB",
-            "Seconded",
-            "Roll Call Vote on SB - Motion Passed - 0-0-0",
-            "Roll Call Vote on SB - Motion Failed - 0-0-0",
-            "Chairwoman Diane Larson - Closed Hearing",
-            "Chairwoman Diane Larson - Recessed Meeting",
-            "Chairwoman Diane Larson - Adjourned Meeting",
-            "Chairwoman Diane Larson - Reconvened Meeting",
-            "Moved Amendment LC#",
-            "Moved a Do Pass on Amendment LC#",
-            "Roll Call Vote on Amendment LC# - Motion Passed - 0-0-0",
-            "Roll Call Vote on Amendment LC# - Motion Failed - 0-0-0",
-            "Roll Call Vote on SB as Amended - Motion Passed - 0-0-0",
-            "Roll Call Vote on SB as Amended - Motion Failed - 0-0-0",
-            "Moved to Reconsider",
-            "Carried SB"
-        ];
+        function updateMembers() {
+            const selectedCommittee = document.getElementById("committeeSelect").value;
+            const membersContainer = document.getElementById("members-container");
+            membersContainer.innerHTML = "";
+            committees[selectedCommittee].forEach(member => {
+                const btn = document.createElement("button");
+                btn.innerText = member;
+                btn.onclick = () => selectMember(member, btn);
+                membersContainer.appendChild(btn);
+            });
+        }
 
-        // Generate buttons for members
-        const membersContainer = document.getElementById("members-container");
-        members.forEach(member => {
-            const btn = document.createElement("button");
-            btn.innerText = member;
-            btn.onclick = () => selectMember(member, btn);
-            membersContainer.appendChild(btn);
-        });
-
-        // Generate buttons for actions
-        const actionsContainer = document.getElementById("actions-container");
-        actions.forEach(action => {
-            const btn = document.createElement("button");
-            btn.innerText = action;
-            btn.onclick = () => appendAction(action);
-            actionsContainer.appendChild(btn);
-        });
-
-        // Select member function
         function selectMember(member, btn) {
             selectedMember = member;
             constructedStatement = `${selectedMember} - `;
             updateLog();
-
-            // Highlight selected member button
             document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
             btn.classList.add("selected");
         }
 
-        // Append action function
         function appendAction(action) {
             if (!selectedMember) {
                 alert("Please select a member first!");
@@ -151,12 +188,19 @@
             updateLog();
         }
 
-        // Update log display
+        function setMotionStatus(context, status) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+            constructedStatement = `${selectedMember} - Roll Call Vote on ${context} - Motion ${status}`;
+            updateLog();
+        }
+
         function updateLog() {
             document.getElementById("log").innerText = constructedStatement;
         }
 
-        // Copy to clipboard function
         function copyToClipboard() {
             if (!constructedStatement || constructedStatement === "[Click a member and an action]") {
                 alert("Nothing to copy! Select a member and an action first.");
@@ -165,6 +209,8 @@
             navigator.clipboard.writeText(constructedStatement);
             alert("Copied to clipboard: " + constructedStatement);
         }
+
+        updateMembers();
     </script>
 
 </body>
