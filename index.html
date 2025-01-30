@@ -75,6 +75,9 @@
             padding: 5px;
             margin-bottom: 15px;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -92,36 +95,17 @@
         <div class="buttons-container" id="members-container"></div>
 
         <div class="section">
-            <h3>Bill Actions</h3>
+            <h3>Main Actions</h3>
             <div class="buttons-container">
-                <button onclick="appendAction('Introduced SB')">Introduced SB</button>
-                <button onclick="appendAction('Moved a Do Pass on SB')">Moved a Do Pass on SB</button>
-                <button onclick="appendAction('Moved a Do Not Pass on SB')">Moved a Do Not Pass on SB</button>
-                <button onclick="appendAction('Seconded')">Seconded</button>
-                <button onclick="appendAction('Carried SB')">Carried SB</button>
-                <button onclick="appendAction('Moved to Reconsider')">Moved to Reconsider</button>
+                <button onclick="setMainAction('Moved')">Moved</button>
+                <button onclick="setMainAction('Roll Call Vote on SB')">Roll Call Vote on SB</button>
+                <button onclick="setMainAction('Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
             </div>
         </div>
 
-        <div class="section">
-            <h3>Roll Call Votes</h3>
-            <div class="buttons-container">
-                <button onclick="setMotionStatus('SB', 'Passed')">SB - Motion Passed</button>
-                <button onclick="setMotionStatus('SB', 'Failed')">SB - Motion Failed</button>
-                <button onclick="setMotionStatus('SB as Amended', 'Passed')">SB as Amended - Passed</button>
-                <button onclick="setMotionStatus('SB as Amended', 'Failed')">SB as Amended - Failed</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>Amendments</h3>
-            <div class="buttons-container">
-                <button onclick="appendAction('Moved Amendment LC#')">Moved Amendment LC#</button>
-                <button onclick="appendAction('Moved a Do Pass on Amendment LC#')">Do Pass on Amendment LC#</button>
-                <button onclick="appendAction('Moved a Do Not Pass on Amendment LC#')">Do Not Pass on Amendment LC#</button>
-                <button onclick="setMotionStatus('Amendment LC#', 'Passed')">Amendment LC# - Passed</button>
-                <button onclick="setMotionStatus('Amendment LC#', 'Failed')">Amendment LC# - Failed</button>
-            </div>
+        <div class="section hidden" id="sub-actions">
+            <h3>Sub Actions</h3>
+            <div class="buttons-container" id="sub-actions-container"></div>
         </div>
 
         <div class="section">
@@ -143,6 +127,7 @@
     <script>
         let selectedMember = "";
         let constructedStatement = "";
+        let mainAction = "";
 
         const committees = {
             energy: [
@@ -185,21 +170,46 @@
             btn.classList.add("selected");
         }
 
+        function setMainAction(action) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+            mainAction = action;
+            showSubActions(action);
+        }
+
+        function showSubActions(action) {
+            const subActionsContainer = document.getElementById("sub-actions-container");
+            subActionsContainer.innerHTML = "";
+            document.getElementById("sub-actions").classList.remove("hidden");
+
+            let subActions = [];
+            if (action.includes("Moved")) {
+                subActions = ["Do Pass on SB", "Do Not Pass on SB", "Do Pass on Amendment LC#", "Do Not Pass on Amendment LC#"];
+            } else if (action.includes("Roll Call Vote")) {
+                subActions = ["Motion Passed", "Motion Failed"];
+            }
+
+            subActions.forEach(subAction => {
+                const btn = document.createElement("button");
+                btn.innerText = subAction;
+                btn.onclick = () => appendSubAction(subAction);
+                subActionsContainer.appendChild(btn);
+            });
+        }
+
+        function appendSubAction(subAction) {
+            constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
+            updateLog();
+        }
+
         function appendAction(action) {
             if (!selectedMember) {
                 alert("Please select a member first!");
                 return;
             }
             constructedStatement = `${selectedMember} - ${action}`;
-            updateLog();
-        }
-
-        function setMotionStatus(context, status) {
-            if (!selectedMember) {
-                alert("Please select a member first!");
-                return;
-            }
-            constructedStatement = `${selectedMember} - Roll Call Vote on ${context} - Motion ${status}`;
             updateLog();
         }
 
