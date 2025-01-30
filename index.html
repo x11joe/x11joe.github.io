@@ -70,11 +70,6 @@
             background: #f1f1f1;
             text-align: center;
         }
-        select {
-            font-size: 16px;
-            padding: 5px;
-            margin-bottom: 15px;
-        }
         .hidden {
             display: none;
         }
@@ -106,6 +101,11 @@
         <div class="section hidden" id="sub-actions">
             <h3>Sub Actions</h3>
             <div class="buttons-container" id="sub-actions-container"></div>
+        </div>
+
+        <div class="section hidden" id="bill-carrier-section">
+            <h3>Select Bill Carrier</h3>
+            <div class="buttons-container" id="bill-carrier-container"></div>
         </div>
 
         <div class="section">
@@ -168,6 +168,7 @@
             updateLog();
             document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
             btn.classList.add("selected");
+            resetSubActions();
         }
 
         function setMainAction(action) {
@@ -202,27 +203,40 @@
         function appendSubAction(subAction) {
             constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
             updateLog();
+            if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
+                showBillCarrierSelection();
+            }
         }
 
-        function appendAction(action) {
-            if (!selectedMember) {
-                alert("Please select a member first!");
-                return;
-            }
-            constructedStatement = `${selectedMember} - ${action}`;
+        function showBillCarrierSelection() {
+            const carrierContainer = document.getElementById("bill-carrier-container");
+            carrierContainer.innerHTML = "";
+            document.getElementById("bill-carrier-section").classList.remove("hidden");
+
+            committees[document.getElementById("committeeSelect").value].forEach(member => {
+                const btn = document.createElement("button");
+                btn.innerText = member;
+                btn.onclick = () => appendBillCarrier(member);
+                carrierContainer.appendChild(btn);
+            });
+        }
+
+        function appendBillCarrier(member) {
+            constructedStatement += ` - Senator ${member} Carried the Bill`;
             updateLog();
         }
 
-        function updateLog() {
-            const log = document.getElementById("log");
-            log.innerText = constructedStatement;
+        function resetSubActions() {
+            document.getElementById("sub-actions").classList.add("hidden");
+            document.getElementById("bill-carrier-section").classList.add("hidden");
         }
 
         function copyToClipboard() {
             navigator.clipboard.writeText(constructedStatement);
-            const log = document.getElementById("log");
-            log.classList.add("copied");
-            setTimeout(() => log.classList.remove("copied"), 1000);
+        }
+
+        function updateLog() {
+            document.getElementById("log").innerText = constructedStatement;
         }
 
         updateMembers();
