@@ -111,14 +111,14 @@
         <div class="section">
             <h3>Meeting Actions</h3>
             <div class="buttons-container">
-                <button onclick="appendAction('Closed Hearing')">Closed Hearing</button>
-                <button onclick="appendAction('Recessed Meeting')">Recessed Meeting</button>
-                <button onclick="appendAction('Adjourned Meeting')">Adjourned Meeting</button>
-                <button onclick="appendAction('Reconvened Meeting')">Reconvened Meeting</button>
+                <button onclick="appendMeetingAction('Closed Hearing')">Closed Hearing</button>
+                <button onclick="appendMeetingAction('Recessed Meeting')">Recessed Meeting</button>
+                <button onclick="appendMeetingAction('Adjourned Meeting')">Adjourned Meeting</button>
+                <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
             </div>
         </div>
 
-        <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+        <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
 
         <h3>Constructed Statement:</h3>
         <div class="log" id="log">[Click a member and an action]</div>
@@ -216,39 +216,31 @@
             }
         }
 
-        function showBillCarrierSelection() {
-            const carrierContainer = document.getElementById("bill-carrier-container");
-            carrierContainer.innerHTML = "";
-            document.getElementById("bill-carrier-section").classList.remove("hidden");
-
-            committees[document.getElementById("committeeSelect").value].forEach(member => {
-                const btn = document.createElement("button");
-                btn.innerText = member;
-                btn.onclick = () => appendBillCarrier(btn, member);
-                carrierContainer.appendChild(btn);
-            });
-        }
-
-        function appendBillCarrier(button, member) {
-            if (selectedCarrier === member) return;
-            selectedCarrier = member;
-            constructedStatement = `${selectedMember} - ${mainAction} - Senator ${member} Carried the Bill`;
+        function appendMeetingAction(action) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+            constructedStatement = `${selectedMember} - ${action}`;
             updateLog();
-        }
-
-        function resetSelections() {
-            document.getElementById("sub-actions").classList.add("hidden");
-            document.getElementById("bill-carrier-section").classList.add("hidden");
-            selectedCarrier = "";
         }
 
         function copyToClipboard() {
             navigator.clipboard.writeText(constructedStatement);
+            const log = document.getElementById("log");
+            log.classList.add("copied");
+            setTimeout(() => log.classList.remove("copied"), 1000);
         }
 
         function updateLog() {
             document.getElementById("log").innerText = constructedStatement;
         }
+
+        document.addEventListener("keydown", function(event) {
+            if (event.ctrlKey && event.key === "Enter") {
+                copyToClipboard();
+            }
+        });
 
         updateMembers();
     </script>
