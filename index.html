@@ -1,5 +1,171 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Committee Quick Actions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .selected {
+            background-color: #28a745 !important;
+        }
+        .log {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            width: 90%;
+            max-width: 600px;
+            min-height: 50px;
+            background: #f9f9f9;
+            font-size: 16px;
+            text-align: left;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            background-color: #dc3545;
+        }
+        .copy-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
 <body>
-Test
+
+    <h2>Committee Quick Actions</h2>
+
+    <div class="container">
+        <h3>Select Member:</h3>
+        <div class="buttons-container" id="members-container"></div>
+
+        <h3>Select Action:</h3>
+        <div class="buttons-container" id="actions-container"></div>
+
+        <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+
+        <h3>Constructed Statement:</h3>
+        <div class="log" id="log">[Click a member and an action]</div>
+    </div>
+
+    <script>
+        let selectedMember = "";
+        let constructedStatement = "";
+
+        // Committee members
+        const members = [
+            "Chairman Dale Patton",
+            "Vice Chairman Greg Kessel",
+            "Senator Todd Beard",
+            "Senator Keith Boehm",
+            "Senator Mark Enget",
+            "Senator Justin Gerhardt",
+            "Senator Desiree Van Oosting"
+        ];
+
+        // Actions
+        const actions = [
+            "Introduced SB",
+            "Moved a Do Pass on SB",
+            "Seconded",
+            "Roll Call Vote on SB - Motion Passed - 0-0-0",
+            "Roll Call Vote on SB - Motion Failed - 0-0-0",
+            "Chairwoman Diane Larson - Closed Hearing",
+            "Chairwoman Diane Larson - Recessed Meeting",
+            "Chairwoman Diane Larson - Adjourned Meeting",
+            "Chairwoman Diane Larson - Reconvened Meeting",
+            "Moved Amendment LC#",
+            "Moved a Do Pass on Amendment LC#",
+            "Roll Call Vote on Amendment LC# - Motion Passed - 0-0-0",
+            "Roll Call Vote on Amendment LC# - Motion Failed - 0-0-0",
+            "Roll Call Vote on SB as Amended - Motion Passed - 0-0-0",
+            "Roll Call Vote on SB as Amended - Motion Failed - 0-0-0",
+            "Moved to Reconsider",
+            "Carried SB"
+        ];
+
+        // Generate buttons for members
+        const membersContainer = document.getElementById("members-container");
+        members.forEach(member => {
+            const btn = document.createElement("button");
+            btn.innerText = member;
+            btn.onclick = () => selectMember(member, btn);
+            membersContainer.appendChild(btn);
+        });
+
+        // Generate buttons for actions
+        const actionsContainer = document.getElementById("actions-container");
+        actions.forEach(action => {
+            const btn = document.createElement("button");
+            btn.innerText = action;
+            btn.onclick = () => appendAction(action);
+            actionsContainer.appendChild(btn);
+        });
+
+        // Select member function
+        function selectMember(member, btn) {
+            selectedMember = member;
+            constructedStatement = `${selectedMember} - `;
+            updateLog();
+
+            // Highlight selected member button
+            document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+        }
+
+        // Append action function
+        function appendAction(action) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+            constructedStatement = `${selectedMember} - ${action}`;
+            updateLog();
+        }
+
+        // Update log display
+        function updateLog() {
+            document.getElementById("log").innerText = constructedStatement;
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard() {
+            if (!constructedStatement || constructedStatement === "[Click a member and an action]") {
+                alert("Nothing to copy! Select a member and an action first.");
+                return;
+            }
+            navigator.clipboard.writeText(constructedStatement);
+            alert("Copied to clipboard: " + constructedStatement);
+        }
+    </script>
+
 </body>
 </html>
