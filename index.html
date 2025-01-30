@@ -92,9 +92,9 @@
         <div class="section">
             <h3>Main Actions</h3>
             <div class="buttons-container">
-                <button onclick="setMainAction('Moved')">Moved</button>
-                <button onclick="setMainAction('Roll Call Vote on SB')">Roll Call Vote on SB</button>
-                <button onclick="setMainAction('Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
+                <button onclick="setMainAction(this, 'Moved')">Moved</button>
+                <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
+                <button onclick="setMainAction(this, 'Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
             </div>
         </div>
 
@@ -108,16 +108,6 @@
             <div class="buttons-container" id="bill-carrier-container"></div>
         </div>
 
-        <div class="section">
-            <h3>Meeting Actions</h3>
-            <div class="buttons-container">
-                <button onclick="appendAction('Closed Hearing')">Closed Hearing</button>
-                <button onclick="appendAction('Recessed Meeting')">Recessed Meeting</button>
-                <button onclick="appendAction('Adjourned Meeting')">Adjourned Meeting</button>
-                <button onclick="appendAction('Reconvened Meeting')">Reconvened Meeting</button>
-            </div>
-        </div>
-
         <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
 
         <h3>Constructed Statement:</h3>
@@ -128,6 +118,7 @@
         let selectedMember = "";
         let constructedStatement = "";
         let mainAction = "";
+        let selectedCarrier = "";
 
         const committees = {
             energy: [
@@ -160,23 +151,28 @@
                 btn.onclick = () => selectMember(member, btn);
                 membersContainer.appendChild(btn);
             });
+            resetSelections();
         }
 
         function selectMember(member, btn) {
             selectedMember = member;
             constructedStatement = `${selectedMember} - `;
             updateLog();
+            resetSelections();
             document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
             btn.classList.add("selected");
-            resetSubActions();
         }
 
-        function setMainAction(action) {
+        function setMainAction(button, action) {
             if (!selectedMember) {
                 alert("Please select a member first!");
                 return;
             }
             mainAction = action;
+            constructedStatement = `${selectedMember} - ${mainAction}`;
+            updateLog();
+            document.querySelectorAll(".section button").forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
             showSubActions(action);
         }
 
@@ -187,7 +183,7 @@
 
             let subActions = [];
             if (action.includes("Moved")) {
-                subActions = ["Do Pass on SB", "Do Not Pass on SB", "Do Pass on Amendment LC#", "Do Not Pass on Amendment LC#"];
+                subActions = ["Do Pass", "Do Not Pass"];
             } else if (action.includes("Roll Call Vote")) {
                 subActions = ["Motion Passed", "Motion Failed"];
             }
@@ -195,14 +191,16 @@
             subActions.forEach(subAction => {
                 const btn = document.createElement("button");
                 btn.innerText = subAction;
-                btn.onclick = () => appendSubAction(subAction);
+                btn.onclick = () => appendSubAction(btn, subAction);
                 subActionsContainer.appendChild(btn);
             });
         }
 
-        function appendSubAction(subAction) {
+        function appendSubAction(button, subAction) {
             constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
             updateLog();
+            document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
             if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
                 showBillCarrierSelection();
             }
@@ -216,19 +214,24 @@
             committees[document.getElementById("committeeSelect").value].forEach(member => {
                 const btn = document.createElement("button");
                 btn.innerText = member;
-                btn.onclick = () => appendBillCarrier(member);
+                btn.onclick = () => appendBillCarrier(btn, member);
                 carrierContainer.appendChild(btn);
             });
         }
 
-        function appendBillCarrier(member) {
+        function appendBillCarrier(button, member) {
+            if (selectedCarrier === member) return;
+            selectedCarrier = member;
             constructedStatement += ` - Senator ${member} Carried the Bill`;
             updateLog();
+            document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
         }
 
-        function resetSubActions() {
+        function resetSelections() {
             document.getElementById("sub-actions").classList.add("hidden");
             document.getElementById("bill-carrier-section").classList.add("hidden");
+            selectedCarrier = "";
         }
 
         function copyToClipboard() {
