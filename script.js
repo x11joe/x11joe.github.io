@@ -714,6 +714,7 @@ function loadHistoryFromLocalStorage() {
         btn.textContent = label;
         btn.classList.add("copy-row-button");
         btn.onclick = () => {
+          // Parse the stored time (assumed format "HH:MM:SS")
           let timeDate = new Date("1970-01-01 " + tdTime.textContent);
           timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
           let newTimeStr = timeDate.toLocaleTimeString([], {
@@ -722,7 +723,7 @@ function loadHistoryFromLocalStorage() {
             second: '2-digit'
           });
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr; // update the record
+          record.time = newTimeStr;  // update the record
           saveHistoryToLocalStorage();
           btn.classList.add("copied-cell");
           setTimeout(() => {
@@ -747,7 +748,6 @@ function loadHistoryFromLocalStorage() {
       // Optionally, change background color for delete
       btnDelete.style.backgroundColor = "#dc3545";
       btnDelete.onclick = () => {
-        // Remove the record at this index and update storage
         historyRecords.splice(index, 1);
         saveHistoryToLocalStorage();
         loadHistoryFromLocalStorage();
@@ -759,6 +759,7 @@ function loadHistoryFromLocalStorage() {
     });
   }
 }
+
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
