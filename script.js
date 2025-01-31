@@ -592,7 +592,7 @@ document.addEventListener("keydown", function (event) {
     resetAllAndFinalize();
   }
 
-   // ESC => Cancel current in-progress action (no record saved)
+   // ESC => Cancel current in-progress action (no record saved~)
   if (event.key === "Escape") {
     event.preventDefault();
     cancelCurrentAction();
