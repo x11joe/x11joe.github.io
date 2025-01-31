@@ -59,17 +59,16 @@ function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
-  // Create a local time cell using the recorded timestamp.
+  // Local references for time & statement cells
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = statementStartTime;
   inProgressRow.appendChild(localTimeCell);
 
-  // Create a local statement cell using the constructed statement.
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   inProgressRow.appendChild(localStatementCell);
 
-  // "Copy Time" cell + button (existing)
+  // "Copy Time" (existing)
   const copyTimeCell = document.createElement("td");
   const copyTimeButton = document.createElement("button");
   copyTimeButton.textContent = "Copy Time";
@@ -85,45 +84,7 @@ function createNewRowInHistory() {
   copyTimeCell.appendChild(copyTimeButton);
   inProgressRow.appendChild(copyTimeCell);
 
-  // NEW: "Copy Time -5s" cell + button
-  const copyTimeMinus5Cell = document.createElement("td");
-  const copyTimeMinus5Button = document.createElement("button");
-  copyTimeMinus5Button.textContent = "Copy Time -5s";
-  copyTimeMinus5Button.classList.add("copy-row-button");
-  copyTimeMinus5Button.onclick = () => {
-    // Create a date object using a dummy date and the current time text.
-    let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
-    timeDate.setSeconds(timeDate.getSeconds() - 5); // Subtract 5 seconds
-    let newTimeStr = timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    navigator.clipboard.writeText(newTimeStr).then(() => {
-      copyTimeMinus5Button.classList.add("copied-cell");
-      setTimeout(() => {
-        copyTimeMinus5Button.classList.remove("copied-cell");
-      }, 800);
-    });
-  };
-  copyTimeMinus5Cell.appendChild(copyTimeMinus5Button);
-  inProgressRow.appendChild(copyTimeMinus5Cell);
-
-  // NEW: "Subtract 5s" cell + button (this updates the permanent time)
-  const subtractTimeCell = document.createElement("td");
-  const subtractTimeButton = document.createElement("button");
-  subtractTimeButton.textContent = "Subtract 5s";
-  subtractTimeButton.classList.add("copy-row-button");
-  subtractTimeButton.onclick = () => {
-    let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
-    timeDate.setSeconds(timeDate.getSeconds() - 5);
-    let newTimeStr = timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    localTimeCell.textContent = newTimeStr; // Update the permanent time record
-    subtractTimeButton.classList.add("copied-cell");
-    setTimeout(() => {
-      subtractTimeButton.classList.remove("copied-cell");
-    }, 800);
-  };
-  subtractTimeCell.appendChild(subtractTimeButton);
-  inProgressRow.appendChild(subtractTimeCell);
-
-  // "Copy Statement" cell + button (existing)
+  // "Copy Statement" (existing)
   const copyStatementCell = document.createElement("td");
   const copyStatementButton = document.createElement("button");
   copyStatementButton.textContent = "Copy Statement";
@@ -139,12 +100,64 @@ function createNewRowInHistory() {
   copyStatementCell.appendChild(copyStatementButton);
   inProgressRow.appendChild(copyStatementCell);
 
+  // Create a single cell to hold all +/- time buttons
+  const timeAdjustCell = document.createElement("td");
+  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line if you want
+
+  // Helper to create a button
+  function createTimeAdjustButton(label, secondsToAdjust) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.classList.add("copy-row-button");
+    btn.onclick = () => {
+      // Convert "1970-01-01 TIME"
+      let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
+      timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust); // +/- seconds
+
+      // Reformat as HH:MM:SS
+      const newTimeStr = timeDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      // Update permanent time in the cell
+      localTimeCell.textContent = newTimeStr;
+
+      // Show quick glow
+      btn.classList.add("copied-cell");
+      setTimeout(() => {
+        btn.classList.remove("copied-cell");
+      }, 800);
+    };
+    return btn;
+  }
+
+  // Create all 6 time adjust buttons
+  const minus5 = createTimeAdjustButton("-5s", -5);
+  const minus3 = createTimeAdjustButton("-3s", -3);
+  const minus1 = createTimeAdjustButton("-1s", -1);
+  const plus1 = createTimeAdjustButton("+1s", +1);
+  const plus3 = createTimeAdjustButton("+3s", +3);
+  const plus5 = createTimeAdjustButton("+5s", +5);
+
+  // Append them in a row
+  timeAdjustCell.appendChild(minus5);
+  timeAdjustCell.appendChild(minus3);
+  timeAdjustCell.appendChild(minus1);
+  timeAdjustCell.appendChild(plus1);
+  timeAdjustCell.appendChild(plus3);
+  timeAdjustCell.appendChild(plus5);
+  inProgressRow.appendChild(timeAdjustCell);
+
+  // Finally append the row
   tableBody.appendChild(inProgressRow);
 
   // Update global references so we can still update the "in-progress" row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 
