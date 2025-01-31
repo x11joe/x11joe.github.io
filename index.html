@@ -110,12 +110,19 @@
       </div>
     </div>
 
+    <!-- Sub Actions for "Moved" only -->
     <div class="section hidden" id="sub-actions">
-      <h3>Sub Actions</h3>
+      <h3>Sub Actions (Moved)</h3>
       <div class="buttons-container" id="sub-actions-container"></div>
     </div>
 
-    <!-- New vote tally section -->
+    <!-- Bill Type section for "Moved" sub-action -->
+    <div class="section hidden" id="bill-type-section">
+      <h3>Select Bill Type</h3>
+      <div class="buttons-container" id="bill-type-container"></div>
+    </div>
+
+    <!-- Vote Tally: only for "Roll Call Vote" (automatically determines Pass/Fail) -->
     <div class="section hidden" id="vote-tally-section">
       <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
       <div class="vote-tally-controls">
@@ -140,6 +147,7 @@
       </div>
     </div>
 
+    <!-- Bill Carrier Section: only for Roll Call Votes -->
     <div class="section hidden" id="bill-carrier-section">
       <h3>Select Bill Carrier</h3>
       <div class="buttons-container" id="bill-carrier-container"></div>
@@ -164,6 +172,8 @@
   <script>
     let selectedMember = "";
     let mainAction = "";
+    let selectedSubAction = "";   // For "Moved" => "Do Pass" or "Do Not Pass"
+    let selectedBillType = "";    // For "Moved" => "SB", "HB", or "Amendment"
     let selectedCarrier = "";
     let constructedStatement = "";
     let currentCommittee = "";
@@ -194,7 +204,6 @@
       ]
     };
 
-    // Called when the committee dropdown changes
     function updateMembers() {
       currentCommittee = document.getElementById("committeeSelect").value;
       resetSelections();
@@ -212,8 +221,7 @@
     function selectMember(member, btn) {
       resetSelections();
       selectedMember = member;
-      constructedStatement = `${selectedMember} - `;
-      updateLog();
+      updateStatement();
 
       // Highlight the selected member
       document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
@@ -226,73 +234,132 @@
         return;
       }
       mainAction = action;
-      constructedStatement = `${selectedMember} - ${mainAction}`;
-      updateLog();
+      selectedSubAction = "";
+      selectedBillType = "";
+      selectedCarrier = "";
+      updateStatement();
 
       // Highlight the selected main action
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      showSubActions(action);
+      if (action === "Moved") {
+        showMovedSubActions();
+        // Hide vote tally & carrier (not needed for Moved)
+        showVoteTallySection(false);
+        showBillCarrierSection(false);
+      } else if (action.includes("Roll Call Vote")) {
+        // Hide Moved sub-actions
+        document.getElementById("sub-actions").classList.add("hidden");
+        document.getElementById("bill-type-section").classList.add("hidden");
+
+        // Show vote tally & carrier
+        showVoteTallySection(true);
+        showBillCarrierSection(true);
+      }
     }
 
-    function showSubActions(action) {
+    /* 
+      Sub-actions for "Moved":
+      - "Do Pass"
+      - "Do Not Pass"
+      After picking one, user can pick Bill Type => "SB", "HB", or "Amendment"
+    */
+    function showMovedSubActions() {
       const subActionsContainer = document.getElementById("sub-actions-container");
       subActionsContainer.innerHTML = "";
       document.getElementById("sub-actions").classList.remove("hidden");
 
-      let subActions = [];
-      if (action.includes("Moved")) {
-        subActions = ["Do Pass", "Do Not Pass"];
-      } else if (action.includes("Roll Call Vote")) {
-        subActions = ["Motion Passed", "Motion Failed"];
-      }
+      const subActions = ["Do Pass", "Do Not Pass"];
 
       subActions.forEach(subAction => {
         const btn = document.createElement("button");
         btn.innerText = subAction;
-        btn.onclick = () => appendSubAction(btn, subAction);
+        btn.onclick = () => handleMovedSubAction(btn, subAction);
         subActionsContainer.appendChild(btn);
       });
     }
 
-    function appendSubAction(button, subAction) {
-      constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
-      updateLog();
+    function handleMovedSubAction(button, subAction) {
+      selectedSubAction = subAction;
+      updateStatement();
 
-      // Highlight the selected sub action
+      // Highlight the chosen sub action
       document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // Check if it's a roll call vote with passed/failed
-      if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
-        // Reset and show the vote tally
-        resetVoteTally();
-        showVoteTallySection();
+      // Show Bill Type buttons: "SB", "HB", "Amendment"
+      showBillTypeSection(true);
+    }
 
-        // Also show bill carrier selection
-        showBillCarrierSelection();
+    // Bill Type = "SB", "HB", or "Amendment"
+    function showBillTypeSection(visible) {
+      const billTypeSection = document.getElementById("bill-type-section");
+      if (visible) {
+        billTypeSection.classList.remove("hidden");
+        const billTypeContainer = document.getElementById("bill-type-container");
+        billTypeContainer.innerHTML = "";
+
+        const types = ["SB", "HB", "Amendment"];
+        types.forEach(t => {
+          const btn = document.createElement("button");
+          btn.innerText = t;
+          btn.onclick = () => selectBillType(t, btn);
+          billTypeContainer.appendChild(btn);
+        });
       } else {
-        document.getElementById("bill-carrier-section").classList.add("hidden");
-        document.getElementById("vote-tally-section").classList.add("hidden");
+        billTypeSection.classList.add("hidden");
       }
     }
 
-    function showVoteTallySection() {
-      document.getElementById("vote-tally-section").classList.remove("hidden");
+    function selectBillType(type, btn) {
+      selectedBillType = type;
+      updateStatement();
+
+      // Highlight the chosen bill type
+      document.querySelectorAll("#bill-type-container button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
     }
 
-    // Reset the tally counters to zero
-    function resetVoteTally() {
-      forVal = 0;
-      againstVal = 0;
-      neutralVal = 0;
-      document.getElementById('forCount').innerText = 0;
-      document.getElementById('againstCount').innerText = 0;
-      document.getElementById('neutralCount').innerText = 0;
+    // Vote Tally: only for Roll Call Vote
+    function showVoteTallySection(visible) {
+      const tallySec = document.getElementById("vote-tally-section");
+      if (visible) {
+        tallySec.classList.remove("hidden");
+        resetVoteTally();
+      } else {
+        tallySec.classList.add("hidden");
+      }
     }
 
-    // Increment or decrement vote count
+    // Bill Carrier: only for Roll Call Vote
+    function showBillCarrierSection(visible) {
+      const carrierSection = document.getElementById("bill-carrier-section");
+      if (visible) {
+        carrierSection.classList.remove("hidden");
+        const carrierContainer = document.getElementById("bill-carrier-container");
+        carrierContainer.innerHTML = "";
+
+        // Populate with current committee members
+        committees[currentCommittee].forEach(member => {
+          const btn = document.createElement("button");
+          btn.innerText = member;
+          btn.onclick = () => selectBillCarrier(member, btn);
+          carrierContainer.appendChild(btn);
+        });
+      } else {
+        carrierSection.classList.add("hidden");
+      }
+    }
+
+    function selectBillCarrier(member, btn) {
+      selectedCarrier = member;
+      document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      updateStatement();
+    }
+
+    // Increment/decrement vote count
     function incrementVote(type, isIncrement) {
       if (type === 'for') {
         if (isIncrement) forVal++;
@@ -308,72 +375,66 @@
       document.getElementById('againstCount').innerText = againstVal;
       document.getElementById('neutralCount').innerText = neutralVal;
 
-      updateConstructedStatementWithVoteTally();
+      updateStatement();
     }
 
-    // Rebuild the statement when the tally changes
-    function updateConstructedStatementWithVoteTally() {
-      // Reconstruct from the known subAction
-      let baseStatement = `${selectedMember} - ${mainAction}`;
-      if (constructedStatement.includes("Motion Passed")) {
-        baseStatement += " - Motion Passed";
-      } else if (constructedStatement.includes("Motion Failed")) {
-        baseStatement += " - Motion Failed";
+    // Determine pass/fail for Roll Call Vote based on FOR vs. AGAINST
+    function getMotionResultText() {
+      // If FOR > AGAINST => Passed; else => Failed (ties count as fail)
+      if (forVal > againstVal) {
+        return "Motion Passed";
+      } else {
+        return "Motion Failed";
       }
-
-      // Append the new vote tally
-      baseStatement += ` - ${forVal}-${againstVal}-${neutralVal}`;
-
-      // If we have a carrier chosen, append that
-      if (selectedCarrier) {
-        baseStatement += ` - ${selectedCarrier} Carried the Bill`;
-      }
-
-      constructedStatement = baseStatement;
-      updateLog();
     }
 
-    function showBillCarrierSelection() {
-      const carrierSection = document.getElementById("bill-carrier-section");
-      carrierSection.classList.remove("hidden");
+    // Rebuild constructedStatement from current state
+    function updateStatement() {
+      if (!selectedMember) {
+        document.getElementById("log").innerText = "[Click a member and an action]";
+        return;
+      }
 
-      const carrierContainer = document.getElementById("bill-carrier-container");
-      carrierContainer.innerHTML = "";
+      let parts = [];
+      parts.push(selectedMember);
 
-      // Show the same members for the chosen committee
-      committees[currentCommittee].forEach(member => {
-        const btn = document.createElement("button");
-        btn.innerText = member;
-        btn.onclick = () => selectBillCarrier(member, btn);
-        carrierContainer.appendChild(btn);
-      });
+      if (mainAction) {
+        parts.push(mainAction);
+      }
+
+      // "Moved" scenario
+      if (mainAction === "Moved") {
+        if (selectedSubAction) {
+          parts.push(selectedSubAction); // "Do Pass" or "Do Not Pass"
+        }
+        if (selectedBillType) {
+          parts.push(selectedBillType);  // "SB", "HB", or "Amendment"
+        }
+      }
+
+      // "Roll Call Vote" scenario
+      if (mainAction.includes("Roll Call Vote")) {
+        // Show the tally, e.g. "4-3-1"
+        parts.push(`${forVal}-${againstVal}-${neutralVal}`);
+        parts.push(getMotionResultText()); // "Motion Passed" / "Motion Failed"
+
+        // Carrier only for roll call votes
+        if (selectedCarrier) {
+          parts.push(`${selectedCarrier} Carried the Bill`);
+        }
+      }
+
+      constructedStatement = parts.join(" - ");
+      document.getElementById("log").innerText = constructedStatement;
     }
 
-    function selectBillCarrier(member, btn) {
-      selectedCarrier = member;
-      // Remove highlight from all carrier buttons
-      document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-
-      // Reconstruct the statement to include the carrier
-      let baseStatement = `${selectedMember} - ${mainAction}`;
-
-      if (constructedStatement.includes("Motion Passed")) {
-        baseStatement += " - Motion Passed";
-      } else if (constructedStatement.includes("Motion Failed")) {
-        baseStatement += " - Motion Failed";
-      }
-
-      // If a vote tally is set (roll call vote scenario), append it
-      if (forVal > 0 || againstVal > 0 || neutralVal > 0) {
-        baseStatement += ` - ${forVal}-${againstVal}-${neutralVal}`;
-      }
-
-      // Append carrier
-      baseStatement += ` - ${selectedCarrier} Carried the Bill`;
-
-      constructedStatement = baseStatement;
-      updateLog();
+    function resetVoteTally() {
+      forVal = 0;
+      againstVal = 0;
+      neutralVal = 0;
+      document.getElementById('forCount').innerText = 0;
+      document.getElementById('againstCount').innerText = 0;
+      document.getElementById('neutralCount').innerText = 0;
     }
 
     function appendMeetingAction(action) {
@@ -382,7 +443,7 @@
         return;
       }
       constructedStatement = `${selectedMember} - ${action}`;
-      updateLog();
+      document.getElementById("log").innerText = constructedStatement;
     }
 
     function copyToClipboard() {
@@ -392,26 +453,27 @@
       setTimeout(() => log.classList.remove("copied"), 1000);
     }
 
-    function updateLog() {
-      document.getElementById("log").innerText = constructedStatement;
-    }
-
     // Resets everything except the committee selection
     function resetSelections() {
       selectedMember = "";
       mainAction = "";
+      selectedSubAction = "";
+      selectedBillType = "";
       selectedCarrier = "";
       constructedStatement = "";
       resetVoteTally();
-      updateLog();
 
-      // Hide sub actions, carrier, and vote tally sections
+      // Hide relevant sections
       document.getElementById("sub-actions").classList.add("hidden");
-      document.getElementById("bill-carrier-section").classList.add("hidden");
+      document.getElementById("bill-type-section").classList.add("hidden");
       document.getElementById("vote-tally-section").classList.add("hidden");
+      document.getElementById("bill-carrier-section").classList.add("hidden");
 
       // Remove .selected from all buttons
       document.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+
+      // Reset log text
+      document.getElementById("log").innerText = "[Click a member and an action]";
     }
 
     // Support Ctrl + Enter to copy
