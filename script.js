@@ -102,9 +102,9 @@ function createNewRowInHistory() {
   copyStatementCell.appendChild(copyStatementButton);
   inProgressRow.appendChild(copyStatementCell);
 
-  // Create a single cell to hold all +/- time buttons
+  // Create a single cell to hold all +/- time buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
-  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line if you want
+  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
 
   // Helper to create a button
   function createTimeAdjustButton(label, secondsToAdjust) {
@@ -112,21 +112,14 @@ function createNewRowInHistory() {
     btn.textContent = label;
     btn.classList.add("copy-row-button");
     btn.onclick = () => {
-      // Convert "1970-01-01 TIME"
       let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
-      timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust); // +/- seconds
-
-      // Reformat as HH:MM:SS
+      timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
       const newTimeStr = timeDate.toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
       });
-
-      // Update permanent time in the cell
       localTimeCell.textContent = newTimeStr;
-
-      // Show quick glow
       btn.classList.add("copied-cell");
       setTimeout(() => {
         btn.classList.remove("copied-cell");
@@ -152,13 +145,31 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(plus5);
   inProgressRow.appendChild(timeAdjustCell);
 
-  // Finally append the row
+  // NEW: Delete cell with a Delete button
+  const deleteCell = document.createElement("td");
+  const deleteButton = document.createElement("button");
+  deleteButton.textContent = "Delete";
+  deleteButton.classList.add("copy-row-button");
+  // Optionally, change the background color to indicate deletion:
+  deleteButton.style.backgroundColor = "#dc3545";
+  deleteButton.onclick = () => {
+    // For a live (in-progress) row, simply remove it and clear the references.
+    if (inProgressRow) {
+      inProgressRow.remove();
+      finalizeInProgressRow();
+    }
+  };
+  deleteCell.appendChild(deleteButton);
+  inProgressRow.appendChild(deleteCell);
+
+  // Finally append the row to the table
   tableBody.appendChild(inProgressRow);
 
   // Update global references so we can still update the "in-progress" row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 
