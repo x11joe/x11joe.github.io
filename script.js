@@ -1,6 +1,8 @@
 /* --------------------------
    Global Variables & Setup
    -------------------------- */
+let historyRecords = [];
+
 let selectedMember = "";
 let mainAction = "";
 let selectedSubAction = "";
@@ -588,22 +590,22 @@ function resetAllAndFinalize() {
     constructedStatement !== "[Click a member and an action]" &&
     constructedStatement.trim() !== ""
   ) {
-    updateInProgressRow(); // finalize
+    updateInProgressRow(); // finalize the in-progress row
+
+    // Create a record object with the (possibly adjusted) time and the constructed statement.
+    let record = {
+      time: timeCell ? timeCell.textContent : statementStartTime,
+      statement: constructedStatement
+    };
+
+    // Add the record to the history array and save to local storage.
+    historyRecords.push(record);
+    saveHistoryToLocalStorage();
   }
   finalizeInProgressRow();
   resetSelections();
 }
 
-// "Cancel via esc key
-function cancelCurrentAction() {
-  // If there's an in-progress row, remove it so it won't appear in history
-  if (inProgressRow) {
-    inProgressRow.remove();  // removes the <tr> from the DOM
-    finalizeInProgressRow(); // clears references like timeCell, statementCell, etc.
-  }
-  // Then reset UI WITHOUT finalizing it in the table
-  resetSelections(false);
-}
 
 
 // The main reset
@@ -649,6 +651,68 @@ function resetSelections(finalize = true) {
   document.getElementById("meetingActionsSection").classList.remove("hidden");
 }
 
+function saveHistoryToLocalStorage() {
+  localStorage.setItem("historyRecords", JSON.stringify(historyRecords));
+}
+
+function loadHistoryFromLocalStorage() {
+  let stored = localStorage.getItem("historyRecords");
+  if (stored) {
+    historyRecords = JSON.parse(stored);
+    const tableBody = document.getElementById("historyTableBody");
+    tableBody.innerHTML = "";
+    historyRecords.forEach(record => {
+      let tr = document.createElement("tr");
+
+      let tdTime = document.createElement("td");
+      tdTime.textContent = record.time;
+      tr.appendChild(tdTime);
+
+      let tdStatement = document.createElement("td");
+      tdStatement.textContent = record.statement;
+      tr.appendChild(tdStatement);
+
+      let tdCopyTime = document.createElement("td");
+      let btnCopyTime = document.createElement("button");
+      btnCopyTime.textContent = "Copy Time";
+      btnCopyTime.classList.add("copy-row-button");
+      btnCopyTime.onclick = () => {
+        navigator.clipboard.writeText(record.time).then(() => {
+          tdTime.classList.add("copied-cell");
+          setTimeout(() => {
+            tdTime.classList.remove("copied-cell");
+          }, 800);
+        });
+      };
+      tdCopyTime.appendChild(btnCopyTime);
+      tr.appendChild(tdCopyTime);
+
+      let tdCopyStatement = document.createElement("td");
+      let btnCopyStatement = document.createElement("button");
+      btnCopyStatement.textContent = "Copy Statement";
+      btnCopyStatement.classList.add("copy-row-button");
+      btnCopyStatement.onclick = () => {
+        navigator.clipboard.writeText(record.statement).then(() => {
+          tdStatement.classList.add("copied-cell");
+          setTimeout(() => {
+            tdStatement.classList.remove("copied-cell");
+          }, 800);
+        });
+      };
+      tdCopyStatement.appendChild(btnCopyStatement);
+      tr.appendChild(tdCopyStatement);
+
+      tableBody.appendChild(tr);
+    });
+  }
+}
+
+function clearHistory() {
+  localStorage.removeItem("historyRecords");
+  historyRecords = [];
+  document.getElementById("historyTableBody").innerHTML = "";
+}
+
 
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
@@ -673,3 +737,5 @@ document.addEventListener("keydown", function (event) {
 
 // Initialize on page load
 updateMembers();
+loadHistoryFromLocalStorage();
+
