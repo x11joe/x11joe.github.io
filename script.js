@@ -597,21 +597,29 @@ function resetAllAndFinalize() {
     constructedStatement !== "[Click a member and an action]" &&
     constructedStatement.trim() !== ""
   ) {
-    updateInProgressRow(); // finalize the in-progress row
-
-    // Create a record object with the (possibly adjusted) time and the constructed statement.
+    // Finalize the in-progress row.
+    updateInProgressRow();
     let record = {
       time: timeCell ? timeCell.textContent : statementStartTime,
       statement: constructedStatement
     };
-
-    // Add the record to the history array and save to local storage.
+    // Add the record to the history array and persist it.
     historyRecords.push(record);
     saveHistoryToLocalStorage();
   }
+  // Remove the live row from the DOM (so it won't remain along with the saved record)
+  if (inProgressRow) {
+    inProgressRow.remove();
+  }
+  // Clear the in-progress row references.
   finalizeInProgressRow();
+  // Reset the UI selections.
   resetSelections();
+  // Reload the history table from local storage so that the finalized record (with its delete button)
+  // is now shown from the stored records.
+  loadHistoryFromLocalStorage();
 }
+
 
 
 
