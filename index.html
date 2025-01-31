@@ -186,19 +186,19 @@
             updateLog();
         }
 
+        function adjustVote(type, amount) {
+            voteCounts[type] += amount;
+            document.getElementById(`vote-${type}`).innerText = voteCounts[type];
+            constructedStatement = `${selectedMember} - Roll Call Vote - ${voteCounts.for}-${voteCounts.against}-${voteCounts.neutral}`;
+            updateLog();
+        }
+
         function appendMeetingAction(action) {
             if (!selectedMember) {
                 alert("Please select a member first!");
                 return;
             }
             constructedStatement = `${selectedMember} - ${action}`;
-            updateLog();
-        }
-
-        function adjustVote(type, amount) {
-            voteCounts[type] += amount;
-            document.getElementById(`vote-${type}`).innerText = voteCounts[type];
-            constructedStatement = `${selectedMember} - Roll Call Vote - ${voteCounts.for}-${voteCounts.against}-${voteCounts.neutral}`;
             updateLog();
         }
 
