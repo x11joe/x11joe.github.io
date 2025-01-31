@@ -397,7 +397,13 @@ function getMotionResultText() {
 
 // Build the statement
 function updateStatement() {
-  if (!selectedMember) {
+  // Allow no selectedMember if mainAction is a roll call vote
+  if (
+    !selectedMember &&
+    mainAction !== "Roll Call Vote on SB" &&
+    mainAction !== "Roll Call Vote on Amendment"
+  ) {
+    // For everything else, we still need a member
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
@@ -449,6 +455,7 @@ function updateStatement() {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
 
 function resetVoteTally() {
   forVal = 0;
