@@ -570,11 +570,13 @@ function resetSelections(finalize = true) {
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
+    event.preventDefault();       // Stop default button activati
     copyToClipboard();
   }
 
    // If just Enter (without Ctrl), reset everything
   if (event.key === "Enter") {
+    event.preventDefault();       // Stop default button activati
     resetAllAndFinalize();
   }
 });
