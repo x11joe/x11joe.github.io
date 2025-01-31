@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Committee Quick Actions with History V.1.0.4</title>
+  <title>Committee Quick Actions with History V.1.0.5</title>
 
   <!-- Link to external CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <h2>Committee Quick Actions with History V.1.0.4</h2>
+  <h2>Committee Quick Actions with History V.1.0.5</h2>
 
   <!-- Container for top controls -->
   <div class="container">
@@ -34,17 +34,17 @@
         <button onclick="setMainAction(this, 'Roll Call Vote on Amendment')">Roll Call Vote on Amendment</button>
       </div>
     </div>
+    
+    <!-- Bill Type section for "Moved" sub-action -->
+    <div class="section hidden" id="bill-type-section">
+      <h3>Select Bill Type</h3>
+      <div class="buttons-container" id="bill-type-container"></div>
+    </div>
 
     <!-- Sub Actions for "Moved" only -->
     <div class="section hidden" id="sub-actions">
       <h3>Sub Actions (Moved)</h3>
       <div class="buttons-container" id="sub-actions-container"></div>
-    </div>
-
-    <!-- Bill Type section for "Moved" sub-action -->
-    <div class="section hidden" id="bill-type-section">
-      <h3>Select Bill Type</h3>
-      <div class="buttons-container" id="bill-type-container"></div>
     </div>
 
     <!-- Optional "as Amended" for Roll Call Vote on SB -->
