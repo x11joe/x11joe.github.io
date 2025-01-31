@@ -93,32 +93,14 @@
             <h3>Main Actions</h3>
             <div class="buttons-container">
                 <button onclick="setMainAction(this, 'Moved')">Moved</button>
-                <button onclick="setMainAction(this, 'Roll Call Vote')">Roll Call Vote</button>
+                <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
+                <button onclick="setMainAction(this, 'Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
             </div>
         </div>
 
         <div class="section hidden" id="sub-actions">
             <h3>Sub Actions</h3>
             <div class="buttons-container" id="sub-actions-container"></div>
-        </div>
-
-        <div class="section hidden" id="bill-type-section">
-            <h3>Select Bill Type</h3>
-            <div class="buttons-container">
-                <button onclick="appendSubAction(this, 'on SB')">on SB</button>
-                <button onclick="appendSubAction(this, 'on HB')">on HB</button>
-                <button onclick="appendSubAction(this, 'on Amendment LC#')">on Amendment LC#</button>
-            </div>
-        </div>
-
-        <div class="section hidden" id="roll-call-section">
-            <h3>Roll Call Vote Counts</h3>
-            <div class="buttons-container">
-                <button onclick="adjustVote('for', 1)">For +1</button>
-                <button onclick="adjustVote('against', 1)">Against +1</button>
-                <button onclick="adjustVote('neutral', 1)">Neutral +1</button>
-            </div>
-            <p>For: <span id="vote-for">0</span>, Against: <span id="vote-against">0</span>, Neutral: <span id="vote-neutral">0</span></p>
         </div>
 
         <div class="section hidden" id="bill-carrier-section">
@@ -145,7 +127,8 @@
     <script>
         let selectedMember = "";
         let constructedStatement = "";
-        let voteCounts = { for: 0, against: 0, neutral: 0 };
+        let mainAction = "";
+        let selectedCarrier = "";
 
         const committees = {
             energy: [
@@ -178,19 +161,59 @@
                 btn.onclick = () => selectMember(member, btn);
                 membersContainer.appendChild(btn);
             });
+            resetSelections();
         }
 
         function selectMember(member, btn) {
             selectedMember = member;
             constructedStatement = `${selectedMember} - `;
             updateLog();
+            resetSelections();
+            document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
         }
 
-        function adjustVote(type, amount) {
-            voteCounts[type] += amount;
-            document.getElementById(`vote-${type}`).innerText = voteCounts[type];
-            constructedStatement = `${selectedMember} - Roll Call Vote - ${voteCounts.for}-${voteCounts.against}-${voteCounts.neutral}`;
+        function setMainAction(button, action) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+            mainAction = action;
+            constructedStatement = `${selectedMember} - ${mainAction}`;
             updateLog();
+            document.querySelectorAll(".section button").forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
+            showSubActions(action);
+        }
+
+        function showSubActions(action) {
+            const subActionsContainer = document.getElementById("sub-actions-container");
+            subActionsContainer.innerHTML = "";
+            document.getElementById("sub-actions").classList.remove("hidden");
+
+            let subActions = [];
+            if (action.includes("Moved")) {
+                subActions = ["Do Pass", "Do Not Pass"];
+            } else if (action.includes("Roll Call Vote")) {
+                subActions = ["Motion Passed", "Motion Failed"];
+            }
+
+            subActions.forEach(subAction => {
+                const btn = document.createElement("button");
+                btn.innerText = subAction;
+                btn.onclick = () => appendSubAction(btn, subAction);
+                subActionsContainer.appendChild(btn);
+            });
+        }
+
+        function appendSubAction(button, subAction) {
+            constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
+            updateLog();
+            document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
+            if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
+                showBillCarrierSelection();
+            }
         }
 
         function appendMeetingAction(action) {
@@ -204,15 +227,20 @@
 
         function copyToClipboard() {
             navigator.clipboard.writeText(constructedStatement);
-            document.getElementById("log").classList.add("copied");
-            setTimeout(() => document.getElementById("log").classList.remove("copied"), 1000);
+            const log = document.getElementById("log");
+            log.classList.add("copied");
+            setTimeout(() => log.classList.remove("copied"), 1000);
         }
 
-        document.addEventListener("keydown", event => {
-            if (event.ctrlKey && event.key === "Enter") copyToClipboard();
-        });
+        function updateLog() {
+            document.getElementById("log").innerText = constructedStatement;
+        }
 
-        function updateLog() { document.getElementById("log").innerText = constructedStatement; }
+        document.addEventListener("keydown", function(event) {
+            if (event.ctrlKey && event.key === "Enter") {
+                copyToClipboard();
+            }
+        });
 
         updateMembers();
     </script>
