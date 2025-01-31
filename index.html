@@ -74,6 +74,17 @@
     .hidden {
       display: none;
     }
+    .vote-tally-controls {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .vote-tally-controls div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
@@ -104,6 +115,31 @@
       <div class="buttons-container" id="sub-actions-container"></div>
     </div>
 
+    <!-- New vote tally section -->
+    <div class="section hidden" id="vote-tally-section">
+      <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
+      <div class="vote-tally-controls">
+        <div>
+          <strong>For:</strong>
+          <button onclick="incrementVote('for', true)">+</button>
+          <span id="forCount">0</span>
+          <button onclick="incrementVote('for', false)">-</button>
+        </div>
+        <div>
+          <strong>Against:</strong>
+          <button onclick="incrementVote('against', true)">+</button>
+          <span id="againstCount">0</span>
+          <button onclick="incrementVote('against', false)">-</button>
+        </div>
+        <div>
+          <strong>Neutral:</strong>
+          <button onclick="incrementVote('neutral', true)">+</button>
+          <span id="neutralCount">0</span>
+          <button onclick="incrementVote('neutral', false)">-</button>
+        </div>
+      </div>
+    </div>
+
     <div class="section hidden" id="bill-carrier-section">
       <h3>Select Bill Carrier</h3>
       <div class="buttons-container" id="bill-carrier-container"></div>
@@ -132,6 +168,11 @@
     let constructedStatement = "";
     let currentCommittee = "";
 
+    // Vote tally variables
+    let forVal = 0;
+    let againstVal = 0;
+    let neutralVal = 0;
+
     const committees = {
       energy: [
         "Chairman Dale Patton",
@@ -155,13 +196,9 @@
 
     // Called when the committee dropdown changes
     function updateMembers() {
-      // Store the currently selected committee
       currentCommittee = document.getElementById("committeeSelect").value;
-
-      // Reset selections and statement
       resetSelections();
 
-      // Dynamically create member buttons
       const membersContainer = document.getElementById("members-container");
       membersContainer.innerHTML = "";
       committees[currentCommittee].forEach(member => {
@@ -173,10 +210,7 @@
     }
 
     function selectMember(member, btn) {
-      // First, reset all actions when selecting a new member
       resetSelections();
-
-      // Set new member
       selectedMember = member;
       constructedStatement = `${selectedMember} - `;
       updateLog();
@@ -196,11 +230,9 @@
       updateLog();
 
       // Highlight the selected main action
-      // (Remove selected from all main action buttons, then highlight this one)
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // Show sub-actions depending on the main action
       showSubActions(action);
     }
 
@@ -232,13 +264,73 @@
       document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // If the motion is passed/failed, show the bill carrier selection
+      // Check if it's a roll call vote with passed/failed
       if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
+        // Reset and show the vote tally
+        resetVoteTally();
+        showVoteTallySection();
+
+        // Also show bill carrier selection
         showBillCarrierSelection();
       } else {
-        // Hide bill-carrier-section if it's not relevant
         document.getElementById("bill-carrier-section").classList.add("hidden");
+        document.getElementById("vote-tally-section").classList.add("hidden");
       }
+    }
+
+    function showVoteTallySection() {
+      document.getElementById("vote-tally-section").classList.remove("hidden");
+    }
+
+    // Reset the tally counters to zero
+    function resetVoteTally() {
+      forVal = 0;
+      againstVal = 0;
+      neutralVal = 0;
+      document.getElementById('forCount').innerText = 0;
+      document.getElementById('againstCount').innerText = 0;
+      document.getElementById('neutralCount').innerText = 0;
+    }
+
+    // Increment or decrement vote count
+    function incrementVote(type, isIncrement) {
+      if (type === 'for') {
+        if (isIncrement) forVal++;
+        else if (forVal > 0) forVal--;
+      } else if (type === 'against') {
+        if (isIncrement) againstVal++;
+        else if (againstVal > 0) againstVal--;
+      } else if (type === 'neutral') {
+        if (isIncrement) neutralVal++;
+        else if (neutralVal > 0) neutralVal--;
+      }
+      document.getElementById('forCount').innerText = forVal;
+      document.getElementById('againstCount').innerText = againstVal;
+      document.getElementById('neutralCount').innerText = neutralVal;
+
+      updateConstructedStatementWithVoteTally();
+    }
+
+    // Rebuild the statement when the tally changes
+    function updateConstructedStatementWithVoteTally() {
+      // Reconstruct from the known subAction
+      let baseStatement = `${selectedMember} - ${mainAction}`;
+      if (constructedStatement.includes("Motion Passed")) {
+        baseStatement += " - Motion Passed";
+      } else if (constructedStatement.includes("Motion Failed")) {
+        baseStatement += " - Motion Failed";
+      }
+
+      // Append the new vote tally
+      baseStatement += ` - ${forVal}-${againstVal}-${neutralVal}`;
+
+      // If we have a carrier chosen, append that
+      if (selectedCarrier) {
+        baseStatement += ` - ${selectedCarrier} Carried the Bill`;
+      }
+
+      constructedStatement = baseStatement;
+      updateLog();
     }
 
     function showBillCarrierSelection() {
@@ -259,24 +351,27 @@
 
     function selectBillCarrier(member, btn) {
       selectedCarrier = member;
-
       // Remove highlight from all carrier buttons
       document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
-      // Highlight the newly selected carrier
       btn.classList.add("selected");
 
-      // We want to append " - Senator X Carried the Bill"
-      // But first, remove any old carrier text if the user re-selects
-      // One approach: reconstruct from scratch without the old carrier text
+      // Reconstruct the statement to include the carrier
       let baseStatement = `${selectedMember} - ${mainAction}`;
-      // If sub-action is relevant, it might already be in constructedStatement
+
       if (constructedStatement.includes("Motion Passed")) {
         baseStatement += " - Motion Passed";
       } else if (constructedStatement.includes("Motion Failed")) {
         baseStatement += " - Motion Failed";
       }
-      // Now append the new bill carrier
+
+      // If a vote tally is set (roll call vote scenario), append it
+      if (forVal > 0 || againstVal > 0 || neutralVal > 0) {
+        baseStatement += ` - ${forVal}-${againstVal}-${neutralVal}`;
+      }
+
+      // Append carrier
       baseStatement += ` - ${selectedCarrier} Carried the Bill`;
+
       constructedStatement = baseStatement;
       updateLog();
     }
@@ -307,11 +402,13 @@
       mainAction = "";
       selectedCarrier = "";
       constructedStatement = "";
+      resetVoteTally();
       updateLog();
 
-      // Hide sub actions & bill carrier section
+      // Hide sub actions, carrier, and vote tally sections
       document.getElementById("sub-actions").classList.add("hidden");
       document.getElementById("bill-carrier-section").classList.add("hidden");
+      document.getElementById("vote-tally-section").classList.add("hidden");
 
       // Remove .selected from all buttons
       document.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
