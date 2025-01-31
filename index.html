@@ -1,249 +1,331 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Committee Quick Actions</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            text-align: center;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .buttons-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        button {
-            padding: 10px 12px;
-            font-size: 14px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: white;
-            transition: 0.3s;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .selected {
-            background-color: #28a745 !important;
-        }
-        .log {
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            width: 90%;
-            max-width: 600px;
-            min-height: 50px;
-            background: #f9f9f9;
-            font-size: 16px;
-            text-align: left;
-            overflow-y: auto;
-            transition: background 0.3s;
-        }
-        .log.copied {
-            background: #d4edda;
-        }
-        .copy-btn {
-            margin-top: 10px;
-            background-color: #dc3545;
-        }
-        .copy-btn:hover {
-            background-color: #c82333;
-        }
-        .section {
-            width: 90%;
-            max-width: 600px;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            background: #f1f1f1;
-            text-align: center;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Committee Quick Actions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .buttons-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    /* Highlight the selected button in green */
+    .selected {
+      background-color: #28a745 !important;
+    }
+    .log {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      width: 90%;
+      max-width: 600px;
+      min-height: 50px;
+      background: #f9f9f9;
+      font-size: 16px;
+      text-align: left;
+      overflow-y: auto;
+      transition: background 0.3s;
+    }
+    .log.copied {
+      background: #d4edda;
+    }
+    .copy-btn {
+      margin-top: 10px;
+      background-color: #dc3545;
+    }
+    .copy-btn:hover {
+      background-color: #c82333;
+    }
+    .section {
+      width: 90%;
+      max-width: 600px;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background: #f1f1f1;
+      text-align: center;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
-    <h2>Committee Quick Actions</h2>
+  <h2>Committee Quick Actions</h2>
 
-    <div class="container">
-        <label for="committeeSelect"><b>Select Committee:</b></label>
-        <select id="committeeSelect" onchange="updateMembers()">
-            <option value="energy">Energy & Natural Resources</option>
-            <option value="judiciary">Judiciary</option>
-        </select>
+  <div class="container">
+    <label for="committeeSelect"><b>Select Committee:</b></label>
+    <select id="committeeSelect" onchange="updateMembers()">
+      <option value="energy">Energy & Natural Resources</option>
+      <option value="judiciary">Judiciary</option>
+    </select>
 
-        <h3>Select Member:</h3>
-        <div class="buttons-container" id="members-container"></div>
+    <h3>Select Member:</h3>
+    <div class="buttons-container" id="members-container"></div>
 
-        <div class="section">
-            <h3>Main Actions</h3>
-            <div class="buttons-container">
-                <button onclick="setMainAction(this, 'Moved')">Moved</button>
-                <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
-                <button onclick="setMainAction(this, 'Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
-            </div>
-        </div>
-
-        <div class="section hidden" id="sub-actions">
-            <h3>Sub Actions</h3>
-            <div class="buttons-container" id="sub-actions-container"></div>
-        </div>
-
-        <div class="section hidden" id="bill-carrier-section">
-            <h3>Select Bill Carrier</h3>
-            <div class="buttons-container" id="bill-carrier-container"></div>
-        </div>
-
-        <div class="section">
-            <h3>Meeting Actions</h3>
-            <div class="buttons-container">
-                <button onclick="appendMeetingAction('Closed Hearing')">Closed Hearing</button>
-                <button onclick="appendMeetingAction('Recessed Meeting')">Recessed Meeting</button>
-                <button onclick="appendMeetingAction('Adjourned Meeting')">Adjourned Meeting</button>
-                <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
-            </div>
-        </div>
-
-        <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
-
-        <h3>Constructed Statement:</h3>
-        <div class="log" id="log">[Click a member and an action]</div>
+    <div class="section">
+      <h3>Main Actions</h3>
+      <div class="buttons-container">
+        <button onclick="setMainAction(this, 'Moved')">Moved</button>
+        <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
+        <button onclick="setMainAction(this, 'Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
+      </div>
     </div>
 
-    <script>
-        let selectedMember = "";
-        let constructedStatement = "";
-        let mainAction = "";
-        let selectedCarrier = "";
+    <div class="section hidden" id="sub-actions">
+      <h3>Sub Actions</h3>
+      <div class="buttons-container" id="sub-actions-container"></div>
+    </div>
 
-        const committees = {
-            energy: [
-                "Chairman Dale Patton",
-                "Vice Chairman Greg Kessel",
-                "Senator Todd Beard",
-                "Senator Keith Boehm",
-                "Senator Mark Enget",
-                "Senator Justin Gerhardt",
-                "Senator Desiree Van Oosting"
-            ],
-            judiciary: [
-                "Chairwoman Diane Larson",
-                "Vice Chairman Bob Paulson",
-                "Senator Jose Castaneda",
-                "Senator Claire Cory",
-                "Senator Larry Luick",
-                "Senator Janne Myrdal",
-                "Senator Ryan Braunberger"
-            ]
-        };
+    <div class="section hidden" id="bill-carrier-section">
+      <h3>Select Bill Carrier</h3>
+      <div class="buttons-container" id="bill-carrier-container"></div>
+    </div>
 
-        function updateMembers() {
-            const selectedCommittee = document.getElementById("committeeSelect").value;
-            const membersContainer = document.getElementById("members-container");
-            membersContainer.innerHTML = "";
-            committees[selectedCommittee].forEach(member => {
-                const btn = document.createElement("button");
-                btn.innerText = member;
-                btn.onclick = () => selectMember(member, btn);
-                membersContainer.appendChild(btn);
-            });
-            resetSelections();
-        }
+    <div class="section">
+      <h3>Meeting Actions</h3>
+      <div class="buttons-container">
+        <button onclick="appendMeetingAction('Closed Hearing')">Closed Hearing</button>
+        <button onclick="appendMeetingAction('Recessed Meeting')">Recessed Meeting</button>
+        <button onclick="appendMeetingAction('Adjourned Meeting')">Adjourned Meeting</button>
+        <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
+      </div>
+    </div>
 
-        function selectMember(member, btn) {
-            selectedMember = member;
-            constructedStatement = `${selectedMember} - `;
-            updateLog();
-            resetSelections();
-            document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
-            btn.classList.add("selected");
-        }
+    <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
 
-        function setMainAction(button, action) {
-            if (!selectedMember) {
-                alert("Please select a member first!");
-                return;
-            }
-            mainAction = action;
-            constructedStatement = `${selectedMember} - ${mainAction}`;
-            updateLog();
-            document.querySelectorAll(".section button").forEach(b => b.classList.remove("selected"));
-            button.classList.add("selected");
-            showSubActions(action);
-        }
+    <h3>Constructed Statement:</h3>
+    <div class="log" id="log">[Click a member and an action]</div>
+  </div>
 
-        function showSubActions(action) {
-            const subActionsContainer = document.getElementById("sub-actions-container");
-            subActionsContainer.innerHTML = "";
-            document.getElementById("sub-actions").classList.remove("hidden");
+  <script>
+    let selectedMember = "";
+    let mainAction = "";
+    let selectedCarrier = "";
+    let constructedStatement = "";
+    let currentCommittee = "";
 
-            let subActions = [];
-            if (action.includes("Moved")) {
-                subActions = ["Do Pass", "Do Not Pass"];
-            } else if (action.includes("Roll Call Vote")) {
-                subActions = ["Motion Passed", "Motion Failed"];
-            }
+    const committees = {
+      energy: [
+        "Chairman Dale Patton",
+        "Vice Chairman Greg Kessel",
+        "Senator Todd Beard",
+        "Senator Keith Boehm",
+        "Senator Mark Enget",
+        "Senator Justin Gerhardt",
+        "Senator Desiree Van Oosting"
+      ],
+      judiciary: [
+        "Chairwoman Diane Larson",
+        "Vice Chairman Bob Paulson",
+        "Senator Jose Castaneda",
+        "Senator Claire Cory",
+        "Senator Larry Luick",
+        "Senator Janne Myrdal",
+        "Senator Ryan Braunberger"
+      ]
+    };
 
-            subActions.forEach(subAction => {
-                const btn = document.createElement("button");
-                btn.innerText = subAction;
-                btn.onclick = () => appendSubAction(btn, subAction);
-                subActionsContainer.appendChild(btn);
-            });
-        }
+    // Called when the committee dropdown changes
+    function updateMembers() {
+      // Store the currently selected committee
+      currentCommittee = document.getElementById("committeeSelect").value;
 
-        function appendSubAction(button, subAction) {
-            constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
-            updateLog();
-            document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
-            button.classList.add("selected");
-            if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
-                showBillCarrierSelection();
-            }
-        }
+      // Reset selections and statement
+      resetSelections();
 
-        function appendMeetingAction(action) {
-            if (!selectedMember) {
-                alert("Please select a member first!");
-                return;
-            }
-            constructedStatement = `${selectedMember} - ${action}`;
-            updateLog();
-        }
+      // Dynamically create member buttons
+      const membersContainer = document.getElementById("members-container");
+      membersContainer.innerHTML = "";
+      committees[currentCommittee].forEach(member => {
+        const btn = document.createElement("button");
+        btn.innerText = member;
+        btn.onclick = () => selectMember(member, btn);
+        membersContainer.appendChild(btn);
+      });
+    }
 
-        function copyToClipboard() {
-            navigator.clipboard.writeText(constructedStatement);
-            const log = document.getElementById("log");
-            log.classList.add("copied");
-            setTimeout(() => log.classList.remove("copied"), 1000);
-        }
+    function selectMember(member, btn) {
+      // First, reset all actions when selecting a new member
+      resetSelections();
 
-        function updateLog() {
-            document.getElementById("log").innerText = constructedStatement;
-        }
+      // Set new member
+      selectedMember = member;
+      constructedStatement = `${selectedMember} - `;
+      updateLog();
 
-        document.addEventListener("keydown", function(event) {
-            if (event.ctrlKey && event.key === "Enter") {
-                copyToClipboard();
-            }
-        });
+      // Highlight the selected member
+      document.querySelectorAll("#members-container button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    }
 
-        updateMembers();
-    </script>
+    function setMainAction(button, action) {
+      if (!selectedMember) {
+        alert("Please select a member first!");
+        return;
+      }
+      mainAction = action;
+      constructedStatement = `${selectedMember} - ${mainAction}`;
+      updateLog();
 
+      // Highlight the selected main action
+      // (Remove selected from all main action buttons, then highlight this one)
+      document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
+      button.classList.add("selected");
+
+      // Show sub-actions depending on the main action
+      showSubActions(action);
+    }
+
+    function showSubActions(action) {
+      const subActionsContainer = document.getElementById("sub-actions-container");
+      subActionsContainer.innerHTML = "";
+      document.getElementById("sub-actions").classList.remove("hidden");
+
+      let subActions = [];
+      if (action.includes("Moved")) {
+        subActions = ["Do Pass", "Do Not Pass"];
+      } else if (action.includes("Roll Call Vote")) {
+        subActions = ["Motion Passed", "Motion Failed"];
+      }
+
+      subActions.forEach(subAction => {
+        const btn = document.createElement("button");
+        btn.innerText = subAction;
+        btn.onclick = () => appendSubAction(btn, subAction);
+        subActionsContainer.appendChild(btn);
+      });
+    }
+
+    function appendSubAction(button, subAction) {
+      constructedStatement = `${selectedMember} - ${mainAction} - ${subAction}`;
+      updateLog();
+
+      // Highlight the selected sub action
+      document.querySelectorAll("#sub-actions-container button").forEach(b => b.classList.remove("selected"));
+      button.classList.add("selected");
+
+      // If the motion is passed/failed, show the bill carrier selection
+      if (subAction.includes("Motion Passed") || subAction.includes("Motion Failed")) {
+        showBillCarrierSelection();
+      } else {
+        // Hide bill-carrier-section if it's not relevant
+        document.getElementById("bill-carrier-section").classList.add("hidden");
+      }
+    }
+
+    function showBillCarrierSelection() {
+      const carrierSection = document.getElementById("bill-carrier-section");
+      carrierSection.classList.remove("hidden");
+
+      const carrierContainer = document.getElementById("bill-carrier-container");
+      carrierContainer.innerHTML = "";
+
+      // Show the same members for the chosen committee
+      committees[currentCommittee].forEach(member => {
+        const btn = document.createElement("button");
+        btn.innerText = member;
+        btn.onclick = () => selectBillCarrier(member, btn);
+        carrierContainer.appendChild(btn);
+      });
+    }
+
+    function selectBillCarrier(member, btn) {
+      selectedCarrier = member;
+
+      // Remove highlight from all carrier buttons
+      document.querySelectorAll("#bill-carrier-container button").forEach(b => b.classList.remove("selected"));
+      // Highlight the newly selected carrier
+      btn.classList.add("selected");
+
+      // We want to append " - Senator X Carried the Bill"
+      // But first, remove any old carrier text if the user re-selects
+      // One approach: reconstruct from scratch without the old carrier text
+      let baseStatement = `${selectedMember} - ${mainAction}`;
+      // If sub-action is relevant, it might already be in constructedStatement
+      if (constructedStatement.includes("Motion Passed")) {
+        baseStatement += " - Motion Passed";
+      } else if (constructedStatement.includes("Motion Failed")) {
+        baseStatement += " - Motion Failed";
+      }
+      // Now append the new bill carrier
+      baseStatement += ` - ${selectedCarrier} Carried the Bill`;
+      constructedStatement = baseStatement;
+      updateLog();
+    }
+
+    function appendMeetingAction(action) {
+      if (!selectedMember) {
+        alert("Please select a member first!");
+        return;
+      }
+      constructedStatement = `${selectedMember} - ${action}`;
+      updateLog();
+    }
+
+    function copyToClipboard() {
+      navigator.clipboard.writeText(constructedStatement);
+      const log = document.getElementById("log");
+      log.classList.add("copied");
+      setTimeout(() => log.classList.remove("copied"), 1000);
+    }
+
+    function updateLog() {
+      document.getElementById("log").innerText = constructedStatement;
+    }
+
+    // Resets everything except the committee selection
+    function resetSelections() {
+      selectedMember = "";
+      mainAction = "";
+      selectedCarrier = "";
+      constructedStatement = "";
+      updateLog();
+
+      // Hide sub actions & bill carrier section
+      document.getElementById("sub-actions").classList.add("hidden");
+      document.getElementById("bill-carrier-section").classList.add("hidden");
+
+      // Remove .selected from all buttons
+      document.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+    }
+
+    // Support Ctrl + Enter to copy
+    document.addEventListener("keydown", function(event) {
+      if (event.ctrlKey && event.key === "Enter") {
+        copyToClipboard();
+      }
+    });
+
+    // Initialize the first committee on page load
+    updateMembers();
+  </script>
 </body>
 </html>
