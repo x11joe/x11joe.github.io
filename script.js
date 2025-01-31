@@ -57,7 +57,6 @@ function getCurrentTimestamp() {
   });
 }
 
-// UPDATED createNewRowInHistory (for live rows)
 function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
@@ -105,7 +104,9 @@ function createNewRowInHistory() {
 
   // Create a cell to hold all the +/- time adjustment buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
-  timeAdjustCell.style.whiteSpace = "nowrap";
+  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
+
+  // Helper to create a time adjustment button
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -126,7 +127,8 @@ function createNewRowInHistory() {
     };
     return btn;
   }
-  // Append the six buttons
+
+  // Create and append the 6 time adjust buttons
   timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
   timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
   timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
@@ -135,8 +137,7 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(createTimeAdjustButton("+5s", +5));
   inProgressRow.appendChild(timeAdjustCell);
 
-  // NEW: Delete cell with a Delete button for live rows.
-  // For live rows, the delete button just removes the row and clears the pending data.
+  // NEW: Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
@@ -144,11 +145,12 @@ function createNewRowInHistory() {
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
     console.log("Delete button clicked on live row");
-    // Remove the live row from the DOM
-    if (inProgressRow) {
-      inProgressRow.remove();
+    // Use closest() to remove the row from the DOM
+    const row = this.closest("tr");
+    if (row) {
+      row.remove();
     }
-    // Clear the pending constructed statement so nothing gets confirmed later
+    // Clear the pending constructed statement so that no record gets confirmed later
     constructedStatement = "";
     // Clear the in-progress row references
     finalizeInProgressRow();
@@ -156,6 +158,7 @@ function createNewRowInHistory() {
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
+  // Finally, append the row to the table body
   tableBody.appendChild(inProgressRow);
 
   // Do NOT push a live record here.
@@ -165,6 +168,7 @@ function createNewRowInHistory() {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
