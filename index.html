@@ -147,10 +147,32 @@
         let constructedStatement = "";
         let voteCounts = { for: 0, against: 0, neutral: 0 };
 
+        const committees = {
+            energy: [
+                "Chairman Dale Patton",
+                "Vice Chairman Greg Kessel",
+                "Senator Todd Beard",
+                "Senator Keith Boehm",
+                "Senator Mark Enget",
+                "Senator Justin Gerhardt",
+                "Senator Desiree Van Oosting"
+            ],
+            judiciary: [
+                "Chairwoman Diane Larson",
+                "Vice Chairman Bob Paulson",
+                "Senator Jose Castaneda",
+                "Senator Claire Cory",
+                "Senator Larry Luick",
+                "Senator Janne Myrdal",
+                "Senator Ryan Braunberger"
+            ]
+        };
+
         function updateMembers() {
+            const selectedCommittee = document.getElementById("committeeSelect").value;
             const membersContainer = document.getElementById("members-container");
             membersContainer.innerHTML = "";
-            ["Senator A", "Senator B", "Senator C"].forEach(member => {
+            committees[selectedCommittee].forEach(member => {
                 const btn = document.createElement("button");
                 btn.innerText = member;
                 btn.onclick = () => selectMember(member, btn);
@@ -164,26 +186,13 @@
             updateLog();
         }
 
-        function setMainAction(button, action) {
+        function appendMeetingAction(action) {
+            if (!selectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
             constructedStatement = `${selectedMember} - ${action}`;
             updateLog();
-            document.getElementById("sub-actions").classList.remove("hidden");
-
-            let subActions = action === "Moved" ? ["Do Pass", "Do Not Pass"] : ["Motion Passed", "Motion Failed"];
-            document.getElementById("sub-actions-container").innerHTML = subActions.map(sub => 
-                `<button onclick="setBillType('${sub}')">${sub}</button>`).join('');
-        }
-
-        function setBillType(subAction) {
-            constructedStatement += ` - ${subAction}`;
-            updateLog();
-            document.getElementById("bill-type-section").classList.remove("hidden");
-        }
-
-        function appendSubAction(button, subAction) {
-            constructedStatement += ` ${subAction}`;
-            updateLog();
-            document.getElementById("roll-call-section").classList.remove("hidden");
         }
 
         function adjustVote(type, amount) {
