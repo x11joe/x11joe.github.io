@@ -145,23 +145,20 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(plus5);
   inProgressRow.appendChild(timeAdjustCell);
 
-  // NEW: Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
   // Optionally, set a delete-style background color:
   deleteButton.style.backgroundColor = "#dc3545";
-  deleteButton.onclick = () => {
+  deleteButton.onclick = function() {
     console.log("Delete button clicked");
-    // For a live (in-progress) row, simply remove it and clear references.
-    if (inProgressRow) {
-      inProgressRow.remove();
-      finalizeInProgressRow();
-    }
+    // Directly remove the row that contains this button.
+    this.parentElement.parentElement.remove();
+    finalizeInProgressRow();
   };
   deleteCell.appendChild(deleteButton);
-  inProgressRow.appendChild(deleteCell);
+  inProgressRow.appendChild(deleteCell);;
 
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
