@@ -547,7 +547,13 @@ function resetSelections(finalize = true) {
 
   // Reset log text
   document.getElementById("log").innerText = "[Click a member and an action]";
+   
+  // Show the committee members again
+  document.getElementById("members-container").classList.remove("hidden");
+  // Show the meeting actions again
+  document.getElementById("meetingActionsSection").classList.remove("hidden");
 }
+
 
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
