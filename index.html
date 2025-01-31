@@ -122,7 +122,15 @@
       <div class="buttons-container" id="bill-type-container"></div>
     </div>
 
-    <!-- Vote Tally: for Roll Call Votes (on SB or Amendment) -->
+    <!-- Optional "as Amended" for Roll Call Vote on SB -->
+    <div class="section hidden" id="as-amended-section">
+      <h3>Optional: As Amended?</h3>
+      <div class="buttons-container">
+        <button id="asAmendedBtn" onclick="toggleAsAmended(this)">As Amended</button>
+      </div>
+    </div>
+
+    <!-- Vote Tally: for Roll Call Votes (SB or Amendment) -->
     <div class="section hidden" id="vote-tally-section">
       <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
       <div class="vote-tally-controls">
@@ -165,7 +173,14 @@
       </div>
     </div>
 
-    <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
+    <!-- Copy button + Auto Copy checkbox -->
+    <div style="margin-top:10px;">
+      <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
+      <label style="margin-left: 10px;">
+        <input type="checkbox" id="autoCopyCheckbox" onchange="onAutoCopyChanged()" />
+        Auto Copy
+      </label>
+    </div>
 
     <h3>Constructed Statement:</h3>
     <div class="log" id="log">[Click a member and an action]</div>
@@ -180,7 +195,13 @@
     let constructedStatement = "";
     let currentCommittee = "";
 
-    // Vote tally variables (for any Roll Call Vote)
+    // For roll call vote on SB: "as Amended"?
+    let asAmended = false;
+
+    // Auto Copy?
+    let autoCopyEnabled = false;
+
+    // Vote tally
     let forVal = 0;
     let againstVal = 0;
     let neutralVal = 0;
@@ -206,7 +227,22 @@
       ]
     };
 
-    // Initialize on page load
+    // Called when user checks/unchecks "Auto Copy"
+    function onAutoCopyChanged() {
+      autoCopyEnabled = document.getElementById("autoCopyCheckbox").checked;
+      // If turning ON and we already have a statement, copy immediately
+      if (autoCopyEnabled && constructedStatement.trim() !== "[Click a member and an action]" && constructedStatement.trim() !== "") {
+        copyToClipboard();
+      }
+    }
+
+    // If auto-copy is on, copy the current statement automatically
+    function autoCopyIfEnabled() {
+      if (autoCopyEnabled) {
+        copyToClipboard(false); // We'll pass a param to skip the highlight flicker if you prefer
+      }
+    }
+
     function updateMembers() {
       currentCommittee = document.getElementById("committeeSelect").value;
       resetSelections();
@@ -240,37 +276,37 @@
       selectedSubAction = "";
       selectedBillType = "";
       selectedCarrier = "";
+      asAmended = false; // reset to false each time we switch main actions
+
       updateStatement();
 
       // Highlight the selected main action
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
+      // Show/hide sections
       if (action === "Moved") {
         showMovedSubActions();
-        // Hide vote tally & carrier
         showVoteTallySection(false);
         showBillCarrierSection(false);
-      } 
+        showAsAmendedSection(false);
+      }
       else if (action === "Roll Call Vote on SB") {
-        // Hide "Moved" sections
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
-        // Show vote tally & carrier
         showVoteTallySection(true);
         showBillCarrierSection(true);
+        showAsAmendedSection(true); // show the "As Amended" button
       }
       else if (action === "Roll Call Vote on Amendment") {
-        // Hide "Moved" sections
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
-        // Show vote tally, no carrier
         showVoteTallySection(true);
         showBillCarrierSection(false);
+        showAsAmendedSection(false); // not applicable for amendment
       }
     }
 
-    /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
     function showMovedSubActions() {
       const subActionsContainer = document.getElementById("sub-actions-container");
       subActionsContainer.innerHTML = "";
@@ -297,7 +333,7 @@
       showBillTypeSection(true);
     }
 
-    // Bill Type => "SB", "HB", or "Amendment"
+    // Bill Type => "SB", "HB", "Amendment"
     function showBillTypeSection(visible) {
       const billTypeSection = document.getElementById("bill-type-section");
       if (visible) {
@@ -321,9 +357,30 @@
       selectedBillType = type;
       updateStatement();
 
-      // Highlight chosen bill type
+      // Highlight the chosen bill type
       document.querySelectorAll("#bill-type-container button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
+    }
+
+    // "As Amended" button for Roll Call Vote on SB
+    function showAsAmendedSection(visible) {
+      const asAmendedSec = document.getElementById("as-amended-section");
+      if (visible) {
+        asAmendedSec.classList.remove("hidden");
+      } else {
+        asAmendedSec.classList.add("hidden");
+      }
+    }
+
+    function toggleAsAmended(btn) {
+      asAmended = !asAmended;
+      // Toggle highlight if you'd like
+      if (asAmended) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+      updateStatement();
     }
 
     // Show/hide vote tally
@@ -391,52 +448,64 @@
       }
     }
 
-    // Build the statement from the current state
+    // Rebuild the constructedStatement from the current state
     function updateStatement() {
       if (!selectedMember) {
         document.getElementById("log").innerText = "[Click a member and an action]";
         return;
       }
 
-      // For roll call votes, we do NOT prepend the selected member
-      // For "Moved", we do: "Member - Moved ..."
-
       let parts = [];
 
-      // 1) If it's a Roll Call Vote (SB or Amendment):
-      if (mainAction.startsWith("Roll Call Vote on")) {
-        // ex: "Roll Call Vote on SB - Motion Passed - 7-0-0 - X Carried the Bill"
-        // "Roll Call Vote on Amendment - Motion Passed - 7-0-0" (no carrier)
-        parts.push(mainAction); // "Roll Call Vote on SB" or "Roll Call Vote on Amendment"
-        const motionResult = getMotionResultText(); 
-        parts.push(motionResult);
+      // 1) "Roll Call Vote on SB" or "Roll Call Vote on Amendment"
+      if (mainAction === "Roll Call Vote on SB" || mainAction === "Roll Call Vote on Amendment") {
+        // We do NOT prepend the selectedMember
+        // e.g. "Roll Call Vote on SB as Amended - Motion Passed - 7-0-0 - Senator X Carried the Bill"
+        // or "Roll Call Vote on Amendment - Motion Passed - 7-0-0"
+        let actionText = mainAction; // "Roll Call Vote on SB"
+        if (mainAction === "Roll Call Vote on SB" && asAmended) {
+          actionText = "Roll Call Vote on SB as Amended";
+        }
+
+        parts.push(actionText);
+        parts.push(getMotionResultText());
         parts.push(`${forVal}-${againstVal}-${neutralVal}`);
 
-        // Only add carrier if it's "Roll Call Vote on SB" and a carrier is selected
-        if (mainAction === "Roll Call Vote on SB" && selectedCarrier) {
+        // Only add carrier if "Roll Call Vote on SB" and selectedCarrier is set
+        if (actionText.includes("SB") && selectedCarrier) {
           parts.push(`${selectedCarrier} Carried the Bill`);
         }
       }
-      // 2) If it's "Moved"
+
+      // 2) "Moved"
       else if (mainAction === "Moved") {
-        // ex: "Chairman Dale Patton - Moved Do Pass on SB"
-        parts.push(selectedMember); // the user who moved
+        // e.g. "Chairman Dale Patton - Moved Do Pass on SB"
+        parts.push(selectedMember);
         if (selectedSubAction && selectedBillType) {
           parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
         } else if (selectedSubAction) {
           parts.push(`Moved ${selectedSubAction}`);
         } else {
-          // If subAction not chosen yet, just "Moved" for now
+          // If subAction not chosen yet
           parts.push("Moved");
         }
       }
-      // 3) If it's neither Roll Call nor Moved, we just do "Member - action"
+
+      // 3) If it's some other action, e.g. none of the above
       else if (mainAction) {
+        // e.g. "Chairman Dale Patton - SomeOtherAction"
         parts.push(`${selectedMember} - ${mainAction}`);
       }
 
-      constructedStatement = parts.join(" - ");
+      // If we ended up with no parts, show default
+      if (parts.length === 0) {
+        constructedStatement = "[Click a member and an action]";
+      } else {
+        constructedStatement = parts.join(" - ");
+      }
+
       document.getElementById("log").innerText = constructedStatement;
+      autoCopyIfEnabled(); // auto-copy if checked
     }
 
     function resetVoteTally() {
@@ -449,7 +518,7 @@
     }
 
     // Meeting actions
-    // Special: "Seconded" => "Chairman Dale Patton Seconded"
+    // "Seconded" => "Chairman Dale Patton Seconded"
     // Otherwise => "Chairman Dale Patton - Closed Hearing", etc.
     function appendMeetingAction(action) {
       if (!selectedMember) {
@@ -462,13 +531,21 @@
         constructedStatement = `${selectedMember} - ${action}`;
       }
       document.getElementById("log").innerText = constructedStatement;
+      autoCopyIfEnabled();
     }
 
-    function copyToClipboard() {
+    // Copy to clipboard
+    // pass highlight=true if we want the green highlight effect
+    function copyToClipboard(highlight = true) {
+      if (!constructedStatement || constructedStatement.startsWith("[Click a member")) {
+        return;
+      }
       navigator.clipboard.writeText(constructedStatement);
-      const log = document.getElementById("log");
-      log.classList.add("copied");
-      setTimeout(() => log.classList.remove("copied"), 1000);
+      if (highlight) {
+        const log = document.getElementById("log");
+        log.classList.add("copied");
+        setTimeout(() => log.classList.remove("copied"), 1000);
+      }
     }
 
     // Resets everything except the committee selection
@@ -478,7 +555,9 @@
       selectedSubAction = "";
       selectedBillType = "";
       selectedCarrier = "";
+      asAmended = false;
       constructedStatement = "";
+
       resetVoteTally();
 
       // Hide relevant sections
@@ -486,6 +565,7 @@
       document.getElementById("bill-type-section").classList.add("hidden");
       document.getElementById("vote-tally-section").classList.add("hidden");
       document.getElementById("bill-carrier-section").classList.add("hidden");
+      document.getElementById("as-amended-section").classList.add("hidden");
 
       // Remove .selected from all buttons
       document.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
