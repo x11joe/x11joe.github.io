@@ -659,9 +659,15 @@ function loadHistoryFromLocalStorage() {
   let stored = localStorage.getItem("historyRecords");
   if (stored) {
     historyRecords = JSON.parse(stored);
+    console.log("Loaded historyRecords:", historyRecords);
     const tableBody = document.getElementById("historyTableBody");
     tableBody.innerHTML = "";
     historyRecords.forEach(record => {
+      // Ensure record.time is a non-empty string.
+      if (!record.time || record.time.trim() === "") {
+        record.time = "00:00:00"; // fallback default time
+      }
+
       let tr = document.createElement("tr");
 
       // Time cell
@@ -716,8 +722,14 @@ function loadHistoryFromLocalStorage() {
         btn.textContent = label;
         btn.classList.add("copy-row-button");
         btn.onclick = () => {
-          // Parse current time from tdTime (assumed format "HH:MM:SS")
-          let timeDate = new Date("1970-01-01 " + tdTime.textContent);
+          // Parse the stored time (assumed format "HH:MM:SS")
+          let currentTime = tdTime.textContent;
+          // Create a Date object from "1970-01-01 " + currentTime.
+          let timeDate = new Date("1970-01-01 " + currentTime);
+          if (isNaN(timeDate.getTime())) {
+            // If the time is invalid, default to 00:00:00.
+            timeDate = new Date("1970-01-01 00:00:00");
+          }
           timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
           let newTimeStr = timeDate.toLocaleTimeString([], {
             hour: '2-digit',
@@ -725,8 +737,8 @@ function loadHistoryFromLocalStorage() {
             second: '2-digit'
           });
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr;  // update the record
-          saveHistoryToLocalStorage(); // save changes
+          record.time = newTimeStr;  // update the record object
+          saveHistoryToLocalStorage(); // persist the change
           btn.classList.add("copied-cell");
           setTimeout(() => {
             btn.classList.remove("copied-cell");
@@ -735,7 +747,7 @@ function loadHistoryFromLocalStorage() {
         return btn;
       }
       
-      // Create and append the 6 buttons: -5s, -3s, -1s, +1s, +3s, +5s
+      // Create adjustment buttons and append them
       tdTimeControl.appendChild(createAdjustButton("-5s", -5));
       tdTimeControl.appendChild(createAdjustButton("-3s", -3));
       tdTimeControl.appendChild(createAdjustButton("-1s", -1));
@@ -748,6 +760,7 @@ function loadHistoryFromLocalStorage() {
     });
   }
 }
+
 
 
 function clearHistory() {
