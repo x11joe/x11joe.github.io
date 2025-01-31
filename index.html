@@ -106,7 +106,7 @@
       <div class="buttons-container">
         <button onclick="setMainAction(this, 'Moved')">Moved</button>
         <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
-        <button onclick="setMainAction(this, 'Roll Call Vote on Amendment LC#')">Roll Call Vote on Amendment LC#</button>
+        <button onclick="setMainAction(this, 'Roll Call Vote on Amendment')">Roll Call Vote on Amendment</button>
       </div>
     </div>
 
@@ -122,7 +122,7 @@
       <div class="buttons-container" id="bill-type-container"></div>
     </div>
 
-    <!-- Vote Tally: for all Roll Call Votes (with pass/fail logic) -->
+    <!-- Vote Tally: for Roll Call Votes (on SB or Amendment) -->
     <div class="section hidden" id="vote-tally-section">
       <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
       <div class="vote-tally-controls">
@@ -160,6 +160,8 @@
         <button onclick="appendMeetingAction('Recessed Meeting')">Recessed Meeting</button>
         <button onclick="appendMeetingAction('Adjourned Meeting')">Adjourned Meeting</button>
         <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
+        <!-- Special: "Seconded" has no dash in the final statement -->
+        <button onclick="appendMeetingAction('Seconded')">Seconded</button>
       </div>
     </div>
 
@@ -244,27 +246,25 @@
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // Decide what to show based on the main action
       if (action === "Moved") {
-        // Show sub-actions: "Do Pass" / "Do Not Pass"
         showMovedSubActions();
         // Hide vote tally & carrier
         showVoteTallySection(false);
         showBillCarrierSection(false);
-      } else if (action.includes("Roll Call Vote on SB")) {
-        // Hide "Moved" sub-actions
+      } 
+      else if (action === "Roll Call Vote on SB") {
+        // Hide "Moved" sections
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
-
-        // Show vote tally and show bill carrier
+        // Show vote tally & carrier
         showVoteTallySection(true);
         showBillCarrierSection(true);
-      } else if (action.includes("Roll Call Vote on Amendment LC#")) {
-        // Hide "Moved" sub-actions
+      }
+      else if (action === "Roll Call Vote on Amendment") {
+        // Hide "Moved" sections
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
-
-        // Show vote tally but NO carrier (amendment = no carrier)
+        // Show vote tally, no carrier
         showVoteTallySection(true);
         showBillCarrierSection(false);
       }
@@ -326,7 +326,7 @@
       btn.classList.add("selected");
     }
 
-    // Show/hide vote tally (for any roll call vote)
+    // Show/hide vote tally
     function showVoteTallySection(visible) {
       const tallySec = document.getElementById("vote-tally-section");
       if (visible) {
@@ -391,44 +391,48 @@
       }
     }
 
-    // Rebuild the constructedStatement from the current state
+    // Build the statement from the current state
     function updateStatement() {
       if (!selectedMember) {
         document.getElementById("log").innerText = "[Click a member and an action]";
         return;
       }
 
+      // For roll call votes, we do NOT prepend the selected member
+      // For "Moved", we do: "Member - Moved ..."
+
       let parts = [];
-      // Always start with the selected member
-      parts.push(selectedMember);
 
-      // Then the main action
-      if (mainAction) {
-        parts.push(mainAction);
-      }
-
-      // Moved => "Moved Do Pass on SB", etc.
-      if (mainAction === "Moved") {
-        if (selectedSubAction && selectedBillType) {
-          // e.g. "Moved Do Pass on SB"
-          parts[1] = `Moved ${selectedSubAction} on ${selectedBillType}`;
-        } else if (selectedSubAction) {
-          // e.g. "Moved Do Pass"
-          parts[1] = `Moved ${selectedSubAction}`;
-        }
-      }
-
-      // Roll Call Votes => "Member - Roll Call Vote on X - Motion Passed - 4-3-0" ...
-      if (mainAction.includes("Roll Call Vote")) {
-        // Insert motion result, then tally
+      // 1) If it's a Roll Call Vote (SB or Amendment):
+      if (mainAction.startsWith("Roll Call Vote on")) {
+        // ex: "Roll Call Vote on SB - Motion Passed - 7-0-0 - X Carried the Bill"
+        // "Roll Call Vote on Amendment - Motion Passed - 7-0-0" (no carrier)
+        parts.push(mainAction); // "Roll Call Vote on SB" or "Roll Call Vote on Amendment"
         const motionResult = getMotionResultText(); 
         parts.push(motionResult);
         parts.push(`${forVal}-${againstVal}-${neutralVal}`);
 
-        // Only add carrier if it's "Roll Call Vote on SB"
-        if (mainAction.includes("on SB") && selectedCarrier) {
+        // Only add carrier if it's "Roll Call Vote on SB" and a carrier is selected
+        if (mainAction === "Roll Call Vote on SB" && selectedCarrier) {
           parts.push(`${selectedCarrier} Carried the Bill`);
         }
+      }
+      // 2) If it's "Moved"
+      else if (mainAction === "Moved") {
+        // ex: "Chairman Dale Patton - Moved Do Pass on SB"
+        parts.push(selectedMember); // the user who moved
+        if (selectedSubAction && selectedBillType) {
+          parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+        } else if (selectedSubAction) {
+          parts.push(`Moved ${selectedSubAction}`);
+        } else {
+          // If subAction not chosen yet, just "Moved" for now
+          parts.push("Moved");
+        }
+      }
+      // 3) If it's neither Roll Call nor Moved, we just do "Member - action"
+      else if (mainAction) {
+        parts.push(`${selectedMember} - ${mainAction}`);
       }
 
       constructedStatement = parts.join(" - ");
@@ -444,12 +448,19 @@
       document.getElementById('neutralCount').innerText = 0;
     }
 
+    // Meeting actions
+    // Special: "Seconded" => "Chairman Dale Patton Seconded"
+    // Otherwise => "Chairman Dale Patton - Closed Hearing", etc.
     function appendMeetingAction(action) {
       if (!selectedMember) {
         alert("Please select a member first!");
         return;
       }
-      constructedStatement = `${selectedMember} - ${action}`;
+      if (action === "Seconded") {
+        constructedStatement = `${selectedMember} Seconded`;
+      } else {
+        constructedStatement = `${selectedMember} - ${action}`;
+      }
       document.getElementById("log").innerText = constructedStatement;
     }
 
