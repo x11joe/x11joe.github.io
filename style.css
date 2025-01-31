@@ -1,0 +1,142 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+button {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Highlight the selected button in green */
+.selected {
+  background-color: #28a745 !important;
+}
+
+/* Constructed statement box */
+.log {
+  margin-top: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  width: 90%;
+  max-width: 600px;
+  min-height: 50px;
+  background: #f9f9f9;
+  font-size: 16px;
+  text-align: left;
+  overflow-y: auto;
+  transition: background 0.3s;
+}
+
+.log.copied {
+  background: #d4edda;
+}
+
+.copy-btn {
+  margin-top: 10px;
+  background-color: #dc3545;
+}
+
+.copy-btn:hover {
+  background-color: #c82333;
+}
+
+.section {
+  width: 90%;
+  max-width: 600px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background: #f1f1f1;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+.vote-tally-controls {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.vote-tally-controls div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* History Table */
+#historyTable {
+  margin: 20px auto;
+  width: 90%;
+  max-width: 800px;
+  border-collapse: collapse;
+}
+
+#historyTable th,
+#historyTable td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+#historyTable th {
+  background: #f1f1f1;
+}
+
+.copy-row-button {
+  background-color: #17a2b8;
+  color: white;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+.copy-row-button:hover {
+  background-color: #138496;
+}
+
+/* Glow effect on successful copy */
+.copied-cell {
+  animation: glow 1s ease-in-out;
+}
+
+@keyframes glow {
+  0% {
+    background-color: #c3e6cb; /* light green */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
