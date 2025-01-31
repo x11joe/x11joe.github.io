@@ -12,16 +12,20 @@
 
   <h2>Committee Quick Actions with History</h2>
 
+  <!-- Container for top controls -->
   <div class="container">
+    <!-- Committee selection -->
     <label for="committeeSelect"><b>Select Committee:</b></label>
     <select id="committeeSelect" onchange="updateMembers()">
       <option value="energy">Energy & Natural Resources</option>
       <option value="judiciary">Judiciary</option>
     </select>
 
+    <!-- Member selection -->
     <h3>Select Member:</h3>
     <div class="buttons-container" id="members-container"></div>
 
+    <!-- Main Actions -->
     <div class="section">
       <h3>Main Actions</h3>
       <div class="buttons-container">
@@ -82,6 +86,7 @@
       <div class="buttons-container" id="bill-carrier-container"></div>
     </div>
 
+    <!-- Meeting Actions section, with its unique ID -->
     <div class="section" id="meetingActionsSection">
       <h3>Meeting Actions</h3>
       <div class="buttons-container">
@@ -91,7 +96,7 @@
         <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
         <!-- Special: "Seconded" has no dash in the final statement -->
         <button onclick="appendMeetingAction('Seconded')">Seconded</button>
-        <!-- New: "Introduced Bill" keeps the dash -->
+        <!-- "Introduced Bill" keeps the dash -->
         <button onclick="appendMeetingAction('Introduced Bill')">Introduced Bill</button>
       </div>
     </div>
