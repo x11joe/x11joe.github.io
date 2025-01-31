@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Committee Quick Actions</title>
+  <title>Committee Quick Actions with History</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,6 +14,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      margin-bottom: 20px;
     }
     .buttons-container {
       display: flex;
@@ -85,11 +86,37 @@
       align-items: center;
       gap: 6px;
     }
+    /* History Table */
+    #historyTable {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 800px;
+      border-collapse: collapse;
+    }
+    #historyTable th, #historyTable td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    #historyTable th {
+      background: #f1f1f1;
+    }
+    .copy-row-button {
+      background-color: #17a2b8;
+      color: white;
+      margin: 0;
+      padding: 5px 8px;
+      border-radius: 4px;
+    }
+    .copy-row-button:hover {
+      background-color: #138496;
+    }
   </style>
 </head>
 <body>
 
-  <h2>Committee Quick Actions</h2>
+  <h2>Committee Quick Actions with History</h2>
 
   <div class="container">
     <label for="committeeSelect"><b>Select Committee:</b></label>
@@ -173,20 +200,37 @@
       </div>
     </div>
 
-    <!-- Copy button + Auto Copy checkbox -->
+    <!-- Copy button + Auto Copy checkbox + Reset All button -->
     <div style="margin-top:10px;">
       <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard (Ctrl + Enter)</button>
       <label style="margin-left: 10px;">
         <input type="checkbox" id="autoCopyCheckbox" onchange="onAutoCopyChanged()" />
         Auto Copy
       </label>
+      <button style="margin-left:10px; background-color:#6c757d; color:white; padding:10px;" onclick="resetAllAndFinalize()">Reset All</button>
     </div>
 
     <h3>Constructed Statement:</h3>
     <div class="log" id="log">[Click a member and an action]</div>
   </div>
 
+  <!-- History Table for completed statements -->
+  <h3>History of Statements</h3>
+  <table id="historyTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Statement</th>
+        <th>Copy</th>
+      </tr>
+    </thead>
+    <tbody id="historyTableBody"></tbody>
+  </table>
+
   <script>
+    /* --------------------------
+       Global Variables & Setup
+       -------------------------- */
     let selectedMember = "";
     let mainAction = "";
     let selectedSubAction = "";   // For "Moved" => "Do Pass" or "Do Not Pass"
@@ -194,18 +238,20 @@
     let selectedCarrier = "";     // Only for "Roll Call Vote on SB"
     let constructedStatement = "";
     let currentCommittee = "";
-
-    // For roll call vote on SB: "as Amended"?
-    let asAmended = false;
-
-    // Auto Copy?
+    let asAmended = false;        // For Roll Call Vote on SB "as Amended" toggle
     let autoCopyEnabled = false;
 
-    // Vote tally
+    // For the statement in progress
     let forVal = 0;
     let againstVal = 0;
     let neutralVal = 0;
 
+    // In-progress row references
+    let inProgressRow = null;
+    let statementCell = null;
+    let statementStartTime = null; // The moment we first pick the new member
+
+    // Committees
     const committees = {
       energy: [
         "Chairman Dale Patton",
@@ -227,22 +273,79 @@
       ]
     };
 
-    // Called when user checks/unchecks "Auto Copy"
+    /* --------------------------
+       Utility Functions
+       -------------------------- */
+    function getCurrentTimestamp() {
+      // Format e.g. "3:05:07 PM" or "15:05:07" if you prefer 24h
+      const now = new Date();
+      // Let's do a simple HH:MM:SS p style
+      return now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    }
+
+    function createNewRowInHistory() {
+      // Create new row, store references
+      const tableBody = document.getElementById("historyTableBody");
+      inProgressRow = document.createElement("tr");
+
+      // 1) Timestamp cell
+      const timeCell = document.createElement("td");
+      timeCell.textContent = statementStartTime; // e.g. "3:05:07 PM"
+      inProgressRow.appendChild(timeCell);
+
+      // 2) Statement cell
+      statementCell = document.createElement("td");
+      statementCell.textContent = constructedStatement;
+      inProgressRow.appendChild(statementCell);
+
+      // 3) Copy button cell
+      const copyCell = document.createElement("td");
+      const copyButton = document.createElement("button");
+      copyButton.textContent = "Copy";
+      copyButton.classList.add("copy-row-button");
+      copyButton.onclick = () => {
+        navigator.clipboard.writeText(statementCell.textContent);
+      };
+      copyCell.appendChild(copyButton);
+      inProgressRow.appendChild(copyCell);
+
+      tableBody.appendChild(inProgressRow);
+    }
+
+    // Update the statement cell text as user changes it
+    function updateInProgressRow() {
+      if (inProgressRow && statementCell) {
+        statementCell.textContent = constructedStatement;
+      }
+    }
+
+    // Finalize the current row (stop updating it)
+    function finalizeInProgressRow() {
+      inProgressRow = null;
+      statementCell = null;
+      statementStartTime = null;
+    }
+
+    /* --------------------------
+       Auto Copy
+       -------------------------- */
     function onAutoCopyChanged() {
       autoCopyEnabled = document.getElementById("autoCopyCheckbox").checked;
-      // If turning ON and we already have a statement, copy immediately
+      // If turning ON and we already have a statement
       if (autoCopyEnabled && constructedStatement.trim() !== "[Click a member and an action]" && constructedStatement.trim() !== "") {
         copyToClipboard();
       }
     }
 
-    // If auto-copy is on, copy the current statement automatically
     function autoCopyIfEnabled() {
       if (autoCopyEnabled) {
-        copyToClipboard(false); // We'll pass a param to skip the highlight flicker if you prefer
+        copyToClipboard(false); 
       }
     }
 
+    /* --------------------------
+       Main UI Flow
+       -------------------------- */
     function updateMembers() {
       currentCommittee = document.getElementById("committeeSelect").value;
       resetSelections();
@@ -257,9 +360,25 @@
       });
     }
 
+    // Called each time we pick a new member
+    // If there's an in-progress statement, we add it to the table first
     function selectMember(member, btn) {
-      resetSelections();
+      // If we have a non-empty statement in progress, finalize that row
+      if (constructedStatement && constructedStatement !== "[Click a member and an action]" && constructedStatement.trim() !== "") {
+        updateInProgressRow(); // ensure final text is saved
+        finalizeInProgressRow();
+      }
+
+      // Now reset everything
+      resetSelections(false); // skip finalizing row again (we just did above)
+
+      // Start fresh with this new statement
       selectedMember = member;
+      // We record the timestamp from the first click => so let's store statementStartTime
+      statementStartTime = getCurrentTimestamp();
+      // Create a new row in history for in-progress statement
+      createNewRowInHistory();
+
       updateStatement();
 
       // Highlight the selected member
@@ -276,7 +395,7 @@
       selectedSubAction = "";
       selectedBillType = "";
       selectedCarrier = "";
-      asAmended = false; // reset to false each time we switch main actions
+      asAmended = false; 
 
       updateStatement();
 
@@ -284,7 +403,7 @@
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // Show/hide sections
+      // Show/hide relevant sections
       if (action === "Moved") {
         showMovedSubActions();
         showVoteTallySection(false);
@@ -296,17 +415,18 @@
         document.getElementById("bill-type-section").classList.add("hidden");
         showVoteTallySection(true);
         showBillCarrierSection(true);
-        showAsAmendedSection(true); // show the "As Amended" button
+        showAsAmendedSection(true); 
       }
       else if (action === "Roll Call Vote on Amendment") {
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
         showVoteTallySection(true);
         showBillCarrierSection(false);
-        showAsAmendedSection(false); // not applicable for amendment
+        showAsAmendedSection(false);
       }
     }
 
+    /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
     function showMovedSubActions() {
       const subActionsContainer = document.getElementById("sub-actions-container");
       subActionsContainer.innerHTML = "";
@@ -333,7 +453,7 @@
       showBillTypeSection(true);
     }
 
-    // Bill Type => "SB", "HB", "Amendment"
+    // Bill Type => "SB", "HB", or "Amendment"
     function showBillTypeSection(visible) {
       const billTypeSection = document.getElementById("bill-type-section");
       if (visible) {
@@ -374,7 +494,7 @@
 
     function toggleAsAmended(btn) {
       asAmended = !asAmended;
-      // Toggle highlight if you'd like
+      // Toggle highlight
       if (asAmended) {
         btn.classList.add("selected");
       } else {
@@ -383,7 +503,7 @@
       updateStatement();
     }
 
-    // Show/hide vote tally
+    // Vote Tally
     function showVoteTallySection(visible) {
       const tallySec = document.getElementById("vote-tally-section");
       if (visible) {
@@ -394,7 +514,7 @@
       }
     }
 
-    // Show/hide bill carrier (only for "Roll Call Vote on SB")
+    // Bill Carrier (only for "Roll Call Vote on SB")
     function showBillCarrierSection(visible) {
       const carrierSection = document.getElementById("bill-carrier-section");
       if (visible) {
@@ -420,7 +540,7 @@
       updateStatement();
     }
 
-    // Vote tally increment/decrement
+    // Tally increment/decrement
     function incrementVote(type, isIncrement) {
       if (type === 'for') {
         if (isIncrement) forVal++;
@@ -439,8 +559,8 @@
       updateStatement();
     }
 
-    // Pass/fail logic (ties are fail)
     function getMotionResultText() {
+      // ties are fail
       if (forVal > againstVal) {
         return "Motion Passed";
       } else {
@@ -448,7 +568,10 @@
       }
     }
 
-    // Rebuild the constructedStatement from the current state
+    /* 
+      The main function that rebuilds the constructedStatement each time
+      something changes.
+    */
     function updateStatement() {
       if (!selectedMember) {
         document.getElementById("log").innerText = "[Click a member and an action]";
@@ -459,24 +582,21 @@
 
       // 1) "Roll Call Vote on SB" or "Roll Call Vote on Amendment"
       if (mainAction === "Roll Call Vote on SB" || mainAction === "Roll Call Vote on Amendment") {
-        // We do NOT prepend the selectedMember
-        // e.g. "Roll Call Vote on SB as Amended - Motion Passed - 7-0-0 - Senator X Carried the Bill"
-        // or "Roll Call Vote on Amendment - Motion Passed - 7-0-0"
-        let actionText = mainAction; // "Roll Call Vote on SB"
+        let actionText = mainAction; // e.g. "Roll Call Vote on SB"
         if (mainAction === "Roll Call Vote on SB" && asAmended) {
           actionText = "Roll Call Vote on SB as Amended";
         }
-
         parts.push(actionText);
+
+        // If there's a tally, show pass/fail + counts
         parts.push(getMotionResultText());
         parts.push(`${forVal}-${againstVal}-${neutralVal}`);
 
-        // Only add carrier if "Roll Call Vote on SB" and selectedCarrier is set
+        // Carrier if "Roll Call Vote on SB" & selectedCarrier
         if (actionText.includes("SB") && selectedCarrier) {
           parts.push(`${selectedCarrier} Carried the Bill`);
         }
       }
-
       // 2) "Moved"
       else if (mainAction === "Moved") {
         // e.g. "Chairman Dale Patton - Moved Do Pass on SB"
@@ -486,14 +606,11 @@
         } else if (selectedSubAction) {
           parts.push(`Moved ${selectedSubAction}`);
         } else {
-          // If subAction not chosen yet
           parts.push("Moved");
         }
       }
-
-      // 3) If it's some other action, e.g. none of the above
+      // 3) Some other action
       else if (mainAction) {
-        // e.g. "Chairman Dale Patton - SomeOtherAction"
         parts.push(`${selectedMember} - ${mainAction}`);
       }
 
@@ -505,7 +622,12 @@
       }
 
       document.getElementById("log").innerText = constructedStatement;
-      autoCopyIfEnabled(); // auto-copy if checked
+
+      // Update in-progress row
+      updateInProgressRow();
+
+      // Possibly auto copy
+      autoCopyIfEnabled();
     }
 
     function resetVoteTally() {
@@ -518,8 +640,6 @@
     }
 
     // Meeting actions
-    // "Seconded" => "Chairman Dale Patton Seconded"
-    // Otherwise => "Chairman Dale Patton - Closed Hearing", etc.
     function appendMeetingAction(action) {
       if (!selectedMember) {
         alert("Please select a member first!");
@@ -531,11 +651,13 @@
         constructedStatement = `${selectedMember} - ${action}`;
       }
       document.getElementById("log").innerText = constructedStatement;
+      updateInProgressRow(); 
       autoCopyIfEnabled();
     }
 
-    // Copy to clipboard
-    // pass highlight=true if we want the green highlight effect
+    /* -------------
+       Copy to Clipboard
+       ------------- */
     function copyToClipboard(highlight = true) {
       if (!constructedStatement || constructedStatement.startsWith("[Click a member")) {
         return;
@@ -548,8 +670,29 @@
       }
     }
 
-    // Resets everything except the committee selection
-    function resetSelections() {
+    /* -------------
+       Reset Logic
+       ------------- */
+    // "Reset All" button
+    // If we have an in-progress statement, finalize it
+    // Then do a fresh reset
+    function resetAllAndFinalize() {
+      if (constructedStatement && constructedStatement !== "[Click a member and an action]" && constructedStatement.trim() !== "") {
+        updateInProgressRow(); // update final text
+      }
+      finalizeInProgressRow();
+      resetSelections();
+    }
+
+    // The main reset (optionally skip finalizing the row if we already did)
+    function resetSelections(finalize = true) {
+      if (finalize && constructedStatement && constructedStatement !== "[Click a member and an action]" && constructedStatement.trim() !== "") {
+        updateInProgressRow();
+      }
+      if (finalize) {
+        finalizeInProgressRow();
+      }
+
       selectedMember = "";
       mainAction = "";
       selectedSubAction = "";
@@ -581,7 +724,7 @@
       }
     });
 
-    // Initialize the first committee on page load
+    // Initialize
     updateMembers();
   </script>
 </body>
