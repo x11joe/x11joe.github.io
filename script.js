@@ -190,10 +190,16 @@ function selectMember(member, btn) {
 }
 
 function setMainAction(button, action) {
-  // Only require a member if the user clicked "Moved"
+  // If it's "Moved," you still require a member:
   if (action === "Moved" && !selectedMember) {
     alert("Please select a member first for 'Moved' actions!");
     return;
+  }
+
+  // If no row is in progress, we create a new one so the statement can appear
+  if (!inProgressRow) {
+    statementStartTime = getCurrentTimestamp();
+    createNewRowInHistory();
   }
 
   mainAction = action;
@@ -224,16 +230,14 @@ function setMainAction(button, action) {
     // Hide sub-actions, bill-type
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
-  } 
-  else if (action === "Moved") {
+  } else if (action === "Moved") {
     // Show committee members again (member is required)
     document.getElementById("members-container").classList.remove("hidden");
     showMovedSubActions();
     showVoteTallySection(false);
     showBillCarrierSection(false);
     showAsAmendedSection(false);
-  }
-  else {
+  } else {
     // For any other main action that isn't roll call or moved:
     document.getElementById("members-container").classList.remove("hidden");
     // Hide sub-actions, etc., if needed
@@ -246,6 +250,7 @@ function setMainAction(button, action) {
 
   updateStatement();
 }
+
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
