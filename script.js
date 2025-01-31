@@ -59,23 +59,23 @@ function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
-  // Use local variables so each row references its own cells
+  // Create a local time cell using the recorded timestamp.
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = statementStartTime;
   inProgressRow.appendChild(localTimeCell);
 
+  // Create a local statement cell using the constructed statement.
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   inProgressRow.appendChild(localStatementCell);
 
-  // "Copy Time" cell + button
+  // "Copy Time" cell + button (existing)
   const copyTimeCell = document.createElement("td");
   const copyTimeButton = document.createElement("button");
   copyTimeButton.textContent = "Copy Time";
   copyTimeButton.classList.add("copy-row-button");
   copyTimeButton.onclick = () => {
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
-      // Show a quick green glow on the time cell
       localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
         localTimeCell.classList.remove("copied-cell");
@@ -85,14 +85,51 @@ function createNewRowInHistory() {
   copyTimeCell.appendChild(copyTimeButton);
   inProgressRow.appendChild(copyTimeCell);
 
-  // "Copy Statement" cell + button
+  // NEW: "Copy Time -5s" cell + button
+  const copyTimeMinus5Cell = document.createElement("td");
+  const copyTimeMinus5Button = document.createElement("button");
+  copyTimeMinus5Button.textContent = "Copy Time -5s";
+  copyTimeMinus5Button.classList.add("copy-row-button");
+  copyTimeMinus5Button.onclick = () => {
+    // Create a date object using a dummy date and the current time text.
+    let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
+    timeDate.setSeconds(timeDate.getSeconds() - 5); // Subtract 5 seconds
+    let newTimeStr = timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    navigator.clipboard.writeText(newTimeStr).then(() => {
+      copyTimeMinus5Button.classList.add("copied-cell");
+      setTimeout(() => {
+        copyTimeMinus5Button.classList.remove("copied-cell");
+      }, 800);
+    });
+  };
+  copyTimeMinus5Cell.appendChild(copyTimeMinus5Button);
+  inProgressRow.appendChild(copyTimeMinus5Cell);
+
+  // NEW: "Subtract 5s" cell + button (this updates the permanent time)
+  const subtractTimeCell = document.createElement("td");
+  const subtractTimeButton = document.createElement("button");
+  subtractTimeButton.textContent = "Subtract 5s";
+  subtractTimeButton.classList.add("copy-row-button");
+  subtractTimeButton.onclick = () => {
+    let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
+    timeDate.setSeconds(timeDate.getSeconds() - 5);
+    let newTimeStr = timeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    localTimeCell.textContent = newTimeStr; // Update the permanent time record
+    subtractTimeButton.classList.add("copied-cell");
+    setTimeout(() => {
+      subtractTimeButton.classList.remove("copied-cell");
+    }, 800);
+  };
+  subtractTimeCell.appendChild(subtractTimeButton);
+  inProgressRow.appendChild(subtractTimeCell);
+
+  // "Copy Statement" cell + button (existing)
   const copyStatementCell = document.createElement("td");
   const copyStatementButton = document.createElement("button");
   copyStatementButton.textContent = "Copy Statement";
   copyStatementButton.classList.add("copy-row-button");
   copyStatementButton.onclick = () => {
     navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
-      // Show a quick green glow on the statement cell
       localStatementCell.classList.add("copied-cell");
       setTimeout(() => {
         localStatementCell.classList.remove("copied-cell");
@@ -108,6 +145,7 @@ function createNewRowInHistory() {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 function updateInProgressRow() {
