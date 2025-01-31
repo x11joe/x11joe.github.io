@@ -59,44 +59,43 @@ function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
-  // Time cell
-  timeCell = document.createElement("td");
-  timeCell.textContent = statementStartTime;
-  inProgressRow.appendChild(timeCell);
+  // Use local variables so each row references its own cells
+  const localTimeCell = document.createElement("td");
+  localTimeCell.textContent = statementStartTime;
+  inProgressRow.appendChild(localTimeCell);
 
-  // Statement cell
-  statementCell = document.createElement("td");
-  statementCell.textContent = constructedStatement;
-  inProgressRow.appendChild(statementCell);
+  const localStatementCell = document.createElement("td");
+  localStatementCell.textContent = constructedStatement;
+  inProgressRow.appendChild(localStatementCell);
 
-  // Copy Time cell
+  // "Copy Time" cell + button
   const copyTimeCell = document.createElement("td");
   const copyTimeButton = document.createElement("button");
   copyTimeButton.textContent = "Copy Time";
   copyTimeButton.classList.add("copy-row-button");
   copyTimeButton.onclick = () => {
-    navigator.clipboard.writeText(timeCell.textContent).then(() => {
-      // Add a quick green glow
-      timeCell.classList.add("copied-cell");
+    navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
+      // Show a quick green glow on the time cell
+      localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
-        timeCell.classList.remove("copied-cell");
+        localTimeCell.classList.remove("copied-cell");
       }, 800);
     });
   };
   copyTimeCell.appendChild(copyTimeButton);
   inProgressRow.appendChild(copyTimeCell);
 
-  // Copy Statement cell
+  // "Copy Statement" cell + button
   const copyStatementCell = document.createElement("td");
   const copyStatementButton = document.createElement("button");
   copyStatementButton.textContent = "Copy Statement";
   copyStatementButton.classList.add("copy-row-button");
   copyStatementButton.onclick = () => {
-    navigator.clipboard.writeText(statementCell.textContent).then(() => {
-      // Add a quick green glow
-      statementCell.classList.add("copied-cell");
+    navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
+      // Show a quick green glow on the statement cell
+      localStatementCell.classList.add("copied-cell");
       setTimeout(() => {
-        statementCell.classList.remove("copied-cell");
+        localStatementCell.classList.remove("copied-cell");
       }, 800);
     });
   };
@@ -104,7 +103,12 @@ function createNewRowInHistory() {
   inProgressRow.appendChild(copyStatementCell);
 
   tableBody.appendChild(inProgressRow);
+
+  // Update global references so we can still update the "in-progress" row
+  timeCell = localTimeCell;
+  statementCell = localStatementCell;
 }
+
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
