@@ -102,11 +102,10 @@ function createNewRowInHistory() {
   copyStatementCell.appendChild(copyStatementButton);
   inProgressRow.appendChild(copyStatementCell);
 
-  // Create a cell to hold all the +/- time adjustment buttons (Time Control)
+  // Time Control cell: holds six adjustment buttons
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
 
-  // Helper to create a time adjustment button
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -128,46 +127,51 @@ function createNewRowInHistory() {
     return btn;
   }
 
-  // Create the six adjustment buttons
-  const minus5 = createTimeAdjustButton("-5s", -5);
-  const minus3 = createTimeAdjustButton("-3s", -3);
-  const minus1 = createTimeAdjustButton("-1s", -1);
-  const plus1 = createTimeAdjustButton("+1s", +1);
-  const plus3 = createTimeAdjustButton("+3s", +3);
-  const plus5 = createTimeAdjustButton("+5s", +5);
-
-  // Append these buttons into the time adjustment cell
-  timeAdjustCell.appendChild(minus5);
-  timeAdjustCell.appendChild(minus3);
-  timeAdjustCell.appendChild(minus1);
-  timeAdjustCell.appendChild(plus1);
-  timeAdjustCell.appendChild(plus3);
-  timeAdjustCell.appendChild(plus5);
+  // Create the six adjustment buttons and append them.
+  timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
+  timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
+  timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
+  timeAdjustCell.appendChild(createTimeAdjustButton("+1s", +1));
+  timeAdjustCell.appendChild(createTimeAdjustButton("+3s", +3));
+  timeAdjustCell.appendChild(createTimeAdjustButton("+5s", +5));
   inProgressRow.appendChild(timeAdjustCell);
 
+  // NEW: Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
-  // Optionally, set a delete-style background color:
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
     console.log("Delete button clicked");
-    // Directly remove the row that contains this button.
+    // Remove the live record from historyRecords.
+    // Since only one live row exists, we assume it is the last element.
+    if (historyRecords.length > 0) {
+      historyRecords.pop();
+      saveHistoryToLocalStorage();
+    }
+    // Remove this row from the DOM and clear the in-progress references.
     this.parentElement.parentElement.remove();
     finalizeInProgressRow();
   };
   deleteCell.appendChild(deleteButton);
-  inProgressRow.appendChild(deleteCell);;
+  inProgressRow.appendChild(deleteCell);
 
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Update global references for the in-progress row
+  // Immediately push the live record into historyRecords and save it.
+  let liveRecord = {
+    time: statementStartTime,
+    statement: constructedStatement
+  };
+  historyRecords.push(liveRecord);
+  saveHistoryToLocalStorage();
+
+  // Update the global references.
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
