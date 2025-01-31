@@ -57,6 +57,7 @@ function getCurrentTimestamp() {
   });
 }
 
+// UPDATED createNewRowInHistory (for live rows)
 function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
@@ -104,9 +105,7 @@ function createNewRowInHistory() {
 
   // Create a cell to hold all the +/- time adjustment buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
-  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
-
-  // Helper to create a time adjustment button
+  timeAdjustCell.style.whiteSpace = "nowrap";
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -127,8 +126,7 @@ function createNewRowInHistory() {
     };
     return btn;
   }
-
-  // Create and append the 6 time adjustment buttons
+  // Append the six buttons
   timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
   timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
   timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
@@ -137,7 +135,8 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(createTimeAdjustButton("+5s", +5));
   inProgressRow.appendChild(timeAdjustCell);
 
-  // NEW: Delete cell with a Delete button for live rows
+  // NEW: Delete cell with a Delete button for live rows.
+  // For live rows, the delete button just removes the row and clears the pending data.
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
@@ -146,8 +145,10 @@ function createNewRowInHistory() {
   deleteButton.onclick = function() {
     console.log("Delete button clicked on live row");
     // Remove the live row from the DOM
-    inProgressRow.remove();
-    // Clear the pending constructed statement so that no record gets confirmed later
+    if (inProgressRow) {
+      inProgressRow.remove();
+    }
+    // Clear the pending constructed statement so nothing gets confirmed later
     constructedStatement = "";
     // Clear the in-progress row references
     finalizeInProgressRow();
@@ -155,18 +156,15 @@ function createNewRowInHistory() {
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
-  // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Do not push a live record here.
+  // Do NOT push a live record here.
   // The record will only be added to historyRecords when the user confirms (via resetAllAndFinalize).
 
   // Update global references for the in-progress row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
-
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
@@ -660,13 +658,16 @@ function saveHistoryToLocalStorage() {
   localStorage.setItem("historyRecords", JSON.stringify(historyRecords));
 }
 
+// UPDATED loadHistoryFromLocalStorage (for finalized records)
 function loadHistoryFromLocalStorage() {
   let stored = localStorage.getItem("historyRecords");
   if (stored) {
     historyRecords = JSON.parse(stored);
     const tableBody = document.getElementById("historyTableBody");
     tableBody.innerHTML = "";
-    historyRecords.forEach((record, index) => {
+    // Use a for loop so that the index is stable when deleting records.
+    for (let i = 0; i < historyRecords.length; i++) {
+      let record = historyRecords[i];
       let tr = document.createElement("tr");
 
       // Time cell
@@ -744,18 +745,16 @@ function loadHistoryFromLocalStorage() {
       tdTimeControl.appendChild(createAdjustButton("+5s", +5));
       tr.appendChild(tdTimeControl);
 
-      // Delete cell with Delete button
+      // Delete cell with a Delete button (for finalized records)
       let tdDelete = document.createElement("td");
       let btnDelete = document.createElement("button");
       btnDelete.textContent = "Delete";
       btnDelete.classList.add("copy-row-button");
-      // Optionally, set the background color for delete:
       btnDelete.style.backgroundColor = "#dc3545";
-      // Set a data attribute to store the record's index.
-      btnDelete.setAttribute("data-index", index);
+      // Use the current loop index
       btnDelete.onclick = function() {
-        const idx = parseInt(this.getAttribute("data-index"), 10);
-        historyRecords.splice(idx, 1);
+        // Remove the record at this index from the historyRecords array
+        historyRecords.splice(i, 1);
         saveHistoryToLocalStorage();
         loadHistoryFromLocalStorage();
       };
@@ -763,10 +762,9 @@ function loadHistoryFromLocalStorage() {
       tr.appendChild(tdDelete);
 
       tableBody.appendChild(tr);
-    });
+    }
   }
 }
-
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
