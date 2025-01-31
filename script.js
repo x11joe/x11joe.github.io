@@ -664,14 +664,17 @@ function loadHistoryFromLocalStorage() {
     historyRecords.forEach(record => {
       let tr = document.createElement("tr");
 
+      // Time cell
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
       tr.appendChild(tdTime);
 
+      // Statement cell
       let tdStatement = document.createElement("td");
       tdStatement.textContent = record.statement;
       tr.appendChild(tdStatement);
 
+      // "Copy Time" cell + button
       let tdCopyTime = document.createElement("td");
       let btnCopyTime = document.createElement("button");
       btnCopyTime.textContent = "Copy Time";
@@ -687,6 +690,7 @@ function loadHistoryFromLocalStorage() {
       tdCopyTime.appendChild(btnCopyTime);
       tr.appendChild(tdCopyTime);
 
+      // "Copy Statement" cell + button
       let tdCopyStatement = document.createElement("td");
       let btnCopyStatement = document.createElement("button");
       btnCopyStatement.textContent = "Copy Statement";
@@ -702,6 +706,45 @@ function loadHistoryFromLocalStorage() {
       tdCopyStatement.appendChild(btnCopyStatement);
       tr.appendChild(tdCopyStatement);
 
+      // Time Control cell: Create 6 buttons (-5s, -3s, -1s, +1s, +3s, +5s)
+      let tdTimeControl = document.createElement("td");
+      tdTimeControl.style.whiteSpace = "nowrap";
+      
+      function createAdjustButton(label, secondsToAdjust) {
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.classList.add("copy-row-button");
+        btn.onclick = () => {
+          // Parse the stored time (assuming format "HH:MM:SS")
+          let timeDate = new Date("1970-01-01 " + tdTime.textContent);
+          timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
+          let newTimeStr = timeDate.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+          // Update the cell text and also update the record's time in memory
+          tdTime.textContent = newTimeStr;
+          record.time = newTimeStr;
+          // Save the updated history to local storage
+          saveHistoryToLocalStorage();
+          btn.classList.add("copied-cell");
+          setTimeout(() => {
+            btn.classList.remove("copied-cell");
+          }, 800);
+        };
+        return btn;
+      }
+      
+      // Create adjustment buttons
+      tdTimeControl.appendChild(createAdjustButton("-5s", -5));
+      tdTimeControl.appendChild(createAdjustButton("-3s", -3));
+      tdTimeControl.appendChild(createAdjustButton("-1s", -1));
+      tdTimeControl.appendChild(createAdjustButton("+1s", +1));
+      tdTimeControl.appendChild(createAdjustButton("+3s", +3));
+      tdTimeControl.appendChild(createAdjustButton("+5s", +5));
+      tr.appendChild(tdTimeControl);
+
       tableBody.appendChild(tr);
     });
   }
@@ -712,6 +755,7 @@ function clearHistory() {
   historyRecords = [];
   document.getElementById("historyTableBody").innerHTML = "";
 }
+
 
 
 // Support Ctrl + Enter to copy
