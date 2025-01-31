@@ -209,14 +209,15 @@ function setMainAction(button, action) {
   asAmended = false;
 
   // Highlight the chosen main action
-  document.querySelectorAll(".section:nth-of-type(2) button").forEach((b) => b.classList.remove("selected"));
+  document.querySelectorAll(".section:nth-of-type(2) button")
+    .forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
 
   // Hide the meeting actions area once a main action is chosen
   document.getElementById("meetingActionsSection").classList.add("hidden");
 
-  // If it's a Roll Call Vote, hide the committee members entirely
   if (action === "Roll Call Vote on SB" || action === "Roll Call Vote on Amendment") {
+    // Hide members, show vote tally
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
 
@@ -230,17 +231,20 @@ function setMainAction(button, action) {
     // Hide sub-actions, bill-type
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
+
   } else if (action === "Moved") {
-    // Show committee members again (member is required)
+    // Show committee members (member is required)
     document.getElementById("members-container").classList.remove("hidden");
-    showMovedSubActions();
+    // Show Bill Type first (SB, HB, Amendment)
+    showBillTypeSection(true);
+
     showVoteTallySection(false);
     showBillCarrierSection(false);
     showAsAmendedSection(false);
+
   } else {
-    // For any other main action that isn't roll call or moved:
+    // For any other main action not roll call or moved
     document.getElementById("members-container").classList.remove("hidden");
-    // Hide sub-actions, etc., if needed
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
     showVoteTallySection(false);
@@ -272,14 +276,14 @@ function handleMovedSubAction(button, subAction) {
   selectedSubAction = subAction;
   updateStatement();
 
-  // Highlight chosen sub action
-  document
-    .querySelectorAll("#sub-actions-container button")
+  // Highlight the chosen sub action
+  document.querySelectorAll("#sub-actions-container button")
     .forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
 
-  // Show Bill Type: "SB", "HB", "Amendment"
-  showBillTypeSection(true);
+  // REMOVE any calls to showBillTypeSection here if it existed
+  // (We now pick Bill Type before sub-actions)
+  // showBillTypeSection(true); // <-- remove this if still present
 }
 
 // Bill Type => "SB", "HB", or "Amendment"
@@ -307,10 +311,18 @@ function selectBillType(type, btn) {
   updateStatement();
 
   // Highlight the chosen bill type
-  document
-    .querySelectorAll("#bill-type-container button")
+  document.querySelectorAll("#bill-type-container button")
     .forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
+
+  // If the user picked SB or HB, THEN show sub-actions (Do Pass / Do Not Pass).
+  // If Amendment, skip sub-actions
+  if (type === "SB" || type === "HB") {
+    showMovedSubActions();  // "Do Pass" / "Do Not Pass"
+  } else {
+    // If it's "Amendment," hide sub-actions (no Do Pass / Do Not Pass for amendments)
+    document.getElementById("sub-actions").classList.add("hidden");
+  }
 }
 
 // "As Amended" for Roll Call Vote on SB
