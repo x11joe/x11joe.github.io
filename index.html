@@ -122,7 +122,7 @@
       <div class="buttons-container" id="bill-type-container"></div>
     </div>
 
-    <!-- Vote Tally: only for "Roll Call Vote" (automatically determines Pass/Fail) -->
+    <!-- Vote Tally: for all Roll Call Votes (with pass/fail logic) -->
     <div class="section hidden" id="vote-tally-section">
       <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
       <div class="vote-tally-controls">
@@ -147,7 +147,7 @@
       </div>
     </div>
 
-    <!-- Bill Carrier Section: only for Roll Call Votes -->
+    <!-- Bill Carrier Section: only for "Roll Call Vote on SB" -->
     <div class="section hidden" id="bill-carrier-section">
       <h3>Select Bill Carrier</h3>
       <div class="buttons-container" id="bill-carrier-container"></div>
@@ -174,11 +174,11 @@
     let mainAction = "";
     let selectedSubAction = "";   // For "Moved" => "Do Pass" or "Do Not Pass"
     let selectedBillType = "";    // For "Moved" => "SB", "HB", or "Amendment"
-    let selectedCarrier = "";
+    let selectedCarrier = "";     // Only for "Roll Call Vote on SB"
     let constructedStatement = "";
     let currentCommittee = "";
 
-    // Vote tally variables (for roll call votes)
+    // Vote tally variables (for any Roll Call Vote)
     let forVal = 0;
     let againstVal = 0;
     let neutralVal = 0;
@@ -204,7 +204,7 @@
       ]
     };
 
-    // Initialize committee on page load
+    // Initialize on page load
     function updateMembers() {
       currentCommittee = document.getElementById("committeeSelect").value;
       resetSelections();
@@ -244,21 +244,33 @@
       document.querySelectorAll(".section:nth-of-type(2) button").forEach(b => b.classList.remove("selected"));
       button.classList.add("selected");
 
-      // If "Moved", show sub-actions (Do Pass / Do Not Pass)
-      // If "Roll Call Vote", show tally & carrier
+      // Decide what to show based on the main action
       if (action === "Moved") {
+        // Show sub-actions: "Do Pass" / "Do Not Pass"
         showMovedSubActions();
+        // Hide vote tally & carrier
         showVoteTallySection(false);
         showBillCarrierSection(false);
-      } else if (action.includes("Roll Call Vote")) {
+      } else if (action.includes("Roll Call Vote on SB")) {
+        // Hide "Moved" sub-actions
         document.getElementById("sub-actions").classList.add("hidden");
         document.getElementById("bill-type-section").classList.add("hidden");
+
+        // Show vote tally and show bill carrier
         showVoteTallySection(true);
         showBillCarrierSection(true);
+      } else if (action.includes("Roll Call Vote on Amendment LC#")) {
+        // Hide "Moved" sub-actions
+        document.getElementById("sub-actions").classList.add("hidden");
+        document.getElementById("bill-type-section").classList.add("hidden");
+
+        // Show vote tally but NO carrier (amendment = no carrier)
+        showVoteTallySection(true);
+        showBillCarrierSection(false);
       }
     }
 
-    /* "Moved" sub-actions => "Do Pass" or "Do Not Pass" */
+    /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
     function showMovedSubActions() {
       const subActionsContainer = document.getElementById("sub-actions-container");
       subActionsContainer.innerHTML = "";
@@ -285,7 +297,7 @@
       showBillTypeSection(true);
     }
 
-    // Bill Type => "SB", "HB", "Amendment"
+    // Bill Type => "SB", "HB", or "Amendment"
     function showBillTypeSection(visible) {
       const billTypeSection = document.getElementById("bill-type-section");
       if (visible) {
@@ -309,12 +321,12 @@
       selectedBillType = type;
       updateStatement();
 
-      // Highlight the chosen bill type
+      // Highlight chosen bill type
       document.querySelectorAll("#bill-type-container button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
     }
 
-    // Show/hide vote tally (for roll call votes)
+    // Show/hide vote tally (for any roll call vote)
     function showVoteTallySection(visible) {
       const tallySec = document.getElementById("vote-tally-section");
       if (visible) {
@@ -325,7 +337,7 @@
       }
     }
 
-    // Show/hide bill carrier (only for roll call votes)
+    // Show/hide bill carrier (only for "Roll Call Vote on SB")
     function showBillCarrierSection(visible) {
       const carrierSection = document.getElementById("bill-carrier-section");
       if (visible) {
@@ -351,7 +363,7 @@
       updateStatement();
     }
 
-    // Increment/decrement vote count
+    // Vote tally increment/decrement
     function incrementVote(type, isIncrement) {
       if (type === 'for') {
         if (isIncrement) forVal++;
@@ -379,7 +391,7 @@
       }
     }
 
-    // Rebuild the constructedStatement
+    // Rebuild the constructedStatement from the current state
     function updateStatement() {
       if (!selectedMember) {
         document.getElementById("log").innerText = "[Click a member and an action]";
@@ -395,29 +407,26 @@
         parts.push(mainAction);
       }
 
-      // "Moved" scenario => "Moved Do Pass on SB", etc.
+      // Moved => "Moved Do Pass on SB", etc.
       if (mainAction === "Moved") {
         if (selectedSubAction && selectedBillType) {
-          // "Moved Do Pass on SB"
+          // e.g. "Moved Do Pass on SB"
           parts[1] = `Moved ${selectedSubAction} on ${selectedBillType}`;
         } else if (selectedSubAction) {
-          // if Bill Type not chosen yet, e.g. "Moved Do Pass"
+          // e.g. "Moved Do Pass"
           parts[1] = `Moved ${selectedSubAction}`;
         }
       }
 
-      // "Roll Call Vote" scenario => put pass/fail before the tally
+      // Roll Call Votes => "Member - Roll Call Vote on X - Motion Passed - 4-3-0" ...
       if (mainAction.includes("Roll Call Vote")) {
-        // We want: Member - Roll Call Vote on X - Motion Passed - 4-3-0 ...
-        // So let's handle that after "mainAction"
-        const motionResult = getMotionResultText(); // "Motion Passed" / "Motion Failed"
+        // Insert motion result, then tally
+        const motionResult = getMotionResultText(); 
         parts.push(motionResult);
-
-        // Tally
         parts.push(`${forVal}-${againstVal}-${neutralVal}`);
 
-        // Carrier, if chosen
-        if (selectedCarrier) {
+        // Only add carrier if it's "Roll Call Vote on SB"
+        if (mainAction.includes("on SB") && selectedCarrier) {
           parts.push(`${selectedCarrier} Carried the Bill`);
         }
       }
