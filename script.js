@@ -659,15 +659,9 @@ function loadHistoryFromLocalStorage() {
   let stored = localStorage.getItem("historyRecords");
   if (stored) {
     historyRecords = JSON.parse(stored);
-    console.log("Loaded historyRecords:", historyRecords);
     const tableBody = document.getElementById("historyTableBody");
     tableBody.innerHTML = "";
-    historyRecords.forEach(record => {
-      // Ensure record.time is a non-empty string.
-      if (!record.time || record.time.trim() === "") {
-        record.time = "00:00:00"; // fallback default time
-      }
-
+    historyRecords.forEach((record, index) => {
       let tr = document.createElement("tr");
 
       // Time cell
@@ -712,24 +706,15 @@ function loadHistoryFromLocalStorage() {
       tdCopyStatement.appendChild(btnCopyStatement);
       tr.appendChild(tdCopyStatement);
 
-      // NEW: Time Control cell with 6 adjustment buttons
+      // Time Control cell with 6 adjustment buttons
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
-
-      // Helper to create a time adjust button
       function createAdjustButton(label, secondsToAdjust) {
         const btn = document.createElement("button");
         btn.textContent = label;
         btn.classList.add("copy-row-button");
         btn.onclick = () => {
-          // Parse the stored time (assumed format "HH:MM:SS")
-          let currentTime = tdTime.textContent;
-          // Create a Date object from "1970-01-01 " + currentTime.
-          let timeDate = new Date("1970-01-01 " + currentTime);
-          if (isNaN(timeDate.getTime())) {
-            // If the time is invalid, default to 00:00:00.
-            timeDate = new Date("1970-01-01 00:00:00");
-          }
+          let timeDate = new Date("1970-01-01 " + tdTime.textContent);
           timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
           let newTimeStr = timeDate.toLocaleTimeString([], {
             hour: '2-digit',
@@ -737,8 +722,8 @@ function loadHistoryFromLocalStorage() {
             second: '2-digit'
           });
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr;  // update the record object
-          saveHistoryToLocalStorage(); // persist the change
+          record.time = newTimeStr; // update the record
+          saveHistoryToLocalStorage();
           btn.classList.add("copied-cell");
           setTimeout(() => {
             btn.classList.remove("copied-cell");
@@ -746,8 +731,6 @@ function loadHistoryFromLocalStorage() {
         };
         return btn;
       }
-      
-      // Create adjustment buttons and append them
       tdTimeControl.appendChild(createAdjustButton("-5s", -5));
       tdTimeControl.appendChild(createAdjustButton("-3s", -3));
       tdTimeControl.appendChild(createAdjustButton("-1s", -1));
@@ -756,20 +739,32 @@ function loadHistoryFromLocalStorage() {
       tdTimeControl.appendChild(createAdjustButton("+5s", +5));
       tr.appendChild(tdTimeControl);
 
+      // NEW: Delete cell with Delete button
+      let tdDelete = document.createElement("td");
+      let btnDelete = document.createElement("button");
+      btnDelete.textContent = "Delete";
+      btnDelete.classList.add("copy-row-button");
+      // Optionally, change background color for delete
+      btnDelete.style.backgroundColor = "#dc3545";
+      btnDelete.onclick = () => {
+        // Remove the record at this index and update storage
+        historyRecords.splice(index, 1);
+        saveHistoryToLocalStorage();
+        loadHistoryFromLocalStorage();
+      };
+      tdDelete.appendChild(btnDelete);
+      tr.appendChild(tdDelete);
+
       tableBody.appendChild(tr);
     });
   }
 }
-
-
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
   historyRecords = [];
   document.getElementById("historyTableBody").innerHTML = "";
 }
-
-
 
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
