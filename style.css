@@ -114,6 +114,12 @@ button:hover {
   background: #f1f1f1;
 }
 
+#historyTable td, #historyTable th {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .copy-row-button {
   background-color: #17a2b8;
   color: white;
