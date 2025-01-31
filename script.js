@@ -446,11 +446,16 @@ function updateStatement() {
   else if (mainAction === "Moved") {
     parts.push(selectedMember);
     if (selectedBillType) {
-      if (selectedSubAction) {
-        parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
-      } else {
-        // For Amendment, no sub-action is required
+      // If the bill type is Amendment, we don't require a sub-action.
+      if (selectedBillType === "Amendment") {
         parts.push(`Moved ${selectedBillType}`);
+      } else {
+        // For SB or HB, if a sub-action is chosen, use it; otherwise, still show the bill type.
+        if (selectedSubAction) {
+          parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+        } else {
+          parts.push(`Moved on ${selectedBillType}`);
+        }
       }
     } else if (selectedSubAction) {
       parts.push(`Moved ${selectedSubAction}`);
@@ -473,6 +478,7 @@ function updateStatement() {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
 
 
 
