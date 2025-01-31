@@ -420,7 +420,6 @@ function updateStatement() {
     mainAction !== "Roll Call Vote on SB" &&
     mainAction !== "Roll Call Vote on Amendment"
   ) {
-    // For everything else, we still need a member
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
@@ -437,10 +436,8 @@ function updateStatement() {
       actionText = "Roll Call Vote on SB as Amended";
     }
     parts.push(actionText);
-
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-
     if (actionText.includes("SB") && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
@@ -448,20 +445,24 @@ function updateStatement() {
   // Moved
   else if (mainAction === "Moved") {
     parts.push(selectedMember);
-    if (selectedSubAction && selectedBillType) {
-      parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+    if (selectedBillType) {
+      if (selectedSubAction) {
+        parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+      } else {
+        // For Amendment, no sub-action is required
+        parts.push(`Moved ${selectedBillType}`);
+      }
     } else if (selectedSubAction) {
       parts.push(`Moved ${selectedSubAction}`);
     } else {
       parts.push("Moved");
     }
   }
-  // Other main action
+  // Other main actions
   else if (mainAction) {
     parts.push(`${selectedMember} - ${mainAction}`);
   }
 
-  // If no parts
   if (parts.length === 0) {
     constructedStatement = "[Click a member and an action]";
   } else {
@@ -472,6 +473,7 @@ function updateStatement() {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
 
 
 function resetVoteTally() {
