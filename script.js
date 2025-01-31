@@ -523,6 +523,18 @@ function resetAllAndFinalize() {
   resetSelections();
 }
 
+// "Cancel via esc key
+function cancelCurrentAction() {
+  // If there's an in-progress row, remove it so it won't appear in history
+  if (inProgressRow) {
+    inProgressRow.remove();  // removes the <tr> from the DOM
+    finalizeInProgressRow(); // clears references like timeCell, statementCell, etc.
+  }
+  // Then reset UI WITHOUT finalizing it in the table
+  resetSelections(false);
+}
+
+
 // The main reset
 function resetSelections(finalize = true) {
   if (
@@ -579,6 +591,13 @@ document.addEventListener("keydown", function (event) {
     event.preventDefault();       // Stop default button activati
     resetAllAndFinalize();
   }
+
+   // ESC => Cancel current in-progress action (no record saved)
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelCurrentAction();
+  }
+
 });
 
 // Initialize on page load
