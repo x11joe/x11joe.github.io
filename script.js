@@ -717,7 +717,6 @@ function loadHistoryFromLocalStorage() {
         btn.textContent = label;
         btn.classList.add("copy-row-button");
         btn.onclick = () => {
-          // Parse the stored time (assumed format "HH:MM:SS")
           let timeDate = new Date("1970-01-01 " + tdTime.textContent);
           timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
           let newTimeStr = timeDate.toLocaleTimeString([], {
@@ -743,15 +742,18 @@ function loadHistoryFromLocalStorage() {
       tdTimeControl.appendChild(createAdjustButton("+5s", +5));
       tr.appendChild(tdTimeControl);
 
-      // NEW: Delete cell with Delete button
+      // Delete cell with Delete button
       let tdDelete = document.createElement("td");
       let btnDelete = document.createElement("button");
       btnDelete.textContent = "Delete";
       btnDelete.classList.add("copy-row-button");
-      // Optionally, change background color for delete
+      // Optionally, set the background color for delete:
       btnDelete.style.backgroundColor = "#dc3545";
-      btnDelete.onclick = () => {
-        historyRecords.splice(index, 1);
+      // Set a data attribute to store the record's index.
+      btnDelete.setAttribute("data-index", index);
+      btnDelete.onclick = function() {
+        const idx = parseInt(this.getAttribute("data-index"), 10);
+        historyRecords.splice(idx, 1);
         saveHistoryToLocalStorage();
         loadHistoryFromLocalStorage();
       };
