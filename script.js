@@ -102,10 +102,11 @@ function createNewRowInHistory() {
   copyStatementCell.appendChild(copyStatementButton);
   inProgressRow.appendChild(copyStatementCell);
 
-  // Time Control cell: holds six adjustment buttons
+  // Create a cell to hold all the +/- time adjustment buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
 
+  // Helper to create a time adjustment button
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -127,7 +128,7 @@ function createNewRowInHistory() {
     return btn;
   }
 
-  // Create the six adjustment buttons and append them.
+  // Create and append the 6 time adjust buttons
   timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
   timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
   timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
@@ -142,16 +143,12 @@ function createNewRowInHistory() {
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
+  // For live rows, simply remove the row without updating local storage
   deleteButton.onclick = function() {
-    console.log("Delete button clicked");
-    // Remove the live record from historyRecords.
-    // Since only one live row exists, we assume it is the last element.
-    if (historyRecords.length > 0) {
-      historyRecords.pop();
-      saveHistoryToLocalStorage();
-    }
-    // Remove this row from the DOM and clear the in-progress references.
+    console.log("Delete button clicked on live row");
+    // Remove the row from the DOM
     this.parentElement.parentElement.remove();
+    // Clear the in-progress row references (since it hasn't been finalized)
     finalizeInProgressRow();
   };
   deleteCell.appendChild(deleteButton);
@@ -160,18 +157,14 @@ function createNewRowInHistory() {
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Immediately push the live record into historyRecords and save it.
-  let liveRecord = {
-    time: statementStartTime,
-    statement: constructedStatement
-  };
-  historyRecords.push(liveRecord);
-  saveHistoryToLocalStorage();
+  // Do NOT push a live record here.
+  // The record will only be added to historyRecords when the user confirms (via resetAllAndFinalize).
 
-  // Update the global references.
+  // Update global references for the in-progress row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
