@@ -554,6 +554,11 @@ document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
     copyToClipboard();
   }
+
+   // If just Enter (without Ctrl), reset everything
+  if (event.key === "Enter") {
+    resetAllAndFinalize();
+  }
 });
 
 // Initialize on page load
