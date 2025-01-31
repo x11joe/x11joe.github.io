@@ -190,43 +190,63 @@ function selectMember(member, btn) {
 }
 
 function setMainAction(button, action) {
-  if (!selectedMember) {
-    alert("Please select a member first!");
+  // Only require a member if the user clicked "Moved"
+  if (action === "Moved" && !selectedMember) {
+    alert("Please select a member first for 'Moved' actions!");
     return;
   }
+
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
   selectedCarrier = "";
   asAmended = false;
 
-  updateStatement();
-
-  // Highlight
-  document
-    .querySelectorAll(".section:nth-of-type(2) button")
-    .forEach((b) => b.classList.remove("selected"));
+  // Highlight the chosen main action
+  document.querySelectorAll(".section:nth-of-type(2) button").forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
 
-  if (action === "Moved") {
+  // Hide the meeting actions area once a main action is chosen
+  document.getElementById("meetingActionsSection").classList.add("hidden");
+
+  // If it's a Roll Call Vote, hide the committee members entirely
+  if (action === "Roll Call Vote on SB" || action === "Roll Call Vote on Amendment") {
+    document.getElementById("members-container").classList.add("hidden");
+    showVoteTallySection(true);
+
+    if (action === "Roll Call Vote on SB") {
+      showBillCarrierSection(true);
+      showAsAmendedSection(true);
+    } else {
+      showBillCarrierSection(false);
+      showAsAmendedSection(false);
+    }
+    // Hide sub-actions, bill-type
+    document.getElementById("sub-actions").classList.add("hidden");
+    document.getElementById("bill-type-section").classList.add("hidden");
+  } 
+  else if (action === "Moved") {
+    // Show committee members again (member is required)
+    document.getElementById("members-container").classList.remove("hidden");
     showMovedSubActions();
     showVoteTallySection(false);
     showBillCarrierSection(false);
     showAsAmendedSection(false);
-  } else if (action === "Roll Call Vote on SB") {
+  }
+  else {
+    // For any other main action that isn't roll call or moved:
+    document.getElementById("members-container").classList.remove("hidden");
+    // Hide sub-actions, etc., if needed
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
-    showVoteTallySection(true);
-    showBillCarrierSection(true);
-    showAsAmendedSection(true);
-  } else if (action === "Roll Call Vote on Amendment") {
-    document.getElementById("sub-actions").classList.add("hidden");
-    document.getElementById("bill-type-section").classList.add("hidden");
-    showVoteTallySection(true);
+    showVoteTallySection(false);
     showBillCarrierSection(false);
     showAsAmendedSection(false);
   }
+
+  updateStatement();
 }
+
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
