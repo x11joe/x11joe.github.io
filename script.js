@@ -128,7 +128,7 @@ function createNewRowInHistory() {
     return btn;
   }
 
-  // Create and append the 6 time adjust buttons
+  // Create and append the 6 time adjustment buttons
   timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
   timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
   timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
@@ -143,12 +143,13 @@ function createNewRowInHistory() {
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
-  // For live rows, simply remove the row without updating local storage
   deleteButton.onclick = function() {
     console.log("Delete button clicked on live row");
-    // Remove the row from the DOM
-    this.parentElement.parentElement.remove();
-    // Clear the in-progress row references (since it hasn't been finalized)
+    // Remove the live row from the DOM
+    inProgressRow.remove();
+    // Clear the pending constructed statement so that no record gets confirmed later
+    constructedStatement = "";
+    // Clear the in-progress row references
     finalizeInProgressRow();
   };
   deleteCell.appendChild(deleteButton);
@@ -157,13 +158,14 @@ function createNewRowInHistory() {
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Do NOT push a live record here.
+  // Do not push a live record here.
   // The record will only be added to historyRecords when the user confirms (via resetAllAndFinalize).
 
   // Update global references for the in-progress row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 function updateInProgressRow() {
