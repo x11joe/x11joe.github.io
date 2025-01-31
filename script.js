@@ -706,16 +706,17 @@ function loadHistoryFromLocalStorage() {
       tdCopyStatement.appendChild(btnCopyStatement);
       tr.appendChild(tdCopyStatement);
 
-      // Time Control cell: Create 6 buttons (-5s, -3s, -1s, +1s, +3s, +5s)
+      // NEW: Time Control cell with 6 adjustment buttons
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
-      
+
+      // Helper to create a time adjust button
       function createAdjustButton(label, secondsToAdjust) {
         const btn = document.createElement("button");
         btn.textContent = label;
         btn.classList.add("copy-row-button");
         btn.onclick = () => {
-          // Parse the stored time (assuming format "HH:MM:SS")
+          // Parse current time from tdTime (assumed format "HH:MM:SS")
           let timeDate = new Date("1970-01-01 " + tdTime.textContent);
           timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
           let newTimeStr = timeDate.toLocaleTimeString([], {
@@ -723,11 +724,9 @@ function loadHistoryFromLocalStorage() {
             minute: '2-digit',
             second: '2-digit'
           });
-          // Update the cell text and also update the record's time in memory
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr;
-          // Save the updated history to local storage
-          saveHistoryToLocalStorage();
+          record.time = newTimeStr;  // update the record
+          saveHistoryToLocalStorage(); // save changes
           btn.classList.add("copied-cell");
           setTimeout(() => {
             btn.classList.remove("copied-cell");
@@ -736,7 +735,7 @@ function loadHistoryFromLocalStorage() {
         return btn;
       }
       
-      // Create adjustment buttons
+      // Create and append the 6 buttons: -5s, -3s, -1s, +1s, +3s, +5s
       tdTimeControl.appendChild(createAdjustButton("-5s", -5));
       tdTimeControl.appendChild(createAdjustButton("-3s", -3));
       tdTimeControl.appendChild(createAdjustButton("-1s", -1));
@@ -749,6 +748,7 @@ function loadHistoryFromLocalStorage() {
     });
   }
 }
+
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
