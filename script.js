@@ -70,7 +70,7 @@ function createNewRowInHistory() {
   localStatementCell.textContent = constructedStatement;
   inProgressRow.appendChild(localStatementCell);
 
-  // "Copy Time" (existing)
+  // "Copy Time" cell (existing)
   const copyTimeCell = document.createElement("td");
   const copyTimeButton = document.createElement("button");
   copyTimeButton.textContent = "Copy Time";
@@ -86,7 +86,7 @@ function createNewRowInHistory() {
   copyTimeCell.appendChild(copyTimeButton);
   inProgressRow.appendChild(copyTimeCell);
 
-  // "Copy Statement" (existing)
+  // "Copy Statement" cell (existing)
   const copyStatementCell = document.createElement("td");
   const copyStatementButton = document.createElement("button");
   copyStatementButton.textContent = "Copy Statement";
@@ -102,11 +102,11 @@ function createNewRowInHistory() {
   copyStatementCell.appendChild(copyStatementButton);
   inProgressRow.appendChild(copyStatementCell);
 
-  // Create a single cell to hold all +/- time buttons (Time Control)
+  // Create a cell to hold all the +/- time adjustment buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
 
-  // Helper to create a button
+  // Helper to create a time adjustment button
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -128,7 +128,7 @@ function createNewRowInHistory() {
     return btn;
   }
 
-  // Create all 6 time adjust buttons
+  // Create the six adjustment buttons
   const minus5 = createTimeAdjustButton("-5s", -5);
   const minus3 = createTimeAdjustButton("-3s", -3);
   const minus1 = createTimeAdjustButton("-1s", -1);
@@ -136,7 +136,7 @@ function createNewRowInHistory() {
   const plus3 = createTimeAdjustButton("+3s", +3);
   const plus5 = createTimeAdjustButton("+5s", +5);
 
-  // Append them in a row
+  // Append these buttons into the time adjustment cell
   timeAdjustCell.appendChild(minus5);
   timeAdjustCell.appendChild(minus3);
   timeAdjustCell.appendChild(minus1);
@@ -145,15 +145,16 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(plus5);
   inProgressRow.appendChild(timeAdjustCell);
 
-  // NEW: Delete cell with a Delete button
+  // NEW: Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
-  // Optionally, change the background color to indicate deletion:
+  // Optionally, set a delete-style background color:
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = () => {
-    // For a live (in-progress) row, simply remove it and clear the references.
+    console.log("Delete button clicked");
+    // For a live (in-progress) row, simply remove it and clear references.
     if (inProgressRow) {
       inProgressRow.remove();
       finalizeInProgressRow();
@@ -162,16 +163,13 @@ function createNewRowInHistory() {
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
-  // Finally append the row to the table
+  // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Update global references so we can still update the "in-progress" row
+  // Update global references for the in-progress row
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
-
-
 
 
 function updateInProgressRow() {
