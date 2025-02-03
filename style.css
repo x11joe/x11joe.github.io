@@ -126,7 +126,6 @@ button:hover {
 /* History Table with forced text wrapping and defined column widths */
 #historyTable {
   width: 100%;
-  table-layout: fixed;
   border-collapse: collapse;
 }
 
