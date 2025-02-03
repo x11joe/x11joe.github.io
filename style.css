@@ -34,6 +34,24 @@ button:hover {
   background-color: #0056b3;
 }
 
+.committee-top {
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.committee-divider {
+  font-weight: bold;
+  margin: 10px 0;
+  text-align: center;
+  color: #555;
+}
+
+.committee-others {
+  margin-top: 10px;
+}
+
+
 /* Highlight the selected button in green */
 .selected {
   background-color: #28a745 !important;
