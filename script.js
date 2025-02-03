@@ -59,6 +59,20 @@ function getCurrentTimestamp() {
   });
 }
 
+// Helper: Sort committee members so that "Chairman" or "Chairwoman" come first,
+// then "Vice Chairman", then the rest.
+function sortCommitteeMembers(members) {
+  return members.slice().sort((a, b) => {
+    const rank = (name) => {
+      if (name.includes("Chairman") || name.includes("Chairwoman")) return 0;
+      if (name.includes("Vice")) return 1;
+      return 2;
+    };
+    return rank(a) - rank(b);
+  });
+}
+
+
 function createNewRowInHistory() {
   // Capture the current timestamp in a local variable.
   const recordTime = statementStartTime;
@@ -230,13 +244,17 @@ function updateMembers() {
 
   const membersContainer = document.getElementById("members-container");
   membersContainer.innerHTML = "";
-  committees[currentCommittee].forEach((member) => {
+  
+  // Sort the committee members before displaying them.
+  const sortedMembers = sortCommitteeMembers(committees[currentCommittee]);
+  sortedMembers.forEach((member) => {
     const btn = document.createElement("button");
     btn.innerText = member;
     btn.onclick = () => selectMember(member, btn);
     membersContainer.appendChild(btn);
   });
 }
+
 
 
 function selectMember(member, btn) {
