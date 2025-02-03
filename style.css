@@ -123,9 +123,10 @@ button:hover {
   margin: 20px auto;
 }
 
-/* History Table with forced text wrapping and defined column widths */
+/* History Table with fixed layout and defined column widths */
 #historyTable {
   width: 100%;
+  table-layout: fixed; /* Ensures fixed layout for consistent column widths */
   border-collapse: collapse;
 }
 
