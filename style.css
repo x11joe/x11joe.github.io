@@ -126,7 +126,7 @@ button:hover {
 /* History Table with forced text wrapping and defined column widths */
 #historyTable {
   width: 100%;
-  table-layout: fixed;
+  table-layout: fixed; /* Ensures consistent column widths */
   border-collapse: collapse;
 }
 
@@ -136,8 +136,9 @@ button:hover {
   padding: 8px;
   text-align: center;
   vertical-align: middle;
-  white-space: normal;
-  word-wrap: break-word;
+  white-space: normal; /* Allows text to wrap */
+  word-wrap: break-word; /* Breaks long words to prevent overflow */
+  overflow: hidden; /* Hides overflow content */
 }
 
 /* Set specific widths for columns */
@@ -161,7 +162,6 @@ button:hover {
 #historyTable th:nth-child(5),
 #historyTable td:nth-child(5) { /* Time Control column */
   width: 15%;
-  /* Force the cell to use a flex column layout */
   display: flex;
   flex-direction: column;
   justify-content: center;
