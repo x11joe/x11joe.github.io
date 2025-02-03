@@ -1,3 +1,6 @@
+/* -------------------------
+   Overall Page Styling
+   ------------------------- */
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
@@ -23,6 +26,9 @@ body {
   margin-bottom: 15px;
 }
 
+/* -------------------------
+   Button Styling
+   ------------------------- */
 button {
   padding: 10px 12px;
   font-size: 14px;
@@ -39,6 +45,28 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* Highlight the selected button in green */
+.selected {
+  background-color: #28a745 !important;
+}
+
+/* Smaller utility for the time-adjust and delete buttons */
+.copy-row-button {
+  background-color: #17a2b8;
+  color: white;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+.copy-row-button:hover {
+  background-color: #138496;
+}
+
+/* -------------------------
+   Committee Layout
+   ------------------------- */
 .committee-top {
   margin-bottom: 10px;
   padding-bottom: 5px;
@@ -56,12 +84,26 @@ button:hover {
   margin-top: 10px;
 }
 
-/* Highlight the selected button in green */
-.selected {
-  background-color: #28a745 !important;
+/* -------------------------
+   Sections & Hidden
+   ------------------------- */
+.section {
+  width: 90%;
+  max-width: 600px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background: #f1f1f1;
+  text-align: center;
 }
 
-/* Constructed statement box */
+.hidden {
+  display: none;
+}
+
+/* -------------------------
+   Constructed Statement Log
+   ------------------------- */
 .log {
   margin-top: 15px;
   padding: 10px;
@@ -89,20 +131,9 @@ button:hover {
   background-color: #c82333;
 }
 
-.section {
-  width: 90%;
-  max-width: 600px;
-  margin: 10px 0;
-  padding: 10px;
-  border: 1px solid #ddd;
-  background: #f1f1f1;
-  text-align: center;
-}
-
-.hidden {
-  display: none;
-}
-
+/* -------------------------
+   Vote Tally Styling
+   ------------------------- */
 .vote-tally-controls {
   display: flex;
   justify-content: space-around;
@@ -116,20 +147,23 @@ button:hover {
   gap: 6px;
 }
 
-/* History Container for responsiveness */
+/* -------------------------
+   History Table
+   ------------------------- */
 .history-container {
   width: 100%;
   overflow: hidden;
   margin: 20px auto;
 }
 
-/* History Table with fixed layout and defined column widths */
+/* Use a fixed table layout for consistent column widths */
 #historyTable {
   width: 100%;
-  table-layout: fixed; /* Ensures fixed layout for consistent column widths */
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
+/* Basic cell styling */
 #historyTable th,
 #historyTable td {
   border: 1px solid #ccc;
@@ -140,54 +174,47 @@ button:hover {
   word-wrap: break-word;
 }
 
-/* Set specific widths for columns */
+/* Now we have 4 columns:
+   1: Time (10%)
+   2: Statement (60%)
+   3: Time Control (20%)
+   4: Delete (10%)
+*/
 #historyTable th:nth-child(1),
-#historyTable td:nth-child(1) { /* Time column */
+#historyTable td:nth-child(1) {
   width: 10%;
 }
 
 #historyTable th:nth-child(2),
-#historyTable td:nth-child(2) { /* Statement column */
-  width: 45%;
+#historyTable td:nth-child(2) {
+  width: 60%;
 }
 
 #historyTable th:nth-child(3),
-#historyTable td:nth-child(3),
+#historyTable td:nth-child(3) {
+  width: 20%;
+}
+
 #historyTable th:nth-child(4),
-#historyTable td:nth-child(4) { /* Copy Time and Copy Statement columns */
+#historyTable td:nth-child(4) {
   width: 10%;
 }
 
-#historyTable th:nth-child(5),
-#historyTable td:nth-child(5) {
-  width: 20%;
-  /* Remove flex from the TD so that it uses its natural table-cell layout.
-     The inner divs (with class "time-control-group") retain their flex styles. */
-  display: table-cell;
-  vertical-align: middle;
-  padding: 8px;
-  white-space: normal !important;
-}
-
-#historyTable th:nth-child(6),
-#historyTable td:nth-child(6) { /* Delete column */
-  width: 5%;
-}
-
-/* Group styles for time control buttons */
+/* Time control groups for +/- second adjustments */
 .time-control-group {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   font-size: 10px;
   justify-content: center;
-  border: 1px dashed red; /* temporary debugging border */
+  border: 1px dashed red; /* optional debugging border */
 }
 
 .time-control-group button {
   padding: 4px 6px;
 }
 
+/* Make clickable cells show a pointer cursor */
 .clickable {
   cursor: pointer;
 }
@@ -201,21 +228,9 @@ button:hover {
   }
 }
 
-.copy-row-button {
-  background-color: #17a2b8;
-  color: white;
-  margin: 0;
-  padding: 5px 8px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-}
-
-.copy-row-button:hover {
-  background-color: #138496;
-}
-
-/* Glow effect on successful copy */
+/* -------------------------
+   Copied Cell Glow Animation
+   ------------------------- */
 .copied-cell {
   animation: glow 1s ease-in-out;
 }
