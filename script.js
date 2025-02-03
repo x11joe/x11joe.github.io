@@ -474,7 +474,17 @@ function getMotionResultText() {
 
 // Build the statement
 function updateStatement() {
-  // Allow no selectedMember if mainAction is a roll call vote
+  // If a member is selected but no main action has been chosen,
+  // immediately set the constructed statement to the member's name.
+  if (selectedMember && !mainAction) {
+    constructedStatement = selectedMember;
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+    return;
+  }
+
+  // Allow no selectedMember only if mainAction is a roll call vote.
   if (
     !selectedMember &&
     mainAction !== "Roll Call Vote on SB" &&
@@ -506,11 +516,9 @@ function updateStatement() {
   else if (mainAction === "Moved") {
     parts.push(selectedMember);
     if (selectedBillType) {
-      // If the bill type is Amendment, we don't require a sub-action.
       if (selectedBillType === "Amendment") {
         parts.push(`Moved ${selectedBillType}`);
       } else {
-        // For SB or HB, if a sub-action is chosen, use it; otherwise, still show the bill type.
         if (selectedSubAction) {
           parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
         } else {
@@ -538,6 +546,7 @@ function updateStatement() {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
 
 
 
