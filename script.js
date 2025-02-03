@@ -3,7 +3,7 @@
    -------------------------- */
 let historyRecords = [];
 
-let inProgressRecordIndex = null; // track the current record in historyRecords
+let inProgressRecordIndex = null; // track the current record in historyRecords..
 
 let selectedMember = "";
 let mainAction = "";
