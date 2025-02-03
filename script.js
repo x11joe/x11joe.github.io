@@ -72,6 +72,23 @@ function sortCommitteeMembers(members) {
   });
 }
 
+// Group committee members into chairs, vice chairs, and others.
+function groupCommitteeMembers(members) {
+  const chairs = [];
+  const viceChairs = [];
+  const others = [];
+  members.forEach(member => {
+    if (member.includes("Chairman") || member.includes("Chairwoman")) {
+      chairs.push(member);
+    } else if (member.includes("Vice")) {
+      viceChairs.push(member);
+    } else {
+      others.push(member);
+    }
+  });
+  return { chairs, viceChairs, others };
+}
+
 
 function createNewRowInHistory() {
   // Capture the current timestamp in a local variable.
@@ -244,16 +261,50 @@ function updateMembers() {
 
   const membersContainer = document.getElementById("members-container");
   membersContainer.innerHTML = "";
+
+  // Group members into chairs/vice chairs and others.
+  const groups = groupCommitteeMembers(committees[currentCommittee]);
+
+  // Create a container for the top members (chairs and vice chairs)
+  const topDiv = document.createElement("div");
+  topDiv.classList.add("committee-top");
   
-  // Sort the committee members before displaying them.
-  const sortedMembers = sortCommitteeMembers(committees[currentCommittee]);
-  sortedMembers.forEach((member) => {
+  // Add chairs first.
+  groups.chairs.forEach(member => {
     const btn = document.createElement("button");
     btn.innerText = member;
     btn.onclick = () => selectMember(member, btn);
-    membersContainer.appendChild(btn);
+    topDiv.appendChild(btn);
   });
+  
+  // Then vice chairs.
+  groups.viceChairs.forEach(member => {
+    const btn = document.createElement("button");
+    btn.innerText = member;
+    btn.onclick = () => selectMember(member, btn);
+    topDiv.appendChild(btn);
+  });
+  
+  membersContainer.appendChild(topDiv);
+
+  // Add a divider between top members and others.
+  const divider = document.createElement("div");
+  divider.classList.add("committee-divider");
+  divider.textContent = "Other Members";
+  membersContainer.appendChild(divider);
+
+  // Create a container for other members.
+  const othersDiv = document.createElement("div");
+  othersDiv.classList.add("committee-others");
+  groups.others.forEach(member => {
+    const btn = document.createElement("button");
+    btn.innerText = member;
+    btn.onclick = () => selectMember(member, btn);
+    othersDiv.appendChild(btn);
+  });
+  membersContainer.appendChild(othersDiv);
 }
+
 
 
 
