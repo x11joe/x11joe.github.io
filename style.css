@@ -140,54 +140,48 @@ button:hover {
   word-wrap: break-word;
 }
 
-/* Table columns: ensuring consistent widths */
+/* Set specific widths for columns */
 #historyTable th:nth-child(1),
-#historyTable td:nth-child(1) {
+#historyTable td:nth-child(1) { /* Time column */
   width: 10%;
 }
 
 #historyTable th:nth-child(2),
-#historyTable td:nth-child(2) {
+#historyTable td:nth-child(2) { /* Statement column */
   width: 45%;
 }
 
 #historyTable th:nth-child(3),
 #historyTable td:nth-child(3),
 #historyTable th:nth-child(4),
-#historyTable td:nth-child(4) {
+#historyTable td:nth-child(4) { /* Copy Time and Copy Statement columns */
   width: 10%;
 }
 
 #historyTable th:nth-child(5),
 #historyTable td:nth-child(5) {
   width: 20%;
-  vertical-align: middle;
-  border: 1px dashed red; /* for debugging */
-  /* Removed display: flex; so it won't squash content in weird ways */
-}
-
-#historyTable th:nth-child(6),
-#historyTable td:nth-child(6) {
-  width: 5%;
-}
-
-/* Make sure table is not overflowing; 
-   you can wrap it in a container with overflow-x if needed. */
-.history-container {
-  width: 100%;
-  overflow-x: auto; /* let the table scroll horizontally on small screens */
-  margin: 20px auto;
-}
-
-/* Now style the time-control-group itself, which 
-   your JS code uses for the ±1s/±3s/±5s groups: */
-.time-control-group {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 4px;
-  margin: 4px 0;
-  flex-wrap: wrap; /* optional wrap */
+}
+
+
+#historyTable th:nth-child(6),
+#historyTable td:nth-child(6) { /* Delete column */
+  width: 5%;
+}
+
+/* Group styles for time control buttons */
+.time-control-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 10px;
+  justify-content: center;
+  border: 1px dashed red; /* temporary debugging border */
 }
 
 
