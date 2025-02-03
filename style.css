@@ -126,7 +126,7 @@ button:hover {
 /* History Table with forced text wrapping and defined column widths */
 #historyTable {
   width: 100%;
-  table-layout: fixed; /* Ensures consistent column widths */
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -136,9 +136,8 @@ button:hover {
   padding: 8px;
   text-align: center;
   vertical-align: middle;
-  white-space: normal; /* Allows text to wrap */
-  word-wrap: break-word; /* Breaks long words to prevent overflow */
-  overflow: hidden; /* Hides overflow content */
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 /* Set specific widths for columns */
@@ -161,9 +160,9 @@ button:hover {
 
 #historyTable th:nth-child(5),
 #historyTable td:nth-child(5) { /* Time Control column */
-  width: 15%;
+  width: 20%; /* Adjusted to 20% */
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap; /* Enable wrapping of content */
   justify-content: center;
   align-items: center;
   gap: 4px;
@@ -171,15 +170,15 @@ button:hover {
 
 #historyTable th:nth-child(6),
 #historyTable td:nth-child(6) { /* Delete column */
-  width: 10%;
+  width: 5%;
 }
 
 /* Group styles for time control buttons */
 .time-control-group {
   display: flex;
+  flex-wrap: wrap; /* Enable wrapping of buttons */
   gap: 4px;
   font-size: 10px;
-  flex-wrap: wrap;
   justify-content: center;
 }
 
