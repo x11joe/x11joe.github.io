@@ -166,13 +166,21 @@ function createNewRowInHistory() {
   }
 
   // Create and append the 6 time adjust buttons
-  timeAdjustCell.appendChild(createTimeAdjustButton("-5s", -5));
-  timeAdjustCell.appendChild(createTimeAdjustButton("-3s", -3));
-  timeAdjustCell.appendChild(createTimeAdjustButton("-1s", -1));
-  timeAdjustCell.appendChild(createTimeAdjustButton("+1s", +1));
-  timeAdjustCell.appendChild(createTimeAdjustButton("+3s", +3));
-  timeAdjustCell.appendChild(createTimeAdjustButton("+5s", +5));
-  inProgressRow.appendChild(timeAdjustCell);
+  // Create two groups: one for minus buttons and one for plus buttons.
+  const minusDiv = document.createElement("div");
+  minusDiv.classList.add("time-control-group");
+  minusDiv.appendChild(createTimeAdjustButton("-5s", -5));
+  minusDiv.appendChild(createTimeAdjustButton("-3s", -3));
+  minusDiv.appendChild(createTimeAdjustButton("-1s", -1));
+
+  const plusDiv = document.createElement("div");
+  plusDiv.classList.add("time-control-group");
+  plusDiv.appendChild(createTimeAdjustButton("+1s", +1));
+  plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
+  plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
+
+  timeAdjustCell.appendChild(minusDiv);
+  timeAdjustCell.appendChild(plusDiv);
 
   // Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
