@@ -176,11 +176,13 @@ button:hover {
 /* Group styles for time control buttons */
 .time-control-group {
   display: flex;
-  flex-wrap: wrap; /* Enable wrapping of buttons */
+  flex-wrap: wrap;
   gap: 4px;
   font-size: 10px;
   justify-content: center;
+  border: 1px dashed red; /* temporary debugging border */
 }
+
 
 .time-control-group button {
   padding: 4px 6px;
