@@ -99,7 +99,9 @@ function createNewRowInHistory() {
   // Time cell
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = recordTime;
-
+  // Make the cell show a pointer cursor
+  localTimeCell.classList.add("clickable");
+   
   // When user clicks the time cell, copy the time to clipboard
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
@@ -114,7 +116,9 @@ function createNewRowInHistory() {
   // Statement cell
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
-
+  // Make the cell show a pointer cursor
+  localStatementCell.classList.add("clickable");
+   
   // When user clicks the statement cell, copy the statement to clipboard
   localStatementCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
