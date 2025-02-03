@@ -202,7 +202,8 @@ function finalizeInProgressRow() {
    -------------------------- */
 function onAutoCopyChanged() {
   autoCopyEnabled = document.getElementById("autoCopyCheckbox").checked;
-  // If turning ON and we have a statement
+  localStorage.setItem("autoCopyEnabled", autoCopyEnabled);
+  // If turning ON and we have a statement, copy it immediately.
   if (
     autoCopyEnabled &&
     constructedStatement.trim() !== "[Click a member and an action]" &&
@@ -211,6 +212,7 @@ function onAutoCopyChanged() {
     copyToClipboard();
   }
 }
+
 
 function autoCopyIfEnabled() {
   if (autoCopyEnabled) {
@@ -828,6 +830,13 @@ let storedCommittee = localStorage.getItem("selectedCommittee");
 if (storedCommittee) {
   document.getElementById("committeeSelect").value = storedCommittee;
 }
+
+let storedAutoCopy = localStorage.getItem("autoCopyEnabled");
+if (storedAutoCopy !== null) {
+  autoCopyEnabled = storedAutoCopy === "true";
+  document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
+}
+
 updateMembers();
 loadHistoryFromLocalStorage();
 
