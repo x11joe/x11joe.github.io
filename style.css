@@ -188,6 +188,10 @@ button:hover {
   padding: 4px 6px;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 /* Adjust table cells for smaller screens */
 @media (max-width: 600px) {
   #historyTable th,
