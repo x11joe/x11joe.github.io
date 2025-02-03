@@ -9,6 +9,10 @@ body {
   flex-direction: column;
   align-items: center;
   margin-bottom: 20px;
+  width: 90%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .buttons-container {
@@ -51,7 +55,6 @@ button:hover {
 .committee-others {
   margin-top: 10px;
 }
-
 
 /* Highlight the selected button in green */
 .selected {
@@ -113,11 +116,18 @@ button:hover {
   gap: 6px;
 }
 
+/* History Container for responsiveness */
+.history-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 20px auto;
+}
+
 /* History Table */
 #historyTable {
   margin: 20px auto;
-  width: 90%;
-  max-width: 800px;
+  width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
 }
 
@@ -125,18 +135,22 @@ button:hover {
 #historyTable td {
   border: 1px solid #ccc;
   padding: 8px;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 #historyTable th {
   background: #f1f1f1;
 }
 
-#historyTable td, #historyTable th {
-  text-align: center;
-  vertical-align: middle;
-  white-space: nowrap;
+/* Adjust table cells for smaller screens */
+@media (max-width: 600px) {
+  #historyTable th,
+  #historyTable td {
+    padding: 6px;
+    font-size: 12px;
+  }
 }
 
 .copy-row-button {
@@ -148,6 +162,7 @@ button:hover {
   border: none;
   cursor: pointer;
 }
+
 .copy-row-button:hover {
   background-color: #138496;
 }
