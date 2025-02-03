@@ -3,6 +3,8 @@
    -------------------------- */
 let historyRecords = [];
 
+let inProgressRecordIndex = null; // track the current record in historyRecords
+
 let selectedMember = "";
 let mainAction = "";
 let selectedSubAction = "";
@@ -124,6 +126,11 @@ function createNewRowInHistory() {
       setTimeout(() => {
         btn.classList.remove("copied-cell");
       }, 800);
+      // Also update the in-progress record and save history
+      if (inProgressRecordIndex !== null) {
+        historyRecords[inProgressRecordIndex].time = newTimeStr;
+        saveHistoryToLocalStorage();
+      }
     };
     return btn;
   }
@@ -137,32 +144,30 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(createTimeAdjustButton("+5s", +5));
   inProgressRow.appendChild(timeAdjustCell);
 
-  // NEW: Delete cell with a Delete button for live rows
+  // Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "Delete";
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
-    console.log("Delete button clicked on live row");
-    // Use closest() to remove the row from the DOM
     const row = this.closest("tr");
     if (row) {
       row.remove();
     }
-    // Clear the pending constructed statement so that no record gets confirmed later
     constructedStatement = "";
-    // Clear the in-progress row references
     finalizeInProgressRow();
   };
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
-  // Finally, append the row to the table body
+  // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Do NOT push a live record here.
-  // The record will only be added to historyRecords when the user confirms (via resetAllAndFinalize).
+  // Immediately push this new record into historyRecords and save it
+  inProgressRecordIndex = historyRecords.length;
+  historyRecords.push({ time: statementStartTime, statement: constructedStatement });
+  saveHistoryToLocalStorage();
 
   // Update global references for the in-progress row
   timeCell = localTimeCell;
@@ -174,7 +179,16 @@ function updateInProgressRow() {
   if (inProgressRow && statementCell) {
     statementCell.textContent = constructedStatement;
   }
+  if (inProgressRecordIndex !== null) {
+    // Update the in-progress record with the latest time and statement
+    historyRecords[inProgressRecordIndex] = {
+      time: timeCell ? timeCell.textContent : statementStartTime,
+      statement: constructedStatement
+    };
+    saveHistoryToLocalStorage();
+  }
 }
+
 
 function finalizeInProgressRow() {
   inProgressRow = null;
@@ -607,28 +621,19 @@ function resetAllAndFinalize() {
     constructedStatement !== "[Click a member and an action]" &&
     constructedStatement.trim() !== ""
   ) {
-    // Finalize the in-progress row.
     updateInProgressRow();
-    let record = {
-      time: timeCell ? timeCell.textContent : statementStartTime,
-      statement: constructedStatement
-    };
-    // Add the record to the history array and persist it.
-    historyRecords.push(record);
-    saveHistoryToLocalStorage();
+    // (The record is already in historyRecords thanks to auto-saving.)
   }
-  // Remove the live row from the DOM (so it won't remain along with the saved record)
   if (inProgressRow) {
     inProgressRow.remove();
   }
-  // Clear the in-progress row references.
   finalizeInProgressRow();
-  // Reset the UI selections.
   resetSelections();
-  // Reload the history table from local storage so that the finalized record (with its delete button)
-  // is now shown from the stored records.
   loadHistoryFromLocalStorage();
+  // Clear the in-progress record index now that we've finalized
+  inProgressRecordIndex = null;
 }
+
 
 
 
@@ -670,11 +675,14 @@ function resetSelections(finalize = true) {
   // Reset log text
   document.getElementById("log").innerText = "[Click a member and an action]";
    
-  // Show the committee members again
+  // Show the committee members and meeting actions again
   document.getElementById("members-container").classList.remove("hidden");
-  // Show the meeting actions again
   document.getElementById("meetingActionsSection").classList.remove("hidden");
+
+  // Also clear the in-progress record index
+  inProgressRecordIndex = null;
 }
+
 
 function saveHistoryToLocalStorage() {
   localStorage.setItem("historyRecords", JSON.stringify(historyRecords));
