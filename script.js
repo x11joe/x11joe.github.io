@@ -60,6 +60,7 @@ function getCurrentTimestamp() {
 }
 
 function createNewRowInHistory() {
+  const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
