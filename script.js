@@ -185,7 +185,7 @@ function createNewRowInHistory() {
   // Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
-  deleteButton.textContent = "Delete";
+  deleteButton.textContent = "X";
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
