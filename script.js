@@ -867,6 +867,22 @@ function clearHistory() {
   document.getElementById("historyTableBody").innerHTML = "";
 }
 
+function cancelCurrentAction() {
+  // If there’s a row in progress, remove it from the DOM:
+  if (inProgressRow) {
+    inProgressRow.remove();
+    finalizeInProgressRow(); // clears inProgressRow, timeCell, statementCell references
+  }
+
+  // Reset any local selections but pass false so we don’t finalize
+  resetSelections(false);
+
+  // Clear the statement from the log
+  constructedStatement = "";
+  document.getElementById("log").innerText = "[Click a member and an action]";
+}
+
+
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
