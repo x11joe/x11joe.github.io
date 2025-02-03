@@ -116,18 +116,17 @@ button:hover {
   gap: 6px;
 }
 
-/* History Container for responsiveness */
+/* History Container: enables responsiveness without a horizontal scrollbar */
 .history-container {
   width: 100%;
-  overflow-x: auto;
   margin: 20px auto;
+  overflow: hidden;
 }
 
-/* History Table */
+/* History Table with forced text wrapping */
 #historyTable {
-  margin: 20px auto;
   width: 100%;
-  min-width: 600px;
+  table-layout: fixed;  /* Force fixed column widths */
   border-collapse: collapse;
 }
 
@@ -137,7 +136,8 @@ button:hover {
   padding: 8px;
   text-align: center;
   vertical-align: middle;
-  white-space: nowrap;
+  white-space: normal;   /* Allow wrapping */
+  word-wrap: break-word; /* Break long words if needed */
 }
 
 #historyTable th {
