@@ -290,7 +290,7 @@ function updateMembers() {
   // Add a divider between top members and others.
   const divider = document.createElement("div");
   divider.classList.add("committee-divider");
-  divider.textContent = "Other Members";
+  // divider.textContent = "Other Members";
   membersContainer.appendChild(divider);
 
   // Create a container for other members.
