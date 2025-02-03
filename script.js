@@ -817,7 +817,11 @@ document.addEventListener("keydown", function (event) {
 
 });
 
-// Initialize on page load
+// On page load, check if a committee was saved from a previous session.
+let storedCommittee = localStorage.getItem("selectedCommittee");
+if (storedCommittee) {
+  document.getElementById("committeeSelect").value = storedCommittee;
+}
 updateMembers();
 loadHistoryFromLocalStorage();
 
