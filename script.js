@@ -60,20 +60,21 @@ function getCurrentTimestamp() {
 }
 
 function createNewRowInHistory() {
+  // Capture the current timestamp in a local variable.
   const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
-  // Local references for time & statement cells
+  // Local references for time & statement cells using recordTime.
   const localTimeCell = document.createElement("td");
-  localTimeCell.textContent = statementStartTime;
+  localTimeCell.textContent = recordTime;
   inProgressRow.appendChild(localTimeCell);
 
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   inProgressRow.appendChild(localStatementCell);
 
-  // "Copy Time" cell (existing)
+  // "Copy Time" cell
   const copyTimeCell = document.createElement("td");
   const copyTimeButton = document.createElement("button");
   copyTimeButton.textContent = "Copy Time";
@@ -89,7 +90,7 @@ function createNewRowInHistory() {
   copyTimeCell.appendChild(copyTimeButton);
   inProgressRow.appendChild(copyTimeCell);
 
-  // "Copy Statement" cell (existing)
+  // "Copy Statement" cell
   const copyStatementCell = document.createElement("td");
   const copyStatementButton = document.createElement("button");
   copyStatementButton.textContent = "Copy Statement";
@@ -107,7 +108,7 @@ function createNewRowInHistory() {
 
   // Create a cell to hold all the +/- time adjustment buttons (Time Control)
   const timeAdjustCell = document.createElement("td");
-  timeAdjustCell.style.whiteSpace = "nowrap"; // Keep buttons on one line
+  timeAdjustCell.style.whiteSpace = "nowrap";
 
   // Helper to create a time adjustment button
   function createTimeAdjustButton(label, secondsToAdjust) {
@@ -127,11 +128,8 @@ function createNewRowInHistory() {
       setTimeout(() => {
         btn.classList.remove("copied-cell");
       }, 800);
-      // Also update the in-progress record and save history
-      if (inProgressRecordIndex !== null) {
-        historyRecords[inProgressRecordIndex].time = newTimeStr;
-        saveHistoryToLocalStorage();
-      }
+      // Update the in-progress record's time if needed (optional)
+      // (We choose not to update it since we want the original timestamp fixed.)
     };
     return btn;
   }
@@ -165,9 +163,9 @@ function createNewRowInHistory() {
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Immediately push this new record into historyRecords and save it
+  // Push the new record into historyRecords using recordTime so it stays fixed.
   inProgressRecordIndex = historyRecords.length;
-  historyRecords.push({ time: statementStartTime, statement: constructedStatement });
+  historyRecords.push({ time: recordTime, statement: constructedStatement });
   saveHistoryToLocalStorage();
 
   // Update global references for the in-progress row
@@ -176,19 +174,18 @@ function createNewRowInHistory() {
 }
 
 
+
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
     statementCell.textContent = constructedStatement;
   }
   if (inProgressRecordIndex !== null) {
-    // Update the in-progress record with the latest time and statement
-    historyRecords[inProgressRecordIndex] = {
-      time: timeCell ? timeCell.textContent : statementStartTime,
-      statement: constructedStatement
-    };
+    // Update only the statement field; do not update time.
+    historyRecords[inProgressRecordIndex].statement = constructedStatement;
     saveHistoryToLocalStorage();
   }
 }
+
 
 
 function finalizeInProgressRow() {
