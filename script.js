@@ -868,19 +868,28 @@ function clearHistory() {
 }
 
 function cancelCurrentAction() {
-  // If there’s a row in progress, remove it from the DOM:
-  if (inProgressRow) {
-    inProgressRow.remove();
-    finalizeInProgressRow(); // clears inProgressRow, timeCell, statementCell references
+  // If there's an in-progress record, remove it from historyRecords:
+  if (inProgressRecordIndex !== null && inProgressRecordIndex < historyRecords.length) {
+    historyRecords.splice(inProgressRecordIndex, 1);
+    saveHistoryToLocalStorage();
   }
 
-  // Reset any local selections but pass false so we don’t finalize
+  // If there's a row in progress, remove it from the DOM:
+  if (inProgressRow) {
+    inProgressRow.remove();
+  }
+
+  // Clear references so we are no longer in "edit mode":
+  finalizeInProgressRow();
+
+  // Reset the UI selections without finalizing
   resetSelections(false);
 
-  // Clear the statement from the log
+  // Make sure the log text is set back to the placeholder
   constructedStatement = "";
   document.getElementById("log").innerText = "[Click a member and an action]";
 }
+
 
 
 // Support Ctrl + Enter to copy
