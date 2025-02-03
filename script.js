@@ -179,7 +179,7 @@ function createNewRowInHistory() {
   plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
   plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
 
-  timeAdjustCell.appendChild(minusDiv);
+  timeAdjustCell.appendChild(minusDiv); 
   timeAdjustCell.appendChild(plusDiv);
 
   // Delete cell with a Delete button for live rows
