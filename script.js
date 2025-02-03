@@ -767,6 +767,8 @@ function loadHistoryFromLocalStorage() {
       // Time cell
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
+      tdTime.classList.add("clickable");
+       
       // Clicking the time cell copies the time to clipboard
       tdTime.addEventListener("click", function () {
         navigator.clipboard.writeText(tdTime.textContent).then(() => {
@@ -781,6 +783,8 @@ function loadHistoryFromLocalStorage() {
       // Statement cell
       let tdStatement = document.createElement("td");
       tdStatement.textContent = record.statement;
+      tdStatement.classList.add("clickable");
+       
       // Clicking the statement cell copies the statement
       tdStatement.addEventListener("click", function () {
         navigator.clipboard.writeText(tdStatement.textContent).then(() => {
