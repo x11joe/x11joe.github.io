@@ -123,7 +123,7 @@ button:hover {
   margin: 20px auto;
 }
 
-/* History Table with forced text wrapping */
+/* History Table with forced text wrapping and defined column widths */
 #historyTable {
   width: 100%;
   table-layout: fixed;
@@ -140,24 +140,51 @@ button:hover {
   word-wrap: break-word;
 }
 
-#historyTable th {
-  background: #f1f1f1;
+/* Set specific widths for columns */
+#historyTable th:nth-child(1),
+#historyTable td:nth-child(1) { /* Time column */
+  width: 10%;
 }
 
-/* Force the Time Control cell (the 5th column) to use a flex column layout */
+#historyTable th:nth-child(2),
+#historyTable td:nth-child(2) { /* Statement column */
+  width: 45%;
+}
+
+#historyTable th:nth-child(3),
+#historyTable td:nth-child(3),
+#historyTable th:nth-child(4),
+#historyTable td:nth-child(4) { /* Copy Time and Copy Statement columns */
+  width: 10%;
+}
+
+#historyTable th:nth-child(5),
+#historyTable td:nth-child(5) { /* Time Control column */
+  width: 15%;
+}
+
+#historyTable th:nth-child(6),
+#historyTable td:nth-child(6) { /* Delete column */
+  width: 10%;
+}
+
+/* Arrange Time Control buttons in two horizontal groups */
 #historyTable td:nth-child(5) {
-  white-space: normal;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Time control groups for minus and plus buttons */
 .time-control-group {
   display: flex;
-  justify-content: center;
   gap: 4px;
-  flex-wrap: wrap;
+  font-size: 10px;  /* smaller text for time control buttons */
+}
+
+.time-control-group button {
+  padding: 4px 6px; /* smaller padding */
 }
 
 /* Adjust table cells for smaller screens */
