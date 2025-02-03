@@ -116,17 +116,17 @@ button:hover {
   gap: 6px;
 }
 
-/* History Container: enables responsiveness without a horizontal scrollbar */
+/* History Container for responsiveness */
 .history-container {
   width: 100%;
-  margin: 20px auto;
   overflow: hidden;
+  margin: 20px auto;
 }
 
 /* History Table with forced text wrapping */
 #historyTable {
   width: 100%;
-  table-layout: fixed;  /* Force fixed column widths */
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -136,12 +136,28 @@ button:hover {
   padding: 8px;
   text-align: center;
   vertical-align: middle;
-  white-space: normal;   /* Allow wrapping */
-  word-wrap: break-word; /* Break long words if needed */
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 #historyTable th {
   background: #f1f1f1;
+}
+
+/* Force the Time Control cell (the 5th column) to use a flex column layout */
+#historyTable td:nth-child(5) {
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Time control groups for minus and plus buttons */
+.time-control-group {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 /* Adjust table cells for smaller screens */
