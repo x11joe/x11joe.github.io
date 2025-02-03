@@ -202,8 +202,8 @@ function finalizeInProgressRow() {
    -------------------------- */
 function onAutoCopyChanged() {
   autoCopyEnabled = document.getElementById("autoCopyCheckbox").checked;
+  console.log("Auto copy changed:", autoCopyEnabled);
   localStorage.setItem("autoCopyEnabled", autoCopyEnabled);
-  // If turning ON and we have a statement, copy it immediately.
   if (
     autoCopyEnabled &&
     constructedStatement.trim() !== "[Click a member and an action]" &&
@@ -212,6 +212,7 @@ function onAutoCopyChanged() {
     copyToClipboard();
   }
 }
+
 
 
 function autoCopyIfEnabled() {
