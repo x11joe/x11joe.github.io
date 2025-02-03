@@ -161,11 +161,11 @@ button:hover {
 #historyTable th:nth-child(5),
 #historyTable td:nth-child(5) { /* Time Control column */
   width: 20%; /* Adjusted to 20% */
-  display: flex;
+/*   display: flex;
   flex-wrap: wrap; /* Enable wrapping of content */
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 4px; */
 }
 
 #historyTable th:nth-child(6),
