@@ -851,7 +851,7 @@ function loadHistoryFromLocalStorage() {
       // Delete cell with a Delete button (for finalized records)
       let tdDelete = document.createElement("td");
       let btnDelete = document.createElement("button");
-      btnDelete.textContent = "Delete";
+      btnDelete.textContent = "X";
       btnDelete.classList.add("copy-row-button");
       btnDelete.style.backgroundColor = "#dc3545";
       // Use the current loop index
