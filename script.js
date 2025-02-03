@@ -209,6 +209,8 @@ function autoCopyIfEnabled() {
    -------------------------- */
 function updateMembers() {
   currentCommittee = document.getElementById("committeeSelect").value;
+  // Save the current committee selection to localStorage
+  localStorage.setItem("selectedCommittee", currentCommittee);
   resetSelections();
 
   const membersContainer = document.getElementById("members-container");
@@ -220,6 +222,7 @@ function updateMembers() {
     membersContainer.appendChild(btn);
   });
 }
+
 
 function selectMember(member, btn) {
   // If there's a statement in progress, finalize it first
