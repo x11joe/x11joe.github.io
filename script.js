@@ -96,48 +96,37 @@ function createNewRowInHistory() {
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
-  // Local references for time & statement cells using recordTime.
+  // Time cell
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = recordTime;
-  inProgressRow.appendChild(localTimeCell);
 
-  const localStatementCell = document.createElement("td");
-  localStatementCell.textContent = constructedStatement;
-  inProgressRow.appendChild(localStatementCell);
-
-  // "Copy Time" cell
-  const copyTimeCell = document.createElement("td");
-  const copyTimeButton = document.createElement("button");
-  copyTimeButton.textContent = "Copy Time";
-  copyTimeButton.classList.add("copy-row-button");
-  copyTimeButton.onclick = () => {
+  // When user clicks the time cell, copy the time to clipboard
+  localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
       localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
         localTimeCell.classList.remove("copied-cell");
       }, 800);
     });
-  };
-  copyTimeCell.appendChild(copyTimeButton);
-  inProgressRow.appendChild(copyTimeCell);
+  });
+  inProgressRow.appendChild(localTimeCell);
 
-  // "Copy Statement" cell
-  const copyStatementCell = document.createElement("td");
-  const copyStatementButton = document.createElement("button");
-  copyStatementButton.textContent = "Copy Statement";
-  copyStatementButton.classList.add("copy-row-button");
-  copyStatementButton.onclick = () => {
+  // Statement cell
+  const localStatementCell = document.createElement("td");
+  localStatementCell.textContent = constructedStatement;
+
+  // When user clicks the statement cell, copy the statement to clipboard
+  localStatementCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
       localStatementCell.classList.add("copied-cell");
       setTimeout(() => {
         localStatementCell.classList.remove("copied-cell");
       }, 800);
     });
-  };
-  copyStatementCell.appendChild(copyStatementButton);
-  inProgressRow.appendChild(copyStatementCell);
+  });
+  inProgressRow.appendChild(localStatementCell);
 
-  // Create a cell to hold all the +/- time adjustment buttons (Time Control)
+  // Create a cell to hold all the +/- time adjustment buttons
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap";
 
@@ -159,14 +148,11 @@ function createNewRowInHistory() {
       setTimeout(() => {
         btn.classList.remove("copied-cell");
       }, 800);
-      // Update the in-progress record's time if needed (optional)
-      // (We choose not to update it since we want the original timestamp fixed.)
     };
     return btn;
   }
 
-  // Create and append the 6 time adjust buttons
-  // Create two groups: one for minus buttons and one for plus buttons.
+  // Create +/- time adjustment buttons (split into two rows for aesthetics)
   const minusDiv = document.createElement("div");
   minusDiv.classList.add("time-control-group");
   minusDiv.appendChild(createTimeAdjustButton("-5s", -5));
@@ -179,8 +165,10 @@ function createNewRowInHistory() {
   plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
   plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
 
-  timeAdjustCell.appendChild(minusDiv); 
+  timeAdjustCell.appendChild(minusDiv);
   timeAdjustCell.appendChild(plusDiv);
+
+  inProgressRow.appendChild(timeAdjustCell);
 
   // Delete cell with a Delete button for live rows
   const deleteCell = document.createElement("td");
@@ -202,7 +190,7 @@ function createNewRowInHistory() {
   // Append the row to the table body
   tableBody.appendChild(inProgressRow);
 
-  // Push the new record into historyRecords using recordTime so it stays fixed.
+  // Push the new record into historyRecords using recordTime
   inProgressRecordIndex = historyRecords.length;
   historyRecords.push({ time: recordTime, statement: constructedStatement });
   saveHistoryToLocalStorage();
@@ -211,7 +199,6 @@ function createNewRowInHistory() {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
 
 
 function updateInProgressRow() {
@@ -768,7 +755,7 @@ function loadHistoryFromLocalStorage() {
     historyRecords = JSON.parse(stored);
     const tableBody = document.getElementById("historyTableBody");
     tableBody.innerHTML = "";
-    // Use a for loop so that the index is stable when deleting records.
+
     for (let i = 0; i < historyRecords.length; i++) {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
@@ -776,48 +763,35 @@ function loadHistoryFromLocalStorage() {
       // Time cell
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
-      tr.appendChild(tdTime);
-
-      // Statement cell
-      let tdStatement = document.createElement("td");
-      tdStatement.textContent = record.statement;
-      tr.appendChild(tdStatement);
-
-      // "Copy Time" cell + button
-      let tdCopyTime = document.createElement("td");
-      let btnCopyTime = document.createElement("button");
-      btnCopyTime.textContent = "Copy Time";
-      btnCopyTime.classList.add("copy-row-button");
-      btnCopyTime.onclick = () => {
-        navigator.clipboard.writeText(record.time).then(() => {
+      // Clicking the time cell copies the time to clipboard
+      tdTime.addEventListener("click", function () {
+        navigator.clipboard.writeText(tdTime.textContent).then(() => {
           tdTime.classList.add("copied-cell");
           setTimeout(() => {
             tdTime.classList.remove("copied-cell");
           }, 800);
         });
-      };
-      tdCopyTime.appendChild(btnCopyTime);
-      tr.appendChild(tdCopyTime);
+      });
+      tr.appendChild(tdTime);
 
-      // "Copy Statement" cell + button
-      let tdCopyStatement = document.createElement("td");
-      let btnCopyStatement = document.createElement("button");
-      btnCopyStatement.textContent = "Copy Statement";
-      btnCopyStatement.classList.add("copy-row-button");
-      btnCopyStatement.onclick = () => {
-        navigator.clipboard.writeText(record.statement).then(() => {
+      // Statement cell
+      let tdStatement = document.createElement("td");
+      tdStatement.textContent = record.statement;
+      // Clicking the statement cell copies the statement
+      tdStatement.addEventListener("click", function () {
+        navigator.clipboard.writeText(tdStatement.textContent).then(() => {
           tdStatement.classList.add("copied-cell");
           setTimeout(() => {
             tdStatement.classList.remove("copied-cell");
           }, 800);
         });
-      };
-      tdCopyStatement.appendChild(btnCopyStatement);
-      tr.appendChild(tdCopyStatement);
+      });
+      tr.appendChild(tdStatement);
 
       // Time Control cell with 6 adjustment buttons
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
+
       function createAdjustButton(label, secondsToAdjust) {
         const btn = document.createElement("button");
         btn.textContent = label;
@@ -840,23 +814,32 @@ function loadHistoryFromLocalStorage() {
         };
         return btn;
       }
-      tdTimeControl.appendChild(createAdjustButton("-5s", -5));
-      tdTimeControl.appendChild(createAdjustButton("-3s", -3));
-      tdTimeControl.appendChild(createAdjustButton("-1s", -1));
-      tdTimeControl.appendChild(createAdjustButton("+1s", +1));
-      tdTimeControl.appendChild(createAdjustButton("+3s", +3));
-      tdTimeControl.appendChild(createAdjustButton("+5s", +5));
+
+      // Two small groups for minus/plus
+      const minusDiv = document.createElement("div");
+      minusDiv.classList.add("time-control-group");
+      minusDiv.appendChild(createAdjustButton("-5s", -5));
+      minusDiv.appendChild(createAdjustButton("-3s", -3));
+      minusDiv.appendChild(createAdjustButton("-1s", -1));
+
+      const plusDiv = document.createElement("div");
+      plusDiv.classList.add("time-control-group");
+      plusDiv.appendChild(createAdjustButton("+1s", +1));
+      plusDiv.appendChild(createAdjustButton("+3s", +3));
+      plusDiv.appendChild(createAdjustButton("+5s", +5));
+
+      tdTimeControl.appendChild(minusDiv);
+      tdTimeControl.appendChild(plusDiv);
+
       tr.appendChild(tdTimeControl);
 
-      // Delete cell with a Delete button (for finalized records)
+      // Delete cell with a Delete button
       let tdDelete = document.createElement("td");
       let btnDelete = document.createElement("button");
       btnDelete.textContent = "X";
       btnDelete.classList.add("copy-row-button");
       btnDelete.style.backgroundColor = "#dc3545";
-      // Use the current loop index
       btnDelete.onclick = function() {
-        // Remove the record at this index from the historyRecords array
         historyRecords.splice(i, 1);
         saveHistoryToLocalStorage();
         loadHistoryFromLocalStorage();
@@ -868,6 +851,7 @@ function loadHistoryFromLocalStorage() {
     }
   }
 }
+
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
