@@ -225,32 +225,30 @@ function updateMembers() {
 
 
 function selectMember(member, btn) {
-  // If there's a statement in progress, finalize it first
+  // If there's already a selected member (and thus a statement in progress)
+  // finalize it (simulate pressing Enter) so it gets saved to history.
   if (
+    selectedMember &&
     constructedStatement &&
-    constructedStatement !== "[Click a member and an action]" &&
-    constructedStatement.trim() !== ""
+    constructedStatement.trim() !== "" &&
+    constructedStatement !== "[Click a member and an action]"
   ) {
-    updateInProgressRow();
-    finalizeInProgressRow();
+    resetAllAndFinalize();
   }
-  // Now reset
+  // Reset UI selections (without finalizing, since we already did that)
   resetSelections(false);
 
-  // Start new statement
+  // Start new statement with the newly selected member
   selectedMember = member;
   statementStartTime = getCurrentTimestamp();
-  // Create new row in history for in-progress
   createNewRowInHistory();
-
   updateStatement();
 
-  // Highlight selected member
-  document
-    .querySelectorAll("#members-container button")
-    .forEach((b) => b.classList.remove("selected"));
+  // Highlight the selected member button
+  document.querySelectorAll("#members-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
 }
+
 
 function setMainAction(button, action) {
   // If it's "Moved," you still require a member:
