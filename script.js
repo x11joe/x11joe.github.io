@@ -826,17 +826,20 @@ document.addEventListener("keydown", function (event) {
 });
 
 // On page load, check if a committee was saved from a previous session.
-let storedCommittee = localStorage.getItem("selectedCommittee");
-if (storedCommittee) {
-  document.getElementById("committeeSelect").value = storedCommittee;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  let storedCommittee = localStorage.getItem("selectedCommittee");
+  if (storedCommittee) {
+    document.getElementById("committeeSelect").value = storedCommittee;
+  }
 
-let storedAutoCopy = localStorage.getItem("autoCopyEnabled");
-if (storedAutoCopy !== null) {
-  autoCopyEnabled = storedAutoCopy === "true";
-  document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
-}
+  let storedAutoCopy = localStorage.getItem("autoCopyEnabled");
+  if (storedAutoCopy !== null) {
+    autoCopyEnabled = storedAutoCopy === "true";
+    document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
+  }
 
-updateMembers();
-loadHistoryFromLocalStorage();
+  updateMembers();
+  loadHistoryFromLocalStorage();
+});
+
 
