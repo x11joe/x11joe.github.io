@@ -242,20 +242,14 @@ function updateMembers() {
 
 
 function selectMember(member, btn) {
-  // If there's already a selected member (and thus a statement in progress)
-  // finalize it (simulate pressing Enter) so it gets saved to history.
-  if (
-    selectedMember &&
-    constructedStatement &&
-    constructedStatement.trim() !== "" &&
-    constructedStatement !== "[Click a member and an action]"
-  ) {
+  // Finalize any in-progress record if one exists.
+  if (inProgressRecordIndex !== null) {
     resetAllAndFinalize();
   }
-  // Reset UI selections (without finalizing, since we already did that)
+  // Reset UI selections without finalizing (we already finalized above)
   resetSelections(false);
 
-  // Start new statement with the newly selected member
+  // Start a new statement with the newly selected member
   selectedMember = member;
   statementStartTime = getCurrentTimestamp();
   createNewRowInHistory();
@@ -265,6 +259,7 @@ function selectMember(member, btn) {
   document.querySelectorAll("#members-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
 }
+
 
 
 function setMainAction(button, action) {
