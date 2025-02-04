@@ -1376,8 +1376,6 @@ function transformMemberLine(line, committeeName, femaleNames) {
 }
 
 
-
-
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
