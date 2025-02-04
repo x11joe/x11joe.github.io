@@ -1167,9 +1167,23 @@ function toTitleCase(str) {
 }
 
 function setDefaultCommittees() {
-  // Overwrite our global 'committees' with the new defaults.
-  // This data is taken directly from your provided list.
-  committees = {
+  // A list of known female names from your committees:
+  // Adjust as necessary if we missed someone or if any are incorrectly assumed female.
+  const femaleNames = [
+    "Diane Larson",
+    "Kathy Hogan",
+    "Judy Lee",
+    "Desiree Van Oosting",
+    "Michelle Powers",
+    "Michelle Axtman",
+    "Claire Cory",
+    "Kristin Roers",
+    "Janne Myrdal"
+  ];
+
+  // Overwrite our global 'committees' with the new raw defaults.
+  // (No transformations yet—this is the original data you provided.)
+  let rawCommittees = {
     "APPROPRIATIONS": [
       "Brad Bekkedahl - Chairman",
       "Robert Erbele - Vice Chairman"
@@ -1277,23 +1291,60 @@ function setDefaultCommittees() {
     ]
   };
 
-  // Save to localStorage
+  // Helper: transform one member line into the correct format
+  // - If ends with " - Chairman" => "Chairman XXX" or "Chairwoman XXX" based on femaleNames
+  // - If ends with " - Vice Chairman" => "Vice Chairman" or "Vice Chairwoman"
+  // - Otherwise => "Senator XXX"
+  function transformMemberLine(line) {
+    // Check if there's a " - Chairman" or " - Vice Chairman"
+    let trimmed = line.trim();
+    if (trimmed.endsWith("- Chairman")) {
+      // parse out the name
+      let namePart = trimmed.replace("- Chairman", "").trim();
+      // If the name is in femaleNames => "Chairwoman name"
+      if (femaleNames.includes(namePart)) {
+        return "Chairwoman " + namePart;
+      } else {
+        return "Chairman " + namePart;
+      }
+    }
+    else if (trimmed.endsWith("- Vice Chairman")) {
+      let namePart = trimmed.replace("- Vice Chairman", "").trim();
+      if (femaleNames.includes(namePart)) {
+        return "Vice Chairwoman " + namePart;
+      } else {
+        return "Vice Chairman " + namePart;
+      }
+    }
+    else {
+      // Not a recognized chair line => prefix "Senator"
+      // Remove any trailing dashes or extra spacing just in case
+      let namePart = trimmed.replace(/^-+|-+$/g, "").trim();
+      return "Senator " + namePart;
+    }
+  }
+
+  // We'll build a new object "transformedCommittees"
+  let transformedCommittees = {};
+
+  // For each committee, transform each line
+  for (let committeeName in rawCommittees) {
+    let members = rawCommittees[committeeName].map(line => transformMemberLine(line));
+    transformedCommittees[committeeName] = members;
+  }
+
+  // Assign it to our global committees
+  committees = transformedCommittees;
+
+  // Now do the usual saves + refresh
   saveCommitteesToLocalStorage();
-
-  // Refresh the modal list
   refreshCommitteeListUI();
-
-  // Also refresh the main <select> in case the user wants to pick from these new committees
   populateCommitteeSelect();
-
-  // If you want to auto-select one of the new committees by default, do so here:
-  // e.g. document.getElementById("committeeSelect").value = "APPROPRIATIONS";
-
-  // Then show its members
   updateMembers();
 
   alert("Default committees have been set!");
 }
+
 
 
 // Support Ctrl + Enter to copy
