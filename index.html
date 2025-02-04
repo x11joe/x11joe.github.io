@@ -9,18 +9,15 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="manage-committees-button">
+    <button onclick="toggleManageCommitteesModal()">Manage Committees</button>
+  </div>
 
   <h2>Committee Quick Actions with History V.1.0.10</h2>
   <h4>Press 'Enter' to confirm, 'esc' to cancel</h4>
 
   <!-- Container for top controls -->
   <div class="container">
-
-    <!-- Button to open the manage committees modal -->
-    <button onclick="toggleManageCommitteesModal()" style="margin: 10px;">
-      Manage Committees
-    </button>
-    
     <!-- Hidden modal or section for adding/editing committees -->
     <div id="manageCommitteesModal" class="modal hidden">
       <!-- Position the X button absolutely in top-right -->
