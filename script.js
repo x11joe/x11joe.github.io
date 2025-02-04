@@ -346,8 +346,14 @@ function setMainAction(button, action) {
     alert("Please select a member first for 'Moved' actions!");
     return;
   }
+  
+  // If it's "Seconded," we also require a member
+  if (action === "Seconded" && !selectedMember) {
+    alert("Please select a member first for 'Seconded' action!");
+    return;
+  }
 
-  // If no row is in progress, we create a new one so the statement can appear
+  // If no row is in progress, create a new one for the statement
   if (!inProgressRow) {
     statementStartTime = getCurrentTimestamp();
     createNewRowInHistory();
@@ -366,6 +372,18 @@ function setMainAction(button, action) {
 
   // Hide the meeting actions area once a main action is chosen
   document.getElementById("meetingActionsSection").classList.add("hidden");
+
+  // "Seconded" is an immediate action: we build the statement and finalize
+  if (action === "Seconded") {
+    constructedStatement = `${selectedMember} Seconded`;
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+
+    // Because it's a quick action that ends right away, let's finalize it
+    resetAllAndFinalize();
+    return;
+  }
 
   if (action === "Roll Call Vote on SB" || action === "Roll Call Vote on Amendment") {
     // Hide members, show vote tally
@@ -394,7 +412,7 @@ function setMainAction(button, action) {
     showAsAmendedSection(false);
 
   } else {
-    // For any other main action not roll call or moved
+    // For any other main action not roll call, moved, or seconded
     document.getElementById("members-container").classList.remove("hidden");
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
@@ -403,8 +421,10 @@ function setMainAction(button, action) {
     showAsAmendedSection(false);
   }
 
+  // Build the statement for the new action
   updateStatement();
 }
+
 
 
 
