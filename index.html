@@ -15,6 +15,41 @@
 
   <!-- Container for top controls -->
   <div class="container">
+
+    <!-- Button to open the manage committees modal -->
+    <button onclick="toggleManageCommitteesModal()" style="margin: 10px;">
+      Manage Committees
+    </button>
+    
+    <!-- Hidden modal or section for adding/editing committees -->
+    <div id="manageCommitteesModal" class="modal hidden">
+      <h3>Manage Committees & Members</h3>
+    
+      <div class="modal-content">
+        <!-- Form to create or edit a member -->
+        <label for="committeeNameInput"><b>Committee Name:</b></label>
+        <input type="text" id="committeeNameInput" placeholder="e.g. Energy & Natural Resources" />
+    
+        <label for="memberNameInput"><b>Member Name:</b></label>
+        <input type="text" id="memberNameInput" placeholder="e.g. Senator John Doe" />
+    
+        <label for="memberRoleSelect"><b>Role:</b></label>
+        <select id="memberRoleSelect">
+          <option value="regular">Regular</option>
+          <option value="chair">Chair</option>
+          <option value="vice">Vice Chair</option>
+        </select>
+    
+        <button onclick="addOrUpdateMember()">Add / Update Member</button>
+        <button onclick="closeManageCommitteesModal()">Close</button>
+      </div>
+    
+      <hr/>
+    
+      <!-- A place to list all committees and members with edit/delete buttons -->
+      <div id="committeeListContainer"></div>
+    </div>
+
     <!-- Committee selection -->
     <label for="committeeSelect"><b>Select Committee:</b></label>
     <select id="committeeSelect" onchange="updateMembers()">
