@@ -1113,7 +1113,7 @@ function editMember(committeeName, index) {
   editMemberIndex = index;
 
   const memberFull = committees[committeeName][index];
-  // e.g. "Chairwoman Diane Larson" or "Vice Chairwoman Kathy Hogan"
+  // e.g. "Chairwoman Diane Larson" or "Vice Chairwoman Kathy Hogan" or "Senator John Doe" or "Representative Jane Smith"
 
   // By default, assume "regular" unless we detect chair/vice text
   let role = "regular";
@@ -1137,18 +1137,17 @@ function editMember(committeeName, index) {
     role = "chair";
     namePart = memberFull.replace("Chairman ", "");
   }
-  else {
-    // It's presumably "Senator XXX"
-    // so namePart = "Senator XXX"
-    // We'll remove the "Senator " prefix below
-  }
-
-  // If we ended up with "Senator ABC" or leftover text, remove "Senator " if present
-  if (namePart.startsWith("Senator ")) {
+  
+  // If it starts with "Senator "
+  else if (namePart.startsWith("Senator ")) {
     namePart = namePart.replace("Senator ", "");
   }
+  // Or if it starts with "Representative "
+  else if (namePart.startsWith("Representative ")) {
+    namePart = namePart.replace("Representative ", "");
+  }
 
-  // Populate the form
+  // Populate the form fields
   document.getElementById("committeeNameInput").value = committeeName;
   document.getElementById("memberNameInput").value = namePart.trim();
   document.getElementById("memberRoleSelect").value = role;
@@ -1160,6 +1159,7 @@ function editMember(committeeName, index) {
   // Optionally refresh the list so the user sees the current data
   refreshCommitteeListUI();
 }
+
 
 
 
@@ -1204,35 +1204,35 @@ function setDefaultCommittees() {
     "Janne Myrdal"
   ];
 
-  // Overwrite our global 'committees' with the new raw defaults.
-  // (No transformations yet—this is the original data you provided.)
+  // Overwrite our global 'committees' with the new raw defaults,
+  // now with "Senate ..." in the committee names.
   let rawCommittees = {
-    "APPROPRIATIONS": [
+    "Senate Appropriations Committee": [
       "Brad Bekkedahl - Chairman",
       "Robert Erbele - Vice Chairman"
     ],
-    "Education and Environment": [
+    "Senate Education and Environment Committee": [
       "Ronald Sorvaag - Chairman",
       "Cole Conley",
       "Scott Meyer",
       "Donald Schaible",
       "Paul J. Thomas"
     ],
-    "Government Operations": [
+    "Senate Government Operations Committee": [
       "Terry M. Wanzek - Chairman",
       "Randy A. Burckhard",
       "Michael Dwyer",
       "Robert Erbele",
       "Jonathan Sickler"
     ],
-    "Human Resources": [
+    "Senate Human Resources Committee": [
       "Dick Dever - Chairman",
       "Tim Mathern",
       "Sean Cleary",
       "Kyle Davison",
       "Jeffery J. Magrum"
     ],
-    "EDUCATION": [
+    "Senate Education Committee": [
       "Todd Beard - Chairman",
       "Josh Boschee",
       "Randy D. Lemm - Vice Chairman",
@@ -1240,7 +1240,7 @@ function setDefaultCommittees() {
       "Justin Gerhardt",
       "Mike Wobbema"
     ],
-    "FINANCE AND TAXATION": [
+    "Senate Finance and Taxation Committee": [
       "Mark F. Weber - Chairman",
       "Richard Marcellais",
       "Dean Rummel - Vice Chairman",
@@ -1248,7 +1248,7 @@ function setDefaultCommittees() {
       "Michelle Powers",
       "Chuck Walen"
     ],
-    "HUMAN SERVICES": [
+    "Senate Human Services Committee": [
       "Judy Lee - Chairman",
       "Kathy Hogan",
       "Kent Weston - Vice Chairman",
@@ -1256,14 +1256,14 @@ function setDefaultCommittees() {
       "Kristin Roers",
       "Desiree Van Oosting"
     ],
-    "INDUSTRY AND BUSINESS": [
+    "Senate Industry and Business Committee": [
       "Jeff Barta - Chairman",
       "Keith Boehm - Vice Chairman",
       "Mark Enget",
       "Greg Kessel",
       "Jerry Klein"
     ],
-    "JUDICIARY": [
+    "Senate Judiciary Committee": [
       "Diane Larson - Chairman",
       "Ryan Braunberger",
       "Bob Paulson - Vice Chairman",
@@ -1272,7 +1272,7 @@ function setDefaultCommittees() {
       "Larry Luick",
       "Janne Myrdal"
     ],
-    "AGRICULTURE AND VETERANS AFFAIRS": [
+    "Senate Agriculture and Veterans Affairs Committee": [
       "Larry Luick - Chairman",
       "Richard Marcellais",
       "Janne Myrdal - Vice Chairman",
@@ -1280,7 +1280,7 @@ function setDefaultCommittees() {
       "Mark F. Weber",
       "Kent Weston"
     ],
-    "ENERGY AND NATURAL RESOURCES": [
+    "Senate Energy and Natural Resources Committee": [
       "Dale Patten - Chairman",
       "Greg Kessel - Vice Chairman",
       "Todd Beard",
@@ -1289,7 +1289,7 @@ function setDefaultCommittees() {
       "Justin Gerhardt",
       "Desiree Van Oosting"
     ],
-    "STATE AND LOCAL GOVERNMENT": [
+    "Senate State and Local Government Committee": [
       "Kristin Roers - Chairman",
       "Ryan Braunberger",
       "Jose L. Castaneda - Vice Chairman",
@@ -1297,7 +1297,7 @@ function setDefaultCommittees() {
       "Judy Lee",
       "Chuck Walen"
     ],
-    "TRANSPORTATION": [
+    "Senate Transportation Committee": [
       "David A. Clemens - Chairman",
       "Kathy Hogan",
       "Claire Cory - Vice Chairman",
@@ -1305,7 +1305,7 @@ function setDefaultCommittees() {
       "Bob Paulson",
       "Dean Rummel"
     ],
-    "WORKFORCE DEVELOPMENT": [
+    "Senate Workforce Development Committee": [
       "Mike Wobbema - Chairman",
       "Josh Boschee",
       "Michelle Axtman - Vice Chairman",
@@ -1314,45 +1314,14 @@ function setDefaultCommittees() {
     ]
   };
 
-  // Helper: transform one member line into the correct format
-  // - If ends with " - Chairman" => "Chairman XXX" or "Chairwoman XXX" based on femaleNames
-  // - If ends with " - Vice Chairman" => "Vice Chairman" or "Vice Chairwoman"
-  // - Otherwise => "Senator XXX"
-  function transformMemberLine(line) {
-    // Check if there's a " - Chairman" or " - Vice Chairman"
-    let trimmed = line.trim();
-    if (trimmed.endsWith("- Chairman")) {
-      // parse out the name
-      let namePart = trimmed.replace("- Chairman", "").trim();
-      // If the name is in femaleNames => "Chairwoman name"
-      if (femaleNames.includes(namePart)) {
-        return "Chairwoman " + namePart;
-      } else {
-        return "Chairman " + namePart;
-      }
-    }
-    else if (trimmed.endsWith("- Vice Chairman")) {
-      let namePart = trimmed.replace("- Vice Chairman", "").trim();
-      if (femaleNames.includes(namePart)) {
-        return "Vice Chairwoman " + namePart;
-      } else {
-        return "Vice Chairman " + namePart;
-      }
-    }
-    else {
-      // Not a recognized chair line => prefix "Senator"
-      // Remove any trailing dashes or extra spacing just in case
-      let namePart = trimmed.replace(/^-+|-+$/g, "").trim();
-      return "Senator " + namePart;
-    }
-  }
-
   // We'll build a new object "transformedCommittees"
   let transformedCommittees = {};
 
   // For each committee, transform each line
   for (let committeeName in rawCommittees) {
-    let members = rawCommittees[committeeName].map(line => transformMemberLine(line));
+    let members = rawCommittees[committeeName].map(line =>
+      transformMemberLine(line, committeeName, femaleNames)
+    );
     transformedCommittees[committeeName] = members;
   }
 
@@ -1367,6 +1336,45 @@ function setDefaultCommittees() {
 
   alert("Default committees have been set!");
 }
+
+function transformMemberLine(line, committeeName, femaleNames) {
+  // Trim any leading/trailing spaces
+  let trimmed = line.trim();
+
+  // Check for " - Chairman"
+  if (trimmed.endsWith("- Chairman")) {
+    let namePart = trimmed.replace("- Chairman", "").trim();
+    // If female
+    if (femaleNames.includes(namePart)) {
+      return "Chairwoman " + namePart;
+    } else {
+      return "Chairman " + namePart;
+    }
+  }
+  // Check for " - Vice Chairman"
+  else if (trimmed.endsWith("- Vice Chairman")) {
+    let namePart = trimmed.replace("- Vice Chairman", "").trim();
+    if (femaleNames.includes(namePart)) {
+      return "Vice Chairwoman " + namePart;
+    } else {
+      return "Vice Chairman " + namePart;
+    }
+  }
+  // Otherwise: fallback to "Senator" or "Representative"
+  else {
+    // Remove any trailing dashes
+    let namePart = trimmed.replace(/^-+|-+$/g, "").trim();
+
+    // If the committee name includes "house" => "Representative"
+    // otherwise => "Senator"
+    if (committeeName.toLowerCase().includes("house")) {
+      return "Representative " + namePart;
+    } else {
+      return "Senator " + namePart;
+    }
+  }
+}
+
 
 
 
