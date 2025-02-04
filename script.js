@@ -346,14 +346,14 @@ function setMainAction(button, action) {
     alert("Please select a member first for 'Moved' actions!");
     return;
   }
-  
+
   // If it's "Seconded," we also require a member
   if (action === "Seconded" && !selectedMember) {
     alert("Please select a member first for 'Seconded' action!");
     return;
   }
 
-  // If no row is in progress, create a new one for the statement
+  // If no row is in progress, create a new one so the statement can appear
   if (!inProgressRow) {
     statementStartTime = getCurrentTimestamp();
     createNewRowInHistory();
@@ -373,20 +373,9 @@ function setMainAction(button, action) {
   // Hide the meeting actions area once a main action is chosen
   document.getElementById("meetingActionsSection").classList.add("hidden");
 
-  // "Seconded" is an immediate action: we build the statement and finalize
-  if (action === "Seconded") {
-    constructedStatement = `${selectedMember} Seconded`;
-    document.getElementById("log").innerText = constructedStatement;
-    updateInProgressRow();
-    autoCopyIfEnabled();
-
-    // Because it's a quick action that ends right away, let's finalize it
-    resetAllAndFinalize();
-    return;
-  }
-
+  // *** Removed the immediate finalize logic for "Seconded" ***
+  // It's now handled like any other main action:
   if (action === "Roll Call Vote on SB" || action === "Roll Call Vote on Amendment") {
-    // Hide members, show vote tally
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
 
@@ -397,22 +386,18 @@ function setMainAction(button, action) {
       showBillCarrierSection(false);
       showAsAmendedSection(false);
     }
-    // Hide sub-actions, bill-type
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
 
   } else if (action === "Moved") {
-    // Show committee members (member is required)
     document.getElementById("members-container").classList.remove("hidden");
-    // Show Bill Type first (SB, HB, Amendment)
     showBillTypeSection(true);
-
     showVoteTallySection(false);
     showBillCarrierSection(false);
     showAsAmendedSection(false);
 
   } else {
-    // For any other main action not roll call, moved, or seconded
+    // For "Seconded" or any other main action not roll call or moved
     document.getElementById("members-container").classList.remove("hidden");
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
@@ -424,8 +409,6 @@ function setMainAction(button, action) {
   // Build the statement for the new action
   updateStatement();
 }
-
-
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
@@ -800,8 +783,8 @@ function loadHistoryFromLocalStorage() {
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
       tdTime.classList.add("clickable");
-       
-      // Clicking the time cell copies the time to clipboard
+      
+      // Clicking the time cell copies the time
       tdTime.addEventListener("click", function () {
         navigator.clipboard.writeText(tdTime.textContent).then(() => {
           tdTime.classList.add("copied-cell");
@@ -816,7 +799,7 @@ function loadHistoryFromLocalStorage() {
       let tdStatement = document.createElement("td");
       tdStatement.textContent = record.statement;
       tdStatement.classList.add("clickable");
-       
+      
       // Clicking the statement cell copies the statement
       tdStatement.addEventListener("click", function () {
         navigator.clipboard.writeText(tdStatement.textContent).then(() => {
@@ -828,10 +811,11 @@ function loadHistoryFromLocalStorage() {
       });
       tr.appendChild(tdStatement);
 
-      // Time Control cell with 6 adjustment buttons
+      // Time Control cell
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
 
+      // Helper to create time adjustment button
       function createAdjustButton(label, secondsToAdjust) {
         const btn = document.createElement("button");
         btn.textContent = label;
@@ -845,7 +829,7 @@ function loadHistoryFromLocalStorage() {
             second: '2-digit'
           });
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr;  // update the record
+          record.time = newTimeStr; // update the record
           saveHistoryToLocalStorage();
           btn.classList.add("copied-cell");
           setTimeout(() => {
@@ -855,25 +839,48 @@ function loadHistoryFromLocalStorage() {
         return btn;
       }
 
-      // Two small groups for minus/plus
+      // Minus group
       const minusDiv = document.createElement("div");
       minusDiv.classList.add("time-control-group");
       minusDiv.appendChild(createAdjustButton("-5s", -5));
       minusDiv.appendChild(createAdjustButton("-3s", -3));
       minusDiv.appendChild(createAdjustButton("-1s", -1));
 
+      // Plus group
       const plusDiv = document.createElement("div");
       plusDiv.classList.add("time-control-group");
       plusDiv.appendChild(createAdjustButton("+1s", +1));
       plusDiv.appendChild(createAdjustButton("+3s", +3));
       plusDiv.appendChild(createAdjustButton("+5s", +5));
 
+      // NEW: The "Now" button for existing rows
+      const nowDiv = document.createElement("div");
+      nowDiv.classList.add("time-control-group");
+      const nowBtn = document.createElement("button");
+      nowBtn.textContent = "Now";
+      nowBtn.classList.add("copy-row-button");
+      nowBtn.onclick = () => {
+        const newTimeStr = new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        tdTime.textContent = newTimeStr;
+        record.time = newTimeStr; // update the record
+        saveHistoryToLocalStorage();
+        nowBtn.classList.add("copied-cell");
+        setTimeout(() => {
+          nowBtn.classList.remove("copied-cell");
+        }, 800);
+      };
+      nowDiv.appendChild(nowBtn);
+
       tdTimeControl.appendChild(minusDiv);
       tdTimeControl.appendChild(plusDiv);
-
+      tdTimeControl.appendChild(nowDiv);
       tr.appendChild(tdTimeControl);
 
-      // Delete cell with a Delete button
+      // Delete cell
       let tdDelete = document.createElement("td");
       let btnDelete = document.createElement("button");
       btnDelete.textContent = "X";
@@ -891,6 +898,7 @@ function loadHistoryFromLocalStorage() {
     }
   }
 }
+
 
 
 function clearHistory() {
@@ -1147,6 +1155,26 @@ document.addEventListener("keydown", function (event) {
   }
 
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  // (Your existing code at the bottom of DOMContentLoaded is fine, just add this inside)
+
+  const logElem = document.getElementById("log");
+  logElem.addEventListener("click", () => {
+    if (
+      !constructedStatement ||
+      constructedStatement.startsWith("[Click a member")
+    ) {
+      return;
+    }
+    // Attempt to copy
+    navigator.clipboard.writeText(constructedStatement).then(() => {
+      logElem.classList.add("copied");
+      setTimeout(() => logElem.classList.remove("copied"), 1000);
+    });
+  });
+});
+
 
 // On page load, check if a committee was saved from a previous session.
 document.addEventListener("DOMContentLoaded", () => {
