@@ -71,6 +71,7 @@
         <button onclick="setMainAction(this, 'Moved')">Moved</button>
         <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
         <button onclick="setMainAction(this, 'Roll Call Vote on Amendment')">Roll Call Vote on Amendment</button>
+        <button onclick="setMainAction(this, 'Seconded')">Seconded</button>
       </div>
     </div>
     
@@ -133,8 +134,6 @@
         <button onclick="appendMeetingAction('Recessed Meeting')">Recessed Meeting</button>
         <button onclick="appendMeetingAction('Adjourned Meeting')">Adjourned Meeting</button>
         <button onclick="appendMeetingAction('Reconvened Meeting')">Reconvened Meeting</button>
-        <!-- Special: "Seconded" has no dash in the final statement -->
-        <button onclick="appendMeetingAction('Seconded')">Seconded</button>
         <!-- "Introduced Bill" keeps the dash -->
         <button onclick="appendMeetingAction('Introduced Bill')">Introduced Bill</button>
       </div>
