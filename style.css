@@ -207,7 +207,8 @@ button:hover {
   gap: 4px;
   font-size: 10px;
   justify-content: center;
-  border: 1px dashed red; /* optional debugging border */
+  border: 1px solid black; /* optional debugging border */
+  margin: 4px auto;
 }
 
 .time-control-group button {
