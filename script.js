@@ -1076,9 +1076,13 @@ function populateCommitteeSelect() {
   for (let committeeName in committees) {
     const opt = document.createElement("option");
     opt.value = committeeName;
-    opt.textContent = committeeName;
+    opt.textContent = toTitleCase(committeeName);
     select.appendChild(opt);
   }
+}
+
+function toTitleCase(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Support Ctrl + Enter to copy
