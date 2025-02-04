@@ -259,11 +259,13 @@ button:hover {
 }
 
 #committeeListContainer li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto auto; /* 3 columns: 1) name, 2) edit, 3) delete */
   align-items: center;
-  gap: 8px;               /* space between text and buttons */
-  margin-bottom: 5px;     /* space between list items */
+  gap: 8px;
+  margin-bottom: 5px;
 }
+
 
 #committeeListContainer button {
   font-size: 12px;        /* slightly smaller for 'Edit'/'Delete' */
