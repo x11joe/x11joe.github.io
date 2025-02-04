@@ -294,13 +294,14 @@ button:hover {
   right: 10px;
   background: transparent;
   border: none;
-  color: #333;
+  color: #dc3545; /* Red */
   font-size: 18px;
+  font-weight: bold; /* Make it bold */
   cursor: pointer;
 }
 
 .close-modal-x:hover {
-  color: red;
+  color: #bd2130; /* darker red on hover */
 }
 
 /* Adjust table cells for smaller screens */
