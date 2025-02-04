@@ -1001,7 +1001,7 @@ function toggleManageCommitteesModal() {
   const modal = document.getElementById("manageCommitteesModal");
   modal.classList.toggle("hidden");
   // Clear inputs or refresh the list
-  mitteeListUI();
+  refreshCommitteeListUI();
 }
 
 function closeManageCommitteesModal() {
