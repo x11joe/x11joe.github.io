@@ -1034,30 +1034,34 @@ function editMember(committeeName, index) {
   editCommitteeName = committeeName;
   editMemberIndex = index;
 
-  const memberFull = committees[committeeName][index]; 
+  const memberFull = committees[committeeName][index];
   // e.g. "Chairman John Doe"
 
   // We want to parse out if it's "Chairman", "Vice Chairman", or "regular"
   let role = "regular";
   let namePart = memberFull;
 
-  if (memberFull.includes("Chairman")) {
-    role = "chair";
-    // remove leading "Chairman " to isolate the actual name
-    namePart = memberFull.replace(/Chairman\s*/i, "");
-  } 
   if (memberFull.includes("Vice Chairman")) {
     role = "vice";
-    namePart = memberFull.replace(/Vice Chairman\s*/i, "");
+    namePart = memberFull.replace("Vice Chairman ", "");
+  } else if (memberFull.includes("Chairman")) {
+    role = "chair";
+    namePart = memberFull.replace(/Chairman\s*/i, "");
   }
 
   // Populate the form
   document.getElementById("committeeNameInput").value = committeeName;
   document.getElementById("memberNameInput").value = namePart.trim();
   document.getElementById("memberRoleSelect").value = role;
-  // Show the modal if not already
-  toggleManageCommitteesModal();
+
+  // Instead of toggling, just open the modal if it's closed
+  const modal = document.getElementById("manageCommitteesModal");
+  modal.classList.remove("hidden");
+
+  // Optionally refresh the list so the user sees the current data
+  refreshCommitteeListUI();
 }
+
 
 function deleteMember(committeeName, index) {
   committees[committeeName].splice(index, 1);
