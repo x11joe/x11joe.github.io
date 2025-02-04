@@ -1001,7 +1001,7 @@ function toggleManageCommitteesModal() {
   const modal = document.getElementById("manageCommitteesModal");
   modal.classList.toggle("hidden");
   // Clear inputs or refresh the list
-  refreshCommitteeListUI();
+  mitteeListUI();
 }
 
 function closeManageCommitteesModal() {
@@ -1023,13 +1023,14 @@ function refreshCommitteeListUI() {
     const ul = document.createElement("ul");
     committees[committeeName].forEach((member, index) => {
       const li = document.createElement("li");
-      li.textContent = member; // e.g. "Chairman John Smith"
+      li.textContent = member; // e.g. "Chairwoman Diane Larson"
 
       // Edit button
       const editBtn = document.createElement("button");
       editBtn.textContent = "Edit";
       editBtn.style.marginLeft = "10px";
-      editBtn.onclick = () => (committeeName, index);
+      // CALL the function properly
+      editBtn.onclick = () => editMember(committeeName, index);
 
       // Delete button
       const delBtn = document.createElement("button");
@@ -1039,12 +1040,12 @@ function refreshCommitteeListUI() {
 
       li.appendChild(editBtn);
       li.appendChild(delBtn);
-
       ul.appendChild(li);
     });
     container.appendChild(ul);
   }
 }
+
 
 function addOrUpdateMember() {
   // Convert to lowercase
