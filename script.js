@@ -903,6 +903,59 @@ function loadCommitteesFromLocalStorage() {
   }
 }
 
+function saveCommitteesToLocalStorage() {
+  localStorage.setItem("allCommittees", JSON.stringify(committees));
+}
+
+function toggleManageCommitteesModal() {
+  const modal = document.getElementById("manageCommitteesModal");
+  modal.classList.toggle("hidden");
+  // Clear inputs or refresh the list
+  refreshCommitteeListUI();
+}
+
+function closeManageCommitteesModal() {
+  const modal = document.getElementById("manageCommitteesModal");
+  modal.classList.add("hidden");
+}
+
+function refreshCommitteeListUI() {
+  const container = document.getElementById("committeeListContainer");
+  container.innerHTML = ""; // Clear existing
+
+  for (let committeeName in committees) {
+    // Create a heading
+    const h4 = document.createElement("h4");
+    h4.textContent = committeeName;
+    container.appendChild(h4);
+
+    // A list or table of members
+    const ul = document.createElement("ul");
+    committees[committeeName].forEach((member, index) => {
+      const li = document.createElement("li");
+      li.textContent = member; // e.g. "Chairman John Smith"
+
+      // Edit button
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "Edit";
+      editBtn.style.marginLeft = "10px";
+      editBtn.onclick = () => editMember(committeeName, index);
+
+      // Delete button
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Delete";
+      delBtn.style.marginLeft = "5px";
+      delBtn.onclick = () => deleteMember(committeeName, index);
+
+      li.appendChild(editBtn);
+      li.appendChild(delBtn);
+
+      ul.appendChild(li);
+    });
+    container.appendChild(ul);
+  }
+}
+
 
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
