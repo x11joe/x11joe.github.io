@@ -966,7 +966,8 @@ function refreshCommitteeListUI() {
 }
 
 function addOrUpdateMember() {
-  const committeeName = document.getElementById("committeeNameInput").value.trim();
+  // Convert to lowercase
+  let committeeName = document.getElementById("committeeNameInput").value.trim().toLowerCase();
   const memberName = document.getElementById("memberNameInput").value.trim();
   const role = document.getElementById("memberRoleSelect").value; // "chair", "vice", "regular"
 
@@ -975,29 +976,22 @@ function addOrUpdateMember() {
     return;
   }
 
-  // If user typed "vice" or "chair," let's transform the actual text:
-  // e.g. "Chairman John Doe" or "Vice Chairman Bob Smith"
-  // For simplicity, let's say "Chairman" or "Chairwoman" is your choice:
-  // We'll just unify them to "Chairman <name>" for demonstration.
   let displayName = memberName;
   if (role === "chair") {
     displayName = "Chairman " + memberName;
   } else if (role === "vice") {
     displayName = "Vice Chairman " + memberName;
-  } 
-  // else "regular" means we keep it as is: "Senator John", "Member John", etc.
+  }
 
-  // 1) Ensure the committees object has that committee
   if (!committees[committeeName]) {
     committees[committeeName] = [];
   }
 
-  // 2) If we only want ONE chair or ONE vice per committee:
+  // If we only want ONE chair or vice per committee
   if (role === "chair" || role === "vice") {
     removeExistingChairOrVice(committeeName, role);
   }
 
-  // 3) If editing vs. new
   if (editMode) {
     committees[editCommitteeName][editMemberIndex] = displayName;
     editMode = false;
@@ -1009,11 +1003,13 @@ function addOrUpdateMember() {
 
   saveCommitteesToLocalStorage();
   refreshCommitteeListUI();
-  // Optionally clear the inputs
+
+  // Clear inputs
   document.getElementById("committeeNameInput").value = "";
   document.getElementById("memberNameInput").value = "";
   document.getElementById("memberRoleSelect").value = "regular";
 }
+
 
 function removeExistingChairOrVice(committeeName, role) {
   // If the user is adding a "chair," remove any existing "Chairman" or "Chairwoman"
