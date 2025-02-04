@@ -220,6 +220,38 @@ button:hover {
   cursor: pointer;
 }
 
+.modal {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #444;
+  padding: 20px;
+  z-index: 9999;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+#committeeListContainer {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
 /* Adjust table cells for smaller screens */
 @media (max-width: 600px) {
   #historyTable th,
