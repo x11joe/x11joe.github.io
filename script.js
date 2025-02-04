@@ -389,7 +389,25 @@ function setMainAction(button, action) {
     document.getElementById("sub-actions").classList.add("hidden");
     document.getElementById("bill-type-section").classList.add("hidden");
 
-  } else if (action === "Moved") {
+  } 
+  else if (action === "Voice Vote on SB" || action === "Voice Vote on Amendment") {
+     // Hide members, show vote tally
+     document.getElementById("members-container").classList.add("hidden");
+     showVoteTallySection(true);
+   
+     // If it's "Voice Vote on SB", show Bill Carrier + AsAmended?
+     if (action === "Voice Vote on SB") {
+       showBillCarrierSection(true);
+       showAsAmendedSection(true); // voice vote SB can be "as amended"
+     } else {
+       showBillCarrierSection(false);
+       showAsAmendedSection(false);
+     }
+   
+     document.getElementById("sub-actions").classList.add("hidden");
+     document.getElementById("bill-type-section").classList.add("hidden");
+  }
+  else if (action === "Moved") {
     document.getElementById("members-container").classList.remove("hidden");
     showBillTypeSection(true);
     showVoteTallySection(false);
@@ -448,7 +466,8 @@ function showBillTypeSection(visible) {
     const billTypeContainer = document.getElementById("bill-type-container");
     billTypeContainer.innerHTML = "";
 
-    const types = ["SB", "HB", "Amendment"];
+    const types = ["SB", "HB", "Amendment", "Reconsider"];
+
     types.forEach((t) => {
       const btn = document.createElement("button");
       btn.innerText = t;
@@ -568,8 +587,7 @@ function getMotionResultText() {
 
 // Build the statement
 function updateStatement() {
-  // If a member is selected but no main action has been chosen,
-  // immediately set the constructed statement to the member's name.
+  // If a member is selected but no main action has been chosen
   if (selectedMember && !mainAction) {
     constructedStatement = selectedMember;
     document.getElementById("log").innerText = constructedStatement;
@@ -578,23 +596,20 @@ function updateStatement() {
     return;
   }
 
-  // Allow no selectedMember only if mainAction is a roll call vote.
-  if (
-    !selectedMember &&
-    mainAction !== "Roll Call Vote on SB" &&
-    mainAction !== "Roll Call Vote on Amendment"
-  ) {
+  // Allow no selectedMember only if mainAction is one of the vote actions
+  if (!selectedMember &&
+      mainAction !== "Roll Call Vote on SB" &&
+      mainAction !== "Roll Call Vote on Amendment" &&
+      mainAction !== "Voice Vote on SB" &&
+      mainAction !== "Voice Vote on Amendment") {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
 
   let parts = [];
 
-  // Roll Call Votes
-  if (
-    mainAction === "Roll Call Vote on SB" ||
-    mainAction === "Roll Call Vote on Amendment"
-  ) {
+  // 1) Roll Call Vote
+  if (mainAction === "Roll Call Vote on SB" || mainAction === "Roll Call Vote on Amendment") {
     let actionText = mainAction;
     if (mainAction === "Roll Call Vote on SB" && asAmended) {
       actionText = "Roll Call Vote on SB as Amended";
@@ -606,10 +621,27 @@ function updateStatement() {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
   }
-  // Moved
+  // 2) Voice Vote
+  else if (mainAction === "Voice Vote on SB" || mainAction === "Voice Vote on Amendment") {
+    let actionText = mainAction;
+    if (mainAction === "Voice Vote on SB" && asAmended) {
+      actionText = "Voice Vote on SB as Amended";
+    }
+    parts.push(actionText);
+    parts.push(getMotionResultText());
+    parts.push(`${forVal}-${againstVal}-${neutralVal}`);
+    if (actionText.includes("SB") && selectedCarrier) {
+      parts.push(`${selectedCarrier} Carried the Bill`);
+    }
+  }
+  // 3) Moved
   else if (mainAction === "Moved") {
     parts.push(selectedMember);
-    if (selectedBillType) {
+
+    if (selectedBillType === "Reconsider") {
+      parts.push("Moved to Reconsider");
+    }
+    else if (selectedBillType) {
       if (selectedBillType === "Amendment") {
         parts.push(`Moved ${selectedBillType}`);
       } else {
@@ -619,13 +651,15 @@ function updateStatement() {
           parts.push(`Moved on ${selectedBillType}`);
         }
       }
-    } else if (selectedSubAction) {
+    }
+    else if (selectedSubAction) {
       parts.push(`Moved ${selectedSubAction}`);
-    } else {
+    }
+    else {
       parts.push("Moved");
     }
   }
-  // Other main actions
+  // 4) Other main actions (e.g. "Seconded")
   else if (mainAction) {
     parts.push(`${selectedMember} - ${mainAction}`);
   }
@@ -640,9 +674,6 @@ function updateStatement() {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
-
-
-
 
 
 function resetVoteTally() {
