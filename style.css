@@ -229,7 +229,7 @@ button:hover {
   border: 2px solid #444;
   padding: 20px;
   z-index: 9999;
-  width: 400px;
+  width: 500px;
   max-width: 90%;
   box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
