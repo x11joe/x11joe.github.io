@@ -1166,6 +1166,136 @@ function toTitleCase(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function setDefaultCommittees() {
+  // Overwrite our global 'committees' with the new defaults.
+  // This data is taken directly from your provided list.
+  committees = {
+    "APPROPRIATIONS": [
+      "Brad Bekkedahl - Chairman",
+      "Robert Erbele - Vice Chairman"
+    ],
+    "Education and Environment": [
+      "Ronald Sorvaag - Chairman",
+      "Cole Conley",
+      "Scott Meyer",
+      "Donald Schaible",
+      "Paul J. Thomas"
+    ],
+    "Government Operations": [
+      "Terry M. Wanzek - Chairman",
+      "Randy A. Burckhard",
+      "Michael Dwyer",
+      "Robert Erbele",
+      "Jonathan Sickler"
+    ],
+    "Human Resources": [
+      "Dick Dever - Chairman",
+      "Tim Mathern",
+      "Sean Cleary",
+      "Kyle Davison",
+      "Jeffery J. Magrum"
+    ],
+    "EDUCATION": [
+      "Todd Beard - Chairman",
+      "Josh Boschee",
+      "Randy D. Lemm - Vice Chairman",
+      "Michelle Axtman",
+      "Justin Gerhardt",
+      "Mike Wobbema"
+    ],
+    "FINANCE AND TAXATION": [
+      "Mark F. Weber - Chairman",
+      "Richard Marcellais",
+      "Dean Rummel - Vice Chairman",
+      "Dale Patten",
+      "Michelle Powers",
+      "Chuck Walen"
+    ],
+    "HUMAN SERVICES": [
+      "Judy Lee - Chairman",
+      "Kathy Hogan",
+      "Kent Weston - Vice Chairman",
+      "David A. Clemens",
+      "Kristin Roers",
+      "Desiree Van Oosting"
+    ],
+    "INDUSTRY AND BUSINESS": [
+      "Jeff Barta - Chairman",
+      "Keith Boehm - Vice Chairman",
+      "Mark Enget",
+      "Greg Kessel",
+      "Jerry Klein"
+    ],
+    "JUDICIARY": [
+      "Diane Larson - Chairman",
+      "Ryan Braunberger",
+      "Bob Paulson - Vice Chairman",
+      "Jose L. Castaneda",
+      "Claire Cory",
+      "Larry Luick",
+      "Janne Myrdal"
+    ],
+    "AGRICULTURE AND VETERANS AFFAIRS": [
+      "Larry Luick - Chairman",
+      "Richard Marcellais",
+      "Janne Myrdal - Vice Chairman",
+      "Randy D. Lemm",
+      "Mark F. Weber",
+      "Kent Weston"
+    ],
+    "ENERGY AND NATURAL RESOURCES": [
+      "Dale Patten - Chairman",
+      "Greg Kessel - Vice Chairman",
+      "Todd Beard",
+      "Keith Boehm",
+      "Mark Enget",
+      "Justin Gerhardt",
+      "Desiree Van Oosting"
+    ],
+    "STATE AND LOCAL GOVERNMENT": [
+      "Kristin Roers - Chairman",
+      "Ryan Braunberger",
+      "Jose L. Castaneda - Vice Chairman",
+      "Jeff Barta",
+      "Judy Lee",
+      "Chuck Walen"
+    ],
+    "TRANSPORTATION": [
+      "David A. Clemens - Chairman",
+      "Kathy Hogan",
+      "Claire Cory - Vice Chairman",
+      "Jerry Klein",
+      "Bob Paulson",
+      "Dean Rummel"
+    ],
+    "WORKFORCE DEVELOPMENT": [
+      "Mike Wobbema - Chairman",
+      "Josh Boschee",
+      "Michelle Axtman - Vice Chairman",
+      "Diane Larson",
+      "Michelle Powers"
+    ]
+  };
+
+  // Save to localStorage
+  saveCommitteesToLocalStorage();
+
+  // Refresh the modal list
+  refreshCommitteeListUI();
+
+  // Also refresh the main <select> in case the user wants to pick from these new committees
+  populateCommitteeSelect();
+
+  // If you want to auto-select one of the new committees by default, do so here:
+  // e.g. document.getElementById("committeeSelect").value = "APPROPRIATIONS";
+
+  // Then show its members
+  updateMembers();
+
+  alert("Default committees have been set!");
+}
+
+
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
