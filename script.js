@@ -1231,9 +1231,9 @@ function setDefaultCommittees() {
     "Dori Hauck"
   ];
 
-  // Overwrite our global 'committees' with the new raw defaults,
-  // now with "Senate ..." in the committee names.
+  // Here are all of your default Senate AND House committees:
   let rawCommittees = {
+    // ---------- SENATE -----------
     "Senate Appropriations Committee": [
       "Brad Bekkedahl - Chairman",
       "Robert Erbele - Vice Chairman"
@@ -1338,6 +1338,218 @@ function setDefaultCommittees() {
       "Michelle Axtman - Vice Chairman",
       "Diane Larson",
       "Michelle Powers"
+    ],
+
+    // ---------- HOUSE -----------
+    // House Appropriations
+    "House Appropriations Committee": [
+      "Don Vigesaa - Chairman",
+      "Keith Kempenich - Vice Chairman"
+    ],
+    "House Appropriations Education & Environment Division": [
+      "Mike Nathe - Chairman",
+      "Karla Rose Hanson",
+      "Steve Swiontek - Vice Chairman",
+      "Scott Louser",
+      "Bob Martinson",
+      "David Richter",
+      "Mark Sanford"
+    ],
+    "House Appropriations Government Operations Division": [
+      "David Monson - Chairman",
+      "Mike Brandenburg - Vice Chairman",
+      "Glenn Bosch",
+      "Jay Fisher",
+      "Keith Kempenich",
+      "Lisa Meier",
+      "Brandy L. Pyle"
+    ],
+    "House Appropriations Human Resources Division": [
+      "Jon O. Nelson - Chairman",
+      "Alisa Mitskog",
+      "Gregory Stemen - Vice Chairman",
+      "Bert Anderson",
+      "Mike Berg",
+      "Eric J. Murphy",
+      "Emily O'Brien",
+      "Scott Wagner"
+    ],
+
+    // House Education
+    "House Education Committee": [
+      "Pat D. Heinert - Chairman",
+      "Liz Conmy",
+      "Cynthia Schreiber-Beck - Vice Chairman",
+      "LaurieBeth Hager",
+      "Patrick R. Hatlestad",
+      "Dori Hauck",
+      "Matthew Heilman",
+      "Jim Jonas",
+      "Donald W. Longmuir",
+      "Roger A. Maki",
+      "Andrew Marschall",
+      "Desiree Morton",
+      "Anna S. Novak",
+      "Doug Osowski"
+    ],
+
+    // House Finance and Taxation
+    "House Finance and Taxation Committee": [
+      "Craig Headland - Chairman",
+      "Austin Foss",
+      "Jared C. Hagert - Vice Chairman",
+      "Zachary Ista",
+      "Dick Anderson",
+      "Jason Dockter",
+      "Ty Dressler",
+      "Jim Grueneich",
+      "Mike Motschenbacher",
+      "Dennis Nehring",
+      "Jeremy L. Olson",
+      "Todd Porter",
+      "Vicky Steiner",
+      "Nathan Toman"
+    ],
+
+    // House Human Services
+    "House Human Services Committee": [
+      "Matthew Ruby - Chairman",
+      "Jayme Davis",
+      "Kathy Frelich - Vice Chairman",
+      "Gretchen Dobervich",
+      "Karen A. Anderson",
+      "Mike Beltz",
+      "Macy Bolinske",
+      "Clayton Fegley",
+      "Jared Hendrix",
+      "Dawson Holle",
+      "Dwight Kiefert",
+      "Nico Rios",
+      "Karen M. Rohr"
+    ],
+
+    // House Industry, Business, and Labor
+    "House Industry, Business and Labor Committee": [
+      "Jonathan Warrey - Chairman",
+      "Collette Brown",
+      "Mitch Ostlie - Vice Chairman",
+      "Lisa Finley-DeVille",
+      "Landon Bahl",
+      "Josh Christy",
+      "Karen Grindberg",
+      "Jorin Johnson",
+      "Jim Kasper",
+      "Ben Koppelman",
+      "Dan Ruby",
+      "Mike Schatz",
+      "Austen Schauer",
+      "Daniel R. Vollmer"
+    ],
+
+    // House Judiciary
+    "House Judiciary Committee": [
+      "Lawrence R. Klemin - Chairman",
+      "Mary Schneider",
+      "Karen Karls - Vice Chairman",
+      "Steve Vetter - Vice Chairman",
+      "Nels Christianson",
+      "Donna Henderson",
+      "Jeff Hoverson",
+      "Daniel Johnston",
+      "Carrie McLeod",
+      "SuAnn Olson",
+      "Bernie Satrom",
+      "Bill Tveit",
+      "Lori VanWinkle",
+      "Christina Wolff"
+    ],
+
+    // House Agriculture
+    "House Agriculture Committee": [
+      "Mike Beltz - Chairman",
+      "Gretchen Dobervich",
+      "Dori Hauck - Vice Chairman",
+      "Karen A. Anderson",
+      "Donna Henderson",
+      "Dawson Holle",
+      "Jeff Hoverson",
+      "Dwight Kiefert",
+      "Dennis Nehring",
+      "SuAnn Olson",
+      "Nico Rios",
+      "Cynthia Schreiber-Beck",
+      "Bill Tveit",
+      "Daniel R. Vollmer"
+    ],
+
+    // House Energy and Natural Resources
+    "House Energy and Natural Resources Committee": [
+      "Todd Porter - Chairman",
+      "Liz Conmy",
+      "Dick Anderson - Vice Chairman",
+      "Austin Foss",
+      "Anna S. Novak - Vice Chairman",
+      "Jason Dockter",
+      "Jared C. Hagert",
+      "Craig Headland",
+      "Pat D. Heinert",
+      "Jorin Johnson",
+      "Andrew Marschall",
+      "Jeremy L. Olson",
+      "Matthew Ruby"
+    ],
+
+    // House Government and Veterans Affairs
+    "House Government and Veterans Affairs Committee": [
+      "Austen Schauer - Chairman",
+      "Collette Brown",
+      "Bernie Satrom - Vice Chairman",
+      "Mary Schneider",
+      "Landon Bahl",
+      "Josh Christy",
+      "Karen Grindberg",
+      "Karen Karls",
+      "Carrie McLeod",
+      "Karen M. Rohr",
+      "Vicky Steiner",
+      "Lori VanWinkle",
+      "Steve Vetter",
+      "Christina Wolff"
+    ],
+
+    // House Political Subdivisions
+    "House Political Subdivisions Committee": [
+      "Donald W. Longmuir - Chairman",
+      "Jayme Davis",
+      "Clayton Fegley - Vice Chairman",
+      "LaurieBeth Hager",
+      "Jim Jonas - Vice Chairman",
+      "Macy Bolinske",
+      "Patrick R. Hatlestad",
+      "Matthew Heilman",
+      "Lawrence R. Klemin",
+      "Mike Motschenbacher",
+      "Mitch Ostlie",
+      "Nathan Toman",
+      "Jonathan Warrey"
+    ],
+
+    // House Transportation
+    "House Transportation Committee": [
+      "Dan Ruby - Chairman",
+      "Lisa Finley-DeVille",
+      "Jim Grueneich - Vice Chairman",
+      "Nels Christianson",
+      "Ty Dressler",
+      "Kathy Frelich",
+      "Jared Hendrix",
+      "Daniel Johnston",
+      "Jim Kasper",
+      "Ben Koppelman",
+      "Roger A. Maki",
+      "Desiree Morton",
+      "Doug Osowski",
+      "Mike Schatz"
     ]
   };
 
@@ -1364,6 +1576,7 @@ function setDefaultCommittees() {
   alert("Default committees have been set!");
 }
 
+
 function transformMemberLine(line, committeeName, femaleNames) {
   // Trim any leading/trailing spaces
   let trimmed = line.trim();
@@ -1389,7 +1602,7 @@ function transformMemberLine(line, committeeName, femaleNames) {
   }
   // Otherwise: fallback to "Senator" or "Representative"
   else {
-    // Remove any trailing dashes
+    // Remove any trailing dashes or extra spaces
     let namePart = trimmed.replace(/^-+|-+$/g, "").trim();
 
     // If the committee name includes "house" => "Representative"
