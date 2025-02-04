@@ -1108,20 +1108,29 @@ document.addEventListener("keydown", function (event) {
 
 // On page load, check if a committee was saved from a previous session.
 document.addEventListener("DOMContentLoaded", () => {
+  // 1) Load committees
+  committees = loadCommitteesFromLocalStorage();
+
+  // 2) Populate the select
+  populateCommitteeSelect();
+
+  // 3) Load saved committee name from localStorage
   let storedCommittee = localStorage.getItem("selectedCommittee");
-  if (storedCommittee) {
+  if (storedCommittee && committees[storedCommittee]) {
     document.getElementById("committeeSelect").value = storedCommittee;
   }
 
+  // 4) Load AutoCopy if any
   let storedAutoCopy = localStorage.getItem("autoCopyEnabled");
   if (storedAutoCopy !== null) {
     autoCopyEnabled = storedAutoCopy === "true";
     document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
   }
-   
-  committees = loadCommitteesFromLocalStorage();
-  populateCommitteeSelect();
+
+  // 5) Update the member buttons for the selected or default committee
   updateMembers();
+
+  // 6) Load previous statement history
   loadHistoryFromLocalStorage();
 });
 
