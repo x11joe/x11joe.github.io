@@ -1029,7 +1029,7 @@ function refreshCommitteeListUI() {
       const editBtn = document.createElement("button");
       editBtn.textContent = "Edit";
       editBtn.style.marginLeft = "10px";
-      editBtn.onclick = () => editMember(committeeName, index);
+      editBtn.onclick = () => (committeeName, index);
 
       // Delete button
       const delBtn = document.createElement("button");
@@ -1074,10 +1074,10 @@ function addOrUpdateMember() {
   }
 
   if (editMode) {
-    committees[editCommitteeName][editMemberIndex] = displayName;
+    committees[editCommitteeName][Index] = displayName;
     editMode = false;
     editCommitteeName = null;
-    editMemberIndex = null;
+    Index = null;
   } else {
     committees[committeeName].push(displayName);
   }
@@ -1112,18 +1112,39 @@ function editMember(committeeName, index) {
   editMemberIndex = index;
 
   const memberFull = committees[committeeName][index];
-  // e.g. "Chairman John Doe"
+  // e.g. "Chairwoman Diane Larson" or "Vice Chairwoman Kathy Hogan"
 
-  // We want to parse out if it's "Chairman", "Vice Chairman", or "regular"
+  // By default, assume "regular" unless we detect chair/vice text
   let role = "regular";
   let namePart = memberFull;
 
-  if (memberFull.includes("Vice Chairman")) {
+  // Check "Vice Chairwoman" first, then "Chairwoman",
+  // then "Vice Chairman", then "Chairman"
+  if (memberFull.includes("Vice Chairwoman")) {
+    role = "vice";
+    namePart = memberFull.replace("Vice Chairwoman ", "");
+  } 
+  else if (memberFull.includes("Chairwoman")) {
+    role = "chair";
+    namePart = memberFull.replace("Chairwoman ", "");
+  } 
+  else if (memberFull.includes("Vice Chairman")) {
     role = "vice";
     namePart = memberFull.replace("Vice Chairman ", "");
-  } else if (memberFull.includes("Chairman")) {
+  } 
+  else if (memberFull.includes("Chairman")) {
     role = "chair";
-    namePart = memberFull.replace(/Chairman\s*/i, "");
+    namePart = memberFull.replace("Chairman ", "");
+  }
+  else {
+    // It's presumably "Senator XXX"
+    // so namePart = "Senator XXX"
+    // We'll remove the "Senator " prefix below
+  }
+
+  // If we ended up with "Senator ABC" or leftover text, remove "Senator " if present
+  if (namePart.startsWith("Senator ")) {
+    namePart = namePart.replace("Senator ", "");
   }
 
   // Populate the form
@@ -1131,13 +1152,14 @@ function editMember(committeeName, index) {
   document.getElementById("memberNameInput").value = namePart.trim();
   document.getElementById("memberRoleSelect").value = role;
 
-  // Instead of toggling, just open the modal if it's closed
+  // Show the modal if it's hidden
   const modal = document.getElementById("manageCommitteesModal");
   modal.classList.remove("hidden");
 
   // Optionally refresh the list so the user sees the current data
   refreshCommitteeListUI();
 }
+
 
 
 function deleteMember(committeeName, index) {
