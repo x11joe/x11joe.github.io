@@ -28,6 +28,10 @@ let statementStartTime = null; // The moment we first pick the new member
 
 let committees = loadCommitteesFromLocalStorage();
 
+let editMode = false;            // are we editing an existing member?
+let editCommitteeName = null;    // store if editing
+let editMemberIndex = null;      // which member?
+
 /* --------------------------
    Utility Functions
    -------------------------- */
@@ -242,6 +246,11 @@ function updateMembers() {
   const membersContainer = document.getElementById("members-container");
   membersContainer.innerHTML = "";
 
+  if (!committees[currentCommittee]) {
+    // If user typed a new committee name, but there's no members yet
+    return;
+  }
+   
   // Group members into chairs/vice chairs and others.
   const groups = groupCommitteeMembers(committees[currentCommittee]);
 
@@ -956,6 +965,121 @@ function refreshCommitteeListUI() {
   }
 }
 
+function addOrUpdateMember() {
+  const committeeName = document.getElementById("committeeNameInput").value.trim();
+  const memberName = document.getElementById("memberNameInput").value.trim();
+  const role = document.getElementById("memberRoleSelect").value; // "chair", "vice", "regular"
+
+  if (!committeeName || !memberName) {
+    alert("Please enter both committee name and member name.");
+    return;
+  }
+
+  // If user typed "vice" or "chair," let's transform the actual text:
+  // e.g. "Chairman John Doe" or "Vice Chairman Bob Smith"
+  // For simplicity, let's say "Chairman" or "Chairwoman" is your choice:
+  // We'll just unify them to "Chairman <name>" for demonstration.
+  let displayName = memberName;
+  if (role === "chair") {
+    displayName = "Chairman " + memberName;
+  } else if (role === "vice") {
+    displayName = "Vice Chairman " + memberName;
+  } 
+  // else "regular" means we keep it as is: "Senator John", "Member John", etc.
+
+  // 1) Ensure the committees object has that committee
+  if (!committees[committeeName]) {
+    committees[committeeName] = [];
+  }
+
+  // 2) If we only want ONE chair or ONE vice per committee:
+  if (role === "chair" || role === "vice") {
+    removeExistingChairOrVice(committeeName, role);
+  }
+
+  // 3) If editing vs. new
+  if (editMode) {
+    committees[editCommitteeName][editMemberIndex] = displayName;
+    editMode = false;
+    editCommitteeName = null;
+    editMemberIndex = null;
+  } else {
+    committees[committeeName].push(displayName);
+  }
+
+  saveCommitteesToLocalStorage();
+  refreshCommitteeListUI();
+  // Optionally clear the inputs
+  document.getElementById("committeeNameInput").value = "";
+  document.getElementById("memberNameInput").value = "";
+  document.getElementById("memberRoleSelect").value = "regular";
+}
+
+function removeExistingChairOrVice(committeeName, role) {
+  // If the user is adding a "chair," remove any existing "Chairman" or "Chairwoman"
+  // If the user is adding a "vice," remove any existing "Vice" name
+  // This ensures only one chair / one vice in that committee
+  const isChair = (role === "chair");
+  committees[committeeName] = committees[committeeName].filter(member => {
+    if (isChair) {
+      return !(member.includes("Chairman") || member.includes("Chairwoman"));
+    } else {
+      return !member.includes("Vice");
+    }
+  });
+}
+
+function editMember(committeeName, index) {
+  editMode = true;
+  editCommitteeName = committeeName;
+  editMemberIndex = index;
+
+  const memberFull = committees[committeeName][index]; 
+  // e.g. "Chairman John Doe"
+
+  // We want to parse out if it's "Chairman", "Vice Chairman", or "regular"
+  let role = "regular";
+  let namePart = memberFull;
+
+  if (memberFull.includes("Chairman")) {
+    role = "chair";
+    // remove leading "Chairman " to isolate the actual name
+    namePart = memberFull.replace(/Chairman\s*/i, "");
+  } 
+  if (memberFull.includes("Vice Chairman")) {
+    role = "vice";
+    namePart = memberFull.replace(/Vice Chairman\s*/i, "");
+  }
+
+  // Populate the form
+  document.getElementById("committeeNameInput").value = committeeName;
+  document.getElementById("memberNameInput").value = namePart.trim();
+  document.getElementById("memberRoleSelect").value = role;
+  // Show the modal if not already
+  toggleManageCommitteesModal();
+}
+
+function deleteMember(committeeName, index) {
+  committees[committeeName].splice(index, 1);
+  // If removing the last member from a committee, you may want to remove the committee entirely
+  if (committees[committeeName].length === 0) {
+    delete committees[committeeName];
+  }
+  saveCommitteesToLocalStorage();
+  refreshCommitteeListUI();
+}
+
+function populateCommitteeSelect() {
+  const select = document.getElementById("committeeSelect");
+  select.innerHTML = "";
+  // For each committee name, add an <option>
+  for (let committeeName in committees) {
+    const opt = document.createElement("option");
+    opt.value = committeeName;
+    opt.textContent = committeeName;
+    select.appendChild(opt);
+  }
+}
 
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
@@ -990,7 +1114,9 @@ document.addEventListener("DOMContentLoaded", () => {
     autoCopyEnabled = storedAutoCopy === "true";
     document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
   }
-
+   
+  committees = loadCommitteesFromLocalStorage();
+  populateCommitteeSelect();
   updateMembers();
   loadHistoryFromLocalStorage();
 });
