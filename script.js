@@ -86,7 +86,7 @@ function createNewRowInHistory() {
   localTimeCell.textContent = recordTime;
   // Make the cell show a pointer cursor
   localTimeCell.classList.add("clickable");
-   
+  
   // When user clicks the time cell, copy the time to clipboard
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
@@ -103,7 +103,7 @@ function createNewRowInHistory() {
   localStatementCell.textContent = constructedStatement;
   // Make the cell show a pointer cursor
   localStatementCell.classList.add("clickable");
-   
+  
   // When user clicks the statement cell, copy the statement to clipboard
   localStatementCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
@@ -154,8 +154,29 @@ function createNewRowInHistory() {
   plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
   plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
 
+  // NEW: "Now" button to set the time to the current local time
+  const nowDiv = document.createElement("div");
+  nowDiv.classList.add("time-control-group");
+  const nowBtn = document.createElement("button");
+  nowBtn.textContent = "Now";
+  nowBtn.classList.add("copy-row-button");
+  nowBtn.onclick = () => {
+    const newTimeStr = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    localTimeCell.textContent = newTimeStr;
+    nowBtn.classList.add("copied-cell");
+    setTimeout(() => {
+      nowBtn.classList.remove("copied-cell");
+    }, 800);
+  };
+  nowDiv.appendChild(nowBtn);
+
   timeAdjustCell.appendChild(minusDiv);
   timeAdjustCell.appendChild(plusDiv);
+  timeAdjustCell.appendChild(nowDiv);
 
   inProgressRow.appendChild(timeAdjustCell);
 
@@ -188,6 +209,7 @@ function createNewRowInHistory() {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 function updateInProgressRow() {
