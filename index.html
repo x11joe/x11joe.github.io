@@ -65,12 +65,20 @@
     <div class="section">
       <h3>Main Actions</h3>
       <div class="buttons-container">
+        <!-- First row: Moved, Seconded -->
         <button onclick="setMainAction(this, 'Moved')">Moved</button>
+        <button onclick="setMainAction(this, 'Seconded')">Seconded</button>
+    
+        <!-- Second row: Roll Call Vote on SB / Amendment -->
         <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
         <button onclick="setMainAction(this, 'Roll Call Vote on Amendment')">Roll Call Vote on Amendment</button>
-        <button onclick="setMainAction(this, 'Seconded')">Seconded</button>
+    
+        <!-- Third row: Voice Vote on SB / Amendment -->
+        <button onclick="setMainAction(this, 'Voice Vote on SB')">Voice Vote on SB</button>
+        <button onclick="setMainAction(this, 'Voice Vote on Amendment')">Voice Vote on Amendment</button>
       </div>
     </div>
+
     
     <!-- Bill Type section for "Moved" sub-action -->
     <div class="section hidden" id="bill-type-section">
