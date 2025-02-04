@@ -26,26 +26,7 @@ let timeCell = null;
 let statementCell = null;
 let statementStartTime = null; // The moment we first pick the new member
 
-const committees = {
-  energy: [
-    "Chairman Dale Patton",
-    "Vice Chairman Greg Kessel",
-    "Senator Todd Beard",
-    "Senator Keith Boehm",
-    "Senator Mark Enget",
-    "Senator Justin Gerhardt",
-    "Senator Desiree Van Oosting"
-  ],
-  judiciary: [
-    "Chairwoman Diane Larson",
-    "Vice Chairman Bob Paulson",
-    "Senator Jose Castaneda",
-    "Senator Claire Cory",
-    "Senator Larry Luick",
-    "Senator Janne Myrdal",
-    "Senator Ryan Braunberger"
-  ]
-};
+let committees = loadCommitteesFromLocalStorage();
 
 /* --------------------------
    Utility Functions
@@ -890,6 +871,37 @@ function cancelCurrentAction() {
   document.getElementById("log").innerText = "[Click a member and an action]";
 }
 
+function loadCommitteesFromLocalStorage() {
+  let stored = localStorage.getItem("allCommittees");
+  if (stored) {
+    // Parse and use that data
+    return JSON.parse(stored);
+  } else {
+    // If not present, use default committees
+    const defaultCommittees = {
+      energy: [
+        "Chairman Dale Patton",
+        "Vice Chairman Greg Kessel",
+        "Senator Todd Beard",
+        "Senator Keith Boehm",
+        "Senator Mark Enget",
+        "Senator Justin Gerhardt",
+        "Senator Desiree Van Oosting"
+      ],
+      judiciary: [
+        "Chairwoman Diane Larson",
+        "Vice Chairman Bob Paulson",
+        "Senator Jose Castaneda",
+        "Senator Claire Cory",
+        "Senator Larry Luick",
+        "Senator Janne Myrdal",
+        "Senator Ryan Braunberger"
+      ]
+    };
+    localStorage.setItem("allCommittees", JSON.stringify(defaultCommittees));
+    return defaultCommittees;
+  }
+}
 
 
 // Support Ctrl + Enter to copy
