@@ -341,47 +341,46 @@ function selectMember(member, btn) {
 }
 
 function setMainAction(button, action) {
-  // If it's "Moved," you still require a member:
+  // 1) If it requires a member, check that
   if (action === "Moved" && !selectedMember) {
     alert("Please select a member first for 'Moved' actions!");
     return;
   }
-
-  // If it's "Seconded," we also require a member
   if (action === "Seconded" && !selectedMember) {
     alert("Please select a member first for 'Seconded' action!");
     return;
   }
-
-  // NEW: If it's "Introduced Bill," we also require a member
   if (action === "Introduced Bill" && !selectedMember) {
     alert("Please select a member first for 'Introduced Bill'!");
     return;
   }
 
-  // If no row is in progress, create a new one so the statement can appear
+  // 2) If no row is in progress, create it
   if (!inProgressRow) {
     statementStartTime = getCurrentTimestamp();
     createNewRowInHistory();
   }
 
+  // 3) Clear old selections from all main-action buttons
+  //    (Requires <div id="mainActionsSection"> around your main action buttons.)
+  document.querySelectorAll("#mainActionsSection button")
+    .forEach((b) => b.classList.remove("selected"));
+
+  // Mark the clicked button as selected
+  button.classList.add("selected");
+
+  // 4) Reset some global states
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
   selectedCarrier = "";
   asAmended = false;
-  voiceVoteOutcome = ""; // reset
+  voiceVoteOutcome = "";
 
-  // Highlight the chosen main action
-  // (Now you have more buttons, but the approach is the same)
-  document.querySelectorAll(".section:nth-of-type(2) button")
-    .forEach((b) => b.classList.remove("selected"));
-  button.classList.add("selected");
-
-  // Hide the meeting actions area once a main action is chosen
+  // 5) Hide the meeting actions area once a main action is chosen
   document.getElementById("meetingActionsSection").classList.add("hidden");
 
-  // Hide all dynamic sections by default
+  // 6) Hide all dynamic sections by default
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
@@ -390,49 +389,47 @@ function setMainAction(button, action) {
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
 
-  // Decide what to show
+  // 7) Decide what sections to show based on action
   if (action === "Moved") {
-    // Show Bill Type section
     showBillTypeSection(true);
-
-  } else if (action === "Roll Call Vote on SB") {
+  }
+  else if (action === "Roll Call Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     showBillCarrierSection(true);
     showAsAmendedSection(true);
-
-  } else if (action === "Roll Call Vote on Amendment") {
+  }
+  else if (action === "Roll Call Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     // no carrier, no "as amended"
-
-  } else if (action === "Roll Call Vote on Reconsider") {
+  }
+  else if (action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     // no carrier, no "as amended"
-
-  } else if (action === "Voice Vote on SB") {
+  }
+  else if (action === "Voice Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
-    // voice vote => show voice-vote-outcome section
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // also show optional "as amended" if they want
+    // optional "as amended"
     showAsAmendedSection(true);
-
-  } else if (action === "Voice Vote on Amendment") {
+  }
+  else if (action === "Voice Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     // no "as amended" for amendments
-
-  } else if (action === "Voice Vote on Reconsider") {
+  }
+  else if (action === "Voice Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     // no "as amended"
-
   }
 
-  // Build the statement for the new action
+  // 8) Build/update the constructed statement
   updateStatement();
 }
+
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
