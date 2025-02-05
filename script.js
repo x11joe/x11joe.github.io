@@ -353,6 +353,12 @@ function setMainAction(button, action) {
     return;
   }
 
+  // NEW: If it's "Introduced Bill," we also require a member
+  if (action === "Introduced Bill" && !selectedMember) {
+    alert("Please select a member first for 'Introduced Bill'!");
+    return;
+  }
+
   // If no row is in progress, create a new one so the statement can appear
   if (!inProgressRow) {
     statementStartTime = getCurrentTimestamp();
