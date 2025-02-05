@@ -32,6 +32,8 @@ let editMode = false;            // are we editing an existing member?
 let editCommitteeName = null;    // store if editing
 let editMemberIndex = null;      // which member?
 
+let voiceVoteOutcome = ""; // For voice votes: "Passed" or "Failed"
+
 /* --------------------------
    Utility Functions
    -------------------------- */
@@ -338,8 +340,6 @@ function selectMember(member, btn) {
   btn.classList.add("selected");
 }
 
-
-
 function setMainAction(button, action) {
   // If it's "Moved," you still require a member:
   if (action === "Moved" && !selectedMember) {
@@ -364,8 +364,10 @@ function setMainAction(button, action) {
   selectedBillType = "";
   selectedCarrier = "";
   asAmended = false;
+  voiceVoteOutcome = ""; // reset
 
   // Highlight the chosen main action
+  // (Now you have more buttons, but the approach is the same)
   document.querySelectorAll(".section:nth-of-type(2) button")
     .forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
@@ -373,61 +375,58 @@ function setMainAction(button, action) {
   // Hide the meeting actions area once a main action is chosen
   document.getElementById("meetingActionsSection").classList.add("hidden");
 
-  // *** Removed the immediate finalize logic for "Seconded" ***
-  // It's now handled like any other main action:
-  if (action === "Roll Call Vote on SB" || action === "Roll Call Vote on Amendment") {
+  // Hide all dynamic sections by default
+  document.getElementById("sub-actions").classList.add("hidden");
+  document.getElementById("bill-type-section").classList.add("hidden");
+  document.getElementById("vote-tally-section").classList.add("hidden");
+  document.getElementById("bill-carrier-section").classList.add("hidden");
+  document.getElementById("as-amended-section").classList.add("hidden");
+  document.getElementById("voice-vote-outcome-section").classList.add("hidden");
+  document.getElementById("members-container").classList.remove("hidden");
+
+  // Decide what to show
+  if (action === "Moved") {
+    // Show Bill Type section
+    showBillTypeSection(true);
+
+  } else if (action === "Roll Call Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
+    showBillCarrierSection(true);
+    showAsAmendedSection(true);
 
-    if (action === "Roll Call Vote on SB") {
-      showBillCarrierSection(true);
-      showAsAmendedSection(true);
-    } else {
-      showBillCarrierSection(false);
-      showAsAmendedSection(false);
-    }
-    document.getElementById("sub-actions").classList.add("hidden");
-    document.getElementById("bill-type-section").classList.add("hidden");
+  } else if (action === "Roll Call Vote on Amendment") {
+    document.getElementById("members-container").classList.add("hidden");
+    showVoteTallySection(true);
+    // no carrier, no "as amended"
 
-  } 
-  else if (action === "Voice Vote on SB" || action === "Voice Vote on Amendment") {
-     // Hide members, show vote tally
-     document.getElementById("members-container").classList.add("hidden");
-     showVoteTallySection(true);
-   
-     // If it's "Voice Vote on SB", show Bill Carrier + AsAmended?
-     if (action === "Voice Vote on SB") {
-       showBillCarrierSection(true);
-       showAsAmendedSection(true); // voice vote SB can be "as amended"
-     } else {
-       showBillCarrierSection(false);
-       showAsAmendedSection(false);
-     }
-   
-     document.getElementById("sub-actions").classList.add("hidden");
-     document.getElementById("bill-type-section").classList.add("hidden");
-  }
-  else if (action === "Moved") {
-    document.getElementById("members-container").classList.remove("hidden");
-    showBillTypeSection(true);
-    showVoteTallySection(false);
-    showBillCarrierSection(false);
-    showAsAmendedSection(false);
+  } else if (action === "Roll Call Vote on Reconsider") {
+    document.getElementById("members-container").classList.add("hidden");
+    showVoteTallySection(true);
+    // no carrier, no "as amended"
 
-  } else {
-    // For "Seconded" or any other main action not roll call or moved
-    document.getElementById("members-container").classList.remove("hidden");
-    document.getElementById("sub-actions").classList.add("hidden");
-    document.getElementById("bill-type-section").classList.add("hidden");
-    showVoteTallySection(false);
-    showBillCarrierSection(false);
-    showAsAmendedSection(false);
+  } else if (action === "Voice Vote on SB") {
+    document.getElementById("members-container").classList.add("hidden");
+    // voice vote => show voice-vote-outcome section
+    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
+    // also show optional "as amended" if they want
+    showAsAmendedSection(true);
+
+  } else if (action === "Voice Vote on Amendment") {
+    document.getElementById("members-container").classList.add("hidden");
+    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
+    // no "as amended" for amendments
+
+  } else if (action === "Voice Vote on Reconsider") {
+    document.getElementById("members-container").classList.add("hidden");
+    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
+    // no "as amended"
+
   }
 
   // Build the statement for the new action
   updateStatement();
 }
-
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
@@ -600,40 +599,61 @@ function updateStatement() {
   if (!selectedMember &&
       mainAction !== "Roll Call Vote on SB" &&
       mainAction !== "Roll Call Vote on Amendment" &&
+      mainAction !== "Roll Call Vote on Reconsider" &&
       mainAction !== "Voice Vote on SB" &&
-      mainAction !== "Voice Vote on Amendment") {
+      mainAction !== "Voice Vote on Amendment" &&
+      mainAction !== "Voice Vote on Reconsider"
+  ) {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
 
   let parts = [];
 
-  // 1) Roll Call Vote
-  if (mainAction === "Roll Call Vote on SB" || mainAction === "Roll Call Vote on Amendment") {
+  // 1) Roll Call Votes (SB, Amendment, Reconsider)
+  if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = mainAction;
+
+    // If "Roll Call Vote on SB as Amended"
     if (mainAction === "Roll Call Vote on SB" && asAmended) {
       actionText = "Roll Call Vote on SB as Amended";
     }
+
     parts.push(actionText);
+
+    // Then the motion result, e.g. "Motion Passed" or "Motion Failed"
+    // We can use your existing numeric logic + getMotionResultText()
     parts.push(getMotionResultText());
+    // e.g. "7-0-0"
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
+
+    // If it's SB (not "Amendment" or "Reconsider"), check for carrier
     if (actionText.includes("SB") && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
   }
-  // 2) Voice Vote
-  else if (mainAction === "Voice Vote on SB" || mainAction === "Voice Vote on Amendment") {
+
+  // 2) Voice Vote (SB, Amendment, Reconsider)
+  else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
+
+    // If "Voice Vote on SB as Amended"
     if (mainAction === "Voice Vote on SB" && asAmended) {
       actionText = "Voice Vote on SB as Amended";
     }
+
     parts.push(actionText);
-    parts.push(getMotionResultText());
-    parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-    if (actionText.includes("SB") && selectedCarrier) {
-      parts.push(`${selectedCarrier} Carried the Bill`);
+
+    // Instead of a numeric tally, we do "Motion Passed" or "Motion Failed"
+    // if the user picked one:
+    if (voiceVoteOutcome) {
+      parts.push(`Motion ${voiceVoteOutcome}`);
+    } else {
+      // If user hasn't clicked Passed/Failed yet, show placeholder:
+      parts.push("[Pick Passed/Failed]");
     }
   }
+
   // 3) Moved
   else if (mainAction === "Moved") {
     parts.push(selectedMember);
@@ -659,6 +679,7 @@ function updateStatement() {
       parts.push("Moved");
     }
   }
+
   // 4) Other main actions (e.g. "Seconded")
   else if (mainAction) {
     parts.push(`${selectedMember} - ${mainAction}`);
@@ -670,6 +691,7 @@ function updateStatement() {
     constructedStatement = parts.join(" - ");
   }
 
+  // Show it on screen
   document.getElementById("log").innerText = constructedStatement;
   updateInProgressRow();
   autoCopyIfEnabled();
@@ -701,6 +723,27 @@ function appendMeetingAction(action) {
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
+function setVoiceVoteOutcome(outcome) {
+  voiceVoteOutcome = outcome; // "Passed" or "Failed"
+  // Highlight whichever button was clicked:
+  document.querySelectorAll("#voice-vote-outcome-section button")
+    .forEach(btn => btn.classList.remove("selected"));
+
+  // Mark the chosen button as selected
+  const buttons = document.querySelectorAll("#voice-vote-outcome-section button");
+  for (let btn of buttons) {
+    if (btn.textContent.includes(outcome)) {
+      btn.classList.add("selected");
+      break;
+    }
+  }
+
+  // Update the final statement
+  updateStatement();
+  autoCopyIfEnabled();
+}
+
 
 /* -------------
    Copy to Clipboard
