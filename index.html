@@ -68,18 +68,25 @@
     <!-- Main Actions -->
     <div class="section">
       <h3>Main Actions</h3>
-      <div class="buttons-container">
-        <!-- First row: Moved, Seconded -->
+    
+      <!-- First row: Moved, Seconded -->
+      <div class="buttons-container" style="margin-bottom:1rem; border-bottom:1px solid #ccc; padding-bottom:0.5rem;">
         <button onclick="setMainAction(this, 'Moved')">Moved</button>
         <button onclick="setMainAction(this, 'Seconded')">Seconded</button>
+      </div>
     
-        <!-- Second row: Roll Call Vote on SB / Amendment -->
+      <!-- Second row: Roll Call Votes (SB, Amendment, Reconsider) -->
+      <div class="buttons-container" style="margin-bottom:1rem; border-bottom:1px solid #ccc; padding-bottom:0.5rem;">
         <button onclick="setMainAction(this, 'Roll Call Vote on SB')">Roll Call Vote on SB</button>
         <button onclick="setMainAction(this, 'Roll Call Vote on Amendment')">Roll Call Vote on Amendment</button>
+        <button onclick="setMainAction(this, 'Roll Call Vote on Reconsider')">Roll Call Vote on Reconsider</button>
+      </div>
     
-        <!-- Third row: Voice Vote on SB / Amendment -->
+      <!-- Third row: Voice Votes (SB, Amendment, Reconsider) -->
+      <div class="buttons-container">
         <button onclick="setMainAction(this, 'Voice Vote on SB')">Voice Vote on SB</button>
         <button onclick="setMainAction(this, 'Voice Vote on Amendment')">Voice Vote on Amendment</button>
+        <button onclick="setMainAction(this, 'Voice Vote on Reconsider')">Voice Vote on Reconsider</button>
       </div>
     </div>
 
@@ -104,7 +111,7 @@
       </div>
     </div>
 
-    <!-- Vote Tally: for Roll Call Votes (SB or Amendment) -->
+     <!-- Vote Tally: for Roll Call Votes (SB, Amendment, or Reconsider) -->
     <div class="section hidden" id="vote-tally-section">
       <h3>Vote Tally (FOR - AGAINST - NEUTRAL)</h3>
       <div class="vote-tally-controls">
@@ -133,6 +140,15 @@
     <div class="section hidden" id="bill-carrier-section">
       <h3>Select Bill Carrier</h3>
       <div class="buttons-container" id="bill-carrier-container"></div>
+    </div>
+
+    <!-- NEW: Voice Vote Outcome Section -->
+    <div class="section hidden" id="voice-vote-outcome-section">
+      <h3>Voice Vote Outcome</h3>
+      <div class="buttons-container">
+        <button onclick="setVoiceVoteOutcome('Passed')">Motion Passed</button>
+        <button onclick="setVoiceVoteOutcome('Failed')">Motion Failed</button>
+      </div>
     </div>
 
     <!-- Meeting Actions section, with its unique ID -->
