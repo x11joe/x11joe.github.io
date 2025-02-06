@@ -103,7 +103,19 @@
       <h3>Sub Actions (Moved)</h3>
       <div class="buttons-container" id="sub-actions-container"></div>
     </div>
-
+    
+    <!-- Rerefer Section: hidden by default -->
+    <div class="section hidden" id="rerefer-section">
+      <h3>Rerefer to Another Committee?</h3>
+      <div class="buttons-container">
+        <!-- A dropdown (or a series of buttons) for the user to choose the target committee -->
+        <select id="rereferCommitteeSelect">
+          <option value="">(No rerefer)</option>
+          <!-- We will populate the committees in script.js -->
+        </select>
+      </div>
+    </div>
+    
     <!-- Optional "as Amended" for Roll Call Vote on SB -->
     <div class="section hidden" id="as-amended-section">
       <h3>Optional: As Amended?</h3>
