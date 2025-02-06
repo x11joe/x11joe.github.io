@@ -363,12 +363,21 @@ function setMainAction(button, action) {
   }
 
   // 3) Clear old selections from all main-action buttons
-  //    (Requires <div id="mainActionsSection"> around your main action buttons.)
-  document.querySelectorAll("#mainActionsSection button")
-    .forEach((b) => b.classList.remove("selected"));
+  const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
+  allMainActionButtons.forEach((b) => {
+    b.classList.remove("selected");
+    b.classList.remove("inactive");
+  });
 
-  // Mark the clicked button as selected
+  // Mark the clicked button as selected (green)
   button.classList.add("selected");
+
+  // Fade out (inactive) the others
+  allMainActionButtons.forEach((b) => {
+    if (b !== button) {
+      b.classList.add("inactive");
+    }
+  });
 
   // 4) Reset some global states
   mainAction = action;
@@ -403,28 +412,23 @@ function setMainAction(button, action) {
   else if (action === "Roll Call Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-    // no carrier, no "as amended"
   }
   else if (action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-    // no carrier, no "as amended"
   }
   else if (action === "Voice Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // optional "as amended"
     showAsAmendedSection(true);
   }
   else if (action === "Voice Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // no "as amended" for amendments
   }
   else if (action === "Voice Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // no "as amended"
   }
 
   // 8) Build/update the constructed statement
@@ -842,9 +846,6 @@ function resetAllAndFinalize() {
 }
 
 
-
-
-
 // The main reset
 function resetSelections(finalize = true) {
   if (
@@ -876,20 +877,19 @@ function resetSelections(finalize = true) {
   document.getElementById("bill-carrier-section").classList.add("hidden");
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("rerefer-section").classList.add("hidden");
-   
   selectedRereferCommittee = "";
-   
-  // Remove .selected from all buttons
-  document.querySelectorAll("button").forEach((b) => b.classList.remove("selected"));
+
+  // Remove .selected and .inactive from all main-action buttons
+  document.querySelectorAll("#mainActionsSection button").forEach((b) => {
+    b.classList.remove("selected");
+    b.classList.remove("inactive");
+  });
 
   // Reset log text
   document.getElementById("log").innerText = "[Click a member and an action]";
-   
-  // Show the committee members and meeting actions again
   document.getElementById("members-container").classList.remove("hidden");
   document.getElementById("meetingActionsSection").classList.remove("hidden");
 
-  // Also clear the in-progress record index
   inProgressRecordIndex = null;
 }
 
