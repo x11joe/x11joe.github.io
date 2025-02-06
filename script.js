@@ -33,6 +33,7 @@ let editCommitteeName = null;    // store if editing
 let editMemberIndex = null;      // which member?
 
 let voiceVoteOutcome = ""; // For voice votes: "Passed" or "Failed"
+let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 
 /* --------------------------
    Utility Functions
@@ -455,10 +456,53 @@ function handleMovedSubAction(button, subAction) {
     .forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
 
-  // REMOVE any calls to showBillTypeSection here if it existed
-  // (We now pick Bill Type before sub-actions)
-  // showBillTypeSection(true); // <-- remove this if still present
+  // Show the "rerefer" section
+  document.getElementById("rerefer-section").classList.remove("hidden");
+
+  // We can reset selectedRereferCommittee if we want
+  selectedRereferCommittee = "";
+
+  // Determine if it’s a House or Senate committee
+  //  e.g. if currentCommittee name includes "house"
+  let isHouse = currentCommittee.toLowerCase().includes("house");
+  
+  // Build a list of possible committees to rerefer to, either House or Senate
+  let possibleCommittees = [];
+  for (let cName in committees) {
+    let cNameLower = cName.toLowerCase();
+    // If we want to allow House -> House only, and Senate -> Senate only:
+    if (isHouse && cNameLower.includes("house")) {
+      possibleCommittees.push(cName);
+    } else if (!isHouse && cNameLower.includes("senate")) {
+      possibleCommittees.push(cName);
+    }
+  }
+  
+  // Populate the <select> with these committees
+  const rereferSelect = document.getElementById("rereferCommitteeSelect");
+  rereferSelect.innerHTML = "";
+  
+  // Add a "(No rerefer)" option
+  const noneOpt = document.createElement("option");
+  noneOpt.value = "";
+  noneOpt.textContent = "(No rerefer)";
+  rereferSelect.appendChild(noneOpt);
+
+  // Add each possible committee
+  possibleCommittees.forEach((cName) => {
+    const opt = document.createElement("option");
+    opt.value = cName;   // e.g. "Senate Appropriations Committee"
+    opt.textContent = cName; // display the same
+    rereferSelect.appendChild(opt);
+  });
+  
+  // Listen for changes
+  rereferSelect.onchange = () => {
+    selectedRereferCommittee = rereferSelect.value; // store
+    updateStatement(); // re-build the final statement
+  };
 }
+
 
 // Bill Type => "SB", "HB", or "Amendment"
 function showBillTypeSection(visible) {
@@ -495,8 +539,10 @@ function selectBillType(type, btn) {
   if (type === "SB" || type === "HB") {
     showMovedSubActions();  // "Do Pass" / "Do Not Pass"
   } else {
-    // If it's "Amendment," hide sub-actions (no Do Pass / Do Not Pass for amendments)
-    document.getElementById("sub-actions").classList.add("hidden");
+     // If it's "Amendment," hide sub-actions (no Do Pass / Do Not Pass for amendments)
+     document.getElementById("sub-actions").classList.add("hidden");
+     document.getElementById("rerefer-section").classList.add("hidden");
+     selectedRereferCommittee = "";
   }
 }
 
@@ -659,28 +705,33 @@ function updateStatement() {
 
   // 3) Moved
   else if (mainAction === "Moved") {
-    parts.push(selectedMember);
-
-    if (selectedBillType === "Reconsider") {
-      parts.push("Moved to Reconsider");
-    }
-    else if (selectedBillType) {
-      if (selectedBillType === "Amendment") {
-        parts.push(`Moved ${selectedBillType}`);
-      } else {
-        if (selectedSubAction) {
-          parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
-        } else {
-          parts.push(`Moved on ${selectedBillType}`);
-        }
-      }
-    }
-    else if (selectedSubAction) {
-      parts.push(`Moved ${selectedSubAction}`);
-    }
-    else {
-      parts.push("Moved");
-    }
+     parts.push(selectedMember);
+   
+     if (selectedBillType === "Reconsider") {
+       parts.push("Moved to Reconsider");
+     }
+     else if (selectedBillType) {
+       if (selectedBillType === "Amendment") {
+         parts.push(`Moved ${selectedBillType}`);
+       } else {
+         if (selectedSubAction) {
+           parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+         } else {
+           parts.push(`Moved on ${selectedBillType}`);
+         }
+       }
+     }
+     else if (selectedSubAction) {
+       parts.push(`Moved ${selectedSubAction}`);
+     }
+     else {
+       parts.push("Moved");
+     }
+   
+     // *** NEW: If user picked a subAction AND a rerefer committee
+     if (selectedSubAction && selectedRereferCommittee) {
+       parts.push(`and rereferred to ${selectedRereferCommittee}`);
+     }
   }
 
   // 4) Other main actions (e.g. "Seconded")
@@ -824,7 +875,10 @@ function resetSelections(finalize = true) {
   document.getElementById("vote-tally-section").classList.add("hidden");
   document.getElementById("bill-carrier-section").classList.add("hidden");
   document.getElementById("as-amended-section").classList.add("hidden");
-
+  document.getElementById("rerefer-section").classList.add("hidden");
+   
+  selectedRereferCommittee = "";
+   
   // Remove .selected from all buttons
   document.querySelectorAll("button").forEach((b) => b.classList.remove("selected"));
 
