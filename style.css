@@ -26,6 +26,13 @@ body {
   margin-bottom: 15px;
 }
 
+.inactive {
+     opacity: 0.4;
+     filter: grayscale(80%);
+     transition: 0.3s;
+}
+
+
 /* -------------------------
    Button Styling
    ------------------------- */
