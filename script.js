@@ -42,6 +42,39 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+// Attach a control-click event listener to a row.
+// When the user clicks with the Control key held down,
+// the row is highlighted yellow and a final string is built and copied.
+function addCtrlClickHandler(row) {
+  row.addEventListener("click", function(e) {
+    if (e.ctrlKey) {
+      // Prevent any other click handlers from firing.
+      e.stopPropagation();
+      e.preventDefault();
+      // Highlight the row in yellow.
+      row.style.backgroundColor = "yellow";
+      // Retrieve the time and statement from the first two cells.
+      let timeStr = row.cells[0].textContent;
+      let statementStr = row.cells[1].textContent;
+      // Retrieve the member from the row's data attribute.
+      let member = row.getAttribute("data-member") || "";
+      // Look up member info using your helper function.
+      let memberInfo = getMemberInfoForMember(member);
+      // Build the final string.
+      let finalString = timeStr + " | " + statementStr + " | " + memberInfo;
+      // Copy the final string to the clipboard.
+      navigator.clipboard.writeText(finalString).then(() => {
+        // Remove the yellow highlight after 1 second.
+        setTimeout(() => {
+          row.style.backgroundColor = "";
+        }, 1000);
+      });
+      console.log("Ctrl-click copy:", finalString);
+    }
+  }, true); // Use capture mode so this runs before cell-level click handlers.
+}
+
+
 function loadMemberInfoXML() {
   fetch('allMember.xml')
     .then(response => response.text())
@@ -154,6 +187,7 @@ function createNewRowInHistory() {
   localTimeCell.textContent = recordTime;
   localTimeCell.classList.add("clickable");
   localTimeCell.addEventListener("click", function () {
+    // Normal single-click copy (if Control is not held, our row handler will override it)
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
       localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
@@ -258,52 +292,20 @@ function createNewRowInHistory() {
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
-  // Add a double-click event listener to the entire row.
-  inProgressRow.addEventListener("dblclick", function () {
-    // Highlight the row in yellow.
-    inProgressRow.style.backgroundColor = "yellow";
-    // Get the time (first cell) and statement (second cell).
-    let timeStr = inProgressRow.cells[0].textContent;
-    let statementStr = inProgressRow.cells[1].textContent;
-    // Get the member name from the data attribute.
-    let member = inProgressRow.getAttribute("data-member");
-    // Look up member info from the XML mapping.
-    let memberInfo = getMemberInfoForMember(member);
-    // Build the final string.
-    let finalString = timeStr + " | " + statementStr + " | " + memberInfo;
-    // Copy the final string to the clipboard.
-    navigator.clipboard.writeText(finalString).then(() => {
-      // Remove yellow highlight after 1 second.
-      setTimeout(() => {
-        inProgressRow.style.backgroundColor = "";
-      }, 1000);
-    });
-    console.log("Double-click copy:", finalString);
-  });
+  // Attach the Control‑click handler to the row.
+  addCtrlClickHandler(inProgressRow);
 
   // Append the row and update history.
   tableBody.appendChild(inProgressRow);
   inProgressRecordIndex = historyRecords.length;
-  historyRecords.push({ time: recordTime, statement: constructedStatement });
+  // Store the member along with time and statement.
+  historyRecords.push({ time: recordTime, statement: constructedStatement, member: selectedMember });
   saveHistoryToLocalStorage();
 
   // Update global references.
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
-function updateInProgressRow() {
-  if (inProgressRow && statementCell) {
-    statementCell.textContent = constructedStatement;
-  }
-  if (inProgressRecordIndex !== null) {
-    // Update only the statement field; do not update time.
-    historyRecords[inProgressRecordIndex].statement = constructedStatement;
-    saveHistoryToLocalStorage();
-  }
-}
-
-
 
 function finalizeInProgressRow() {
   inProgressRow = null;
@@ -1013,12 +1015,15 @@ function loadHistoryFromLocalStorage() {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
 
+      // If the record has a member property, set it as a data attribute.
+      if (record.member) {
+        tr.setAttribute("data-member", record.member);
+      }
+
       // Time cell
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
       tdTime.classList.add("clickable");
-      
-      // Clicking the time cell copies the time
       tdTime.addEventListener("click", function () {
         navigator.clipboard.writeText(tdTime.textContent).then(() => {
           tdTime.classList.add("copied-cell");
@@ -1033,8 +1038,6 @@ function loadHistoryFromLocalStorage() {
       let tdStatement = document.createElement("td");
       tdStatement.textContent = record.statement;
       tdStatement.classList.add("clickable");
-      
-      // Clicking the statement cell copies the statement
       tdStatement.addEventListener("click", function () {
         navigator.clipboard.writeText(tdStatement.textContent).then(() => {
           tdStatement.classList.add("copied-cell");
@@ -1045,11 +1048,9 @@ function loadHistoryFromLocalStorage() {
       });
       tr.appendChild(tdStatement);
 
-      // Time Control cell
+      // Time Control cell (same as before)
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
-
-      // Helper to create time adjustment button
       function createAdjustButton(label, secondsToAdjust) {
         const btn = document.createElement("button");
         btn.textContent = label;
@@ -1072,22 +1073,16 @@ function loadHistoryFromLocalStorage() {
         };
         return btn;
       }
-
-      // Minus group
       const minusDiv = document.createElement("div");
       minusDiv.classList.add("time-control-group");
       minusDiv.appendChild(createAdjustButton("-5s", -5));
       minusDiv.appendChild(createAdjustButton("-3s", -3));
       minusDiv.appendChild(createAdjustButton("-1s", -1));
-
-      // Plus group
       const plusDiv = document.createElement("div");
       plusDiv.classList.add("time-control-group");
       plusDiv.appendChild(createAdjustButton("+1s", +1));
       plusDiv.appendChild(createAdjustButton("+3s", +3));
       plusDiv.appendChild(createAdjustButton("+5s", +5));
-
-      // NEW: The "Now" button for existing rows
       const nowDiv = document.createElement("div");
       nowDiv.classList.add("time-control-group");
       const nowBtn = document.createElement("button");
@@ -1100,7 +1095,7 @@ function loadHistoryFromLocalStorage() {
           second: '2-digit'
         });
         tdTime.textContent = newTimeStr;
-        record.time = newTimeStr; // update the record
+        record.time = newTimeStr;
         saveHistoryToLocalStorage();
         nowBtn.classList.add("copied-cell");
         setTimeout(() => {
@@ -1108,7 +1103,6 @@ function loadHistoryFromLocalStorage() {
         }, 800);
       };
       nowDiv.appendChild(nowBtn);
-
       tdTimeControl.appendChild(minusDiv);
       tdTimeControl.appendChild(plusDiv);
       tdTimeControl.appendChild(nowDiv);
@@ -1128,10 +1122,14 @@ function loadHistoryFromLocalStorage() {
       tdDelete.appendChild(btnDelete);
       tr.appendChild(tdDelete);
 
+      // Attach the Control‑click handler to the row.
+      addCtrlClickHandler(tr);
+
       tableBody.appendChild(tr);
     }
   }
 }
+
 
 
 
