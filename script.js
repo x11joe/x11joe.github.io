@@ -113,24 +113,37 @@ function loadMemberInfoXML() {
     });
 }
 
-// 3. Helper function to get member info for a given member name.
+// Helper function to get member info for a given member name.
 // It first tries an exact match and then falls back to matching by the last name.
 function getMemberInfoForMember(member) {
   if (!member) return "";
-  // Try exact match.
-  if (memberInfoMapping && memberInfoMapping[member]) {
-    return memberInfoMapping[member];
-  }
-  // Otherwise, attempt to match by surname (last word in the member name).
-  let parts = member.split(" ");
-  let surname = parts[parts.length - 1].trim();
+  // Remove common prefixes for comparison.
+  const normalize = (name) => {
+    return name.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "").trim();
+  };
+
+  let normalizedMember = normalize(member).toLowerCase();
+
+  // First, try an exact match (after normalization) against the keys.
   for (let key in memberInfoMapping) {
-    if (key.trim().endsWith(surname)) {
+    let normalizedKey = normalize(key).toLowerCase();
+    if (normalizedMember === normalizedKey) {
+      return memberInfoMapping[key];
+    }
+  }
+
+  // If no exact match, try matching by surname (the last word).
+  let parts = normalizedMember.split(" ");
+  let surname = parts[parts.length - 1];
+  for (let key in memberInfoMapping) {
+    let normalizedKey = normalize(key).toLowerCase();
+    if (normalizedKey.endsWith(surname)) {
       return memberInfoMapping[key];
     }
   }
   return "";
 }
+
 
 function getCurrentTimestamp() {
   // Example: "3:05:07 PM" (12-hour format)
@@ -741,6 +754,18 @@ function getMotionResultText() {
     return "Motion Failed";
   }
 }
+
+function updateInProgressRow() {
+  if (inProgressRow && statementCell) {
+    statementCell.textContent = constructedStatement;
+  }
+  if (inProgressRecordIndex !== null) {
+    // Update only the statement field; do not update time.
+    historyRecords[inProgressRecordIndex].statement = constructedStatement;
+    saveHistoryToLocalStorage();
+  }
+}
+
 
 // Build the statement
 function updateStatement() {
