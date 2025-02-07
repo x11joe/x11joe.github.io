@@ -60,8 +60,8 @@ function addCtrlClickHandler(row) {
       let member = row.getAttribute("data-member") || "";
       // Look up member info using your helper function.
       let memberInfo = getMemberInfoForMember(member);
-      // Build the final string.
-      let finalString = timeStr + " | " + statementStr + " | " + memberInfo;
+      // Build the final string and remove commas.
+      let finalString = (timeStr + " | " + statementStr + " | " + memberInfo).replace(/,/g, "");
       // Copy the final string to the clipboard.
       navigator.clipboard.writeText(finalString).then(() => {
         // Remove the yellow highlight after 1 second.
@@ -73,7 +73,6 @@ function addCtrlClickHandler(row) {
     }
   }, true); // Use capture mode so this runs before cell-level click handlers.
 }
-
 
 function loadMemberInfoXML() {
   fetch('allMember.xml')
@@ -209,8 +208,8 @@ function createNewRowInHistory() {
   localTimeCell.textContent = recordTime;
   localTimeCell.classList.add("clickable");
   localTimeCell.addEventListener("click", function () {
-    // Normal single-click copy (if Control is not held, our row handler will override it)
-    navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
+    // Normal single-click copy; remove commas.
+    navigator.clipboard.writeText(localTimeCell.textContent.replace(/,/g, "")).then(() => {
       localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
         localTimeCell.classList.remove("copied-cell");
@@ -224,7 +223,7 @@ function createNewRowInHistory() {
   localStatementCell.textContent = constructedStatement;
   localStatementCell.classList.add("clickable");
   localStatementCell.addEventListener("click", function () {
-    navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
+    navigator.clipboard.writeText(localStatementCell.textContent.replace(/,/g, "")).then(() => {
       localStatementCell.classList.add("copied-cell");
       setTimeout(() => {
         localStatementCell.classList.remove("copied-cell");
@@ -952,7 +951,8 @@ function copyToClipboard(highlight = true) {
   ) {
     return;
   }
-  navigator.clipboard.writeText(constructedStatement).then(() => {
+  // Remove commas before copying.
+  navigator.clipboard.writeText(constructedStatement.replace(/,/g, "")).then(() => {
     if (highlight) {
       const log = document.getElementById("log");
       log.classList.add("copied");
@@ -960,6 +960,7 @@ function copyToClipboard(highlight = true) {
     }
   });
 }
+
 
 /* -------------
    Reset Logic
@@ -1059,7 +1060,7 @@ function loadHistoryFromLocalStorage() {
       tdTime.textContent = record.time;
       tdTime.classList.add("clickable");
       tdTime.addEventListener("click", function () {
-        navigator.clipboard.writeText(tdTime.textContent).then(() => {
+        navigator.clipboard.writeText(tdTime.textContent.replace(/,/g, "")).then(() => {
           tdTime.classList.add("copied-cell");
           setTimeout(() => {
             tdTime.classList.remove("copied-cell");
@@ -1073,7 +1074,7 @@ function loadHistoryFromLocalStorage() {
       tdStatement.textContent = record.statement;
       tdStatement.classList.add("clickable");
       tdStatement.addEventListener("click", function () {
-        navigator.clipboard.writeText(tdStatement.textContent).then(() => {
+        navigator.clipboard.writeText(tdStatement.textContent.replace(/,/g, "")).then(() => {
           tdStatement.classList.add("copied-cell");
           setTimeout(() => {
             tdStatement.classList.remove("copied-cell");
