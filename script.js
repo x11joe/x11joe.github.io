@@ -107,6 +107,10 @@ function loadMemberInfoXML() {
             memberInfoStr += key + ":" + value + ";";
           }
         }
+        // Remove the trailing semicolon, if it exists
+        if (memberInfoStr.endsWith(";")) {
+          memberInfoStr = memberInfoStr.slice(0, -1);
+        }
         memberInfoMapping[fullName] = memberInfoStr;
       }
       console.log("Member info mapping loaded:", memberInfoMapping);
@@ -115,6 +119,7 @@ function loadMemberInfoXML() {
       console.error("Failed to load member info XML:", err);
     });
 }
+
 
 
 // Helper function to get member info for a given member name.
