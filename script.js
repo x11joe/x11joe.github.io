@@ -88,9 +88,12 @@ function loadMemberInfoXML() {
         if (!nameElem || !firstNameElem) continue;
         let name = nameElem.textContent.trim();
         let firstName = firstNameElem.textContent.trim();
-        // Build a key – for example, "Representative B. Anderson"
+        // Build a full name—for example, "Representative B. Anderson"
         let fullName = (firstName + " " + name).trim();
-        // (If you prefer to key by last name only, you might instead use the surname.)
+        // Only add records where fullName starts with "Senator" or "Representative"
+        if (!fullName.match(/^(Senator|Representative)\b/i)) {
+          continue;
+        }
         let fieldsElement = hotKey.getElementsByTagName("Fields")[0];
         let fields = fieldsElement.getElementsByTagName("Field");
         let memberInfoStr = "";
@@ -112,6 +115,7 @@ function loadMemberInfoXML() {
       console.error("Failed to load member info XML:", err);
     });
 }
+
 
 // Helper function to get member info for a given member name.
 // It first tries an exact match and then falls back to matching by the last name.
