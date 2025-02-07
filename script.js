@@ -138,20 +138,21 @@ function groupCommitteeMembers(members) {
   return { chairs, viceChairs, others };
 }
 
-
 function createNewRowInHistory() {
-  // Capture the current timestamp in a local variable.
+  // Capture the current timestamp.
   const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
+  // If a member is selected, store it as a data attribute on the row.
+  if (selectedMember) {
+    inProgressRow.setAttribute("data-member", selectedMember);
+  }
+
   // Time cell
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = recordTime;
-  // Make the cell show a pointer cursor
   localTimeCell.classList.add("clickable");
-  
-  // When user clicks the time cell, copy the time to clipboard
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent).then(() => {
       localTimeCell.classList.add("copied-cell");
@@ -165,10 +166,7 @@ function createNewRowInHistory() {
   // Statement cell
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
-  // Make the cell show a pointer cursor
   localStatementCell.classList.add("clickable");
-  
-  // When user clicks the statement cell, copy the statement to clipboard
   localStatementCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localStatementCell.textContent).then(() => {
       localStatementCell.classList.add("copied-cell");
@@ -179,11 +177,11 @@ function createNewRowInHistory() {
   });
   inProgressRow.appendChild(localStatementCell);
 
-  // Create a cell to hold all the +/- time adjustment buttons
+  // Create a cell for the +/- time adjustment buttons.
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap";
 
-  // Helper to create a time adjustment button
+  // Helper to create a time adjustment button.
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -205,7 +203,7 @@ function createNewRowInHistory() {
     return btn;
   }
 
-  // Create +/- time adjustment buttons (split into two rows for aesthetics)
+  // Create the minus and plus groups.
   const minusDiv = document.createElement("div");
   minusDiv.classList.add("time-control-group");
   minusDiv.appendChild(createTimeAdjustButton("-5s", -5));
@@ -218,7 +216,7 @@ function createNewRowInHistory() {
   plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
   plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
 
-  // NEW: "Now" button to set the time to the current local time
+  // "Now" button.
   const nowDiv = document.createElement("div");
   nowDiv.classList.add("time-control-group");
   const nowBtn = document.createElement("button");
@@ -241,10 +239,9 @@ function createNewRowInHistory() {
   timeAdjustCell.appendChild(minusDiv);
   timeAdjustCell.appendChild(plusDiv);
   timeAdjustCell.appendChild(nowDiv);
-
   inProgressRow.appendChild(timeAdjustCell);
 
-  // Delete cell with a Delete button for live rows
+  // Delete cell with a Delete button.
   const deleteCell = document.createElement("td");
   const deleteButton = document.createElement("button");
   deleteButton.textContent = "X";
@@ -261,20 +258,39 @@ function createNewRowInHistory() {
   deleteCell.appendChild(deleteButton);
   inProgressRow.appendChild(deleteCell);
 
-  // Append the row to the table body
-  tableBody.appendChild(inProgressRow);
+  // Add a double-click event listener to the entire row.
+  inProgressRow.addEventListener("dblclick", function () {
+    // Highlight the row in yellow.
+    inProgressRow.style.backgroundColor = "yellow";
+    // Get the time (first cell) and statement (second cell).
+    let timeStr = inProgressRow.cells[0].textContent;
+    let statementStr = inProgressRow.cells[1].textContent;
+    // Get the member name from the data attribute.
+    let member = inProgressRow.getAttribute("data-member");
+    // Look up member info from the XML mapping.
+    let memberInfo = getMemberInfoForMember(member);
+    // Build the final string.
+    let finalString = timeStr + " | " + statementStr + " | " + memberInfo;
+    // Copy the final string to the clipboard.
+    navigator.clipboard.writeText(finalString).then(() => {
+      // Remove yellow highlight after 1 second.
+      setTimeout(() => {
+        inProgressRow.style.backgroundColor = "";
+      }, 1000);
+    });
+    console.log("Double-click copy:", finalString);
+  });
 
-  // Push the new record into historyRecords using recordTime
+  // Append the row and update history.
+  tableBody.appendChild(inProgressRow);
   inProgressRecordIndex = historyRecords.length;
   historyRecords.push({ time: recordTime, statement: constructedStatement });
   saveHistoryToLocalStorage();
 
-  // Update global references for the in-progress row
+  // Update global references.
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
-
 
 function updateInProgressRow() {
   if (inProgressRow && statementCell) {
@@ -1536,6 +1552,27 @@ document.addEventListener("DOMContentLoaded", () => {
   // 6) Load previous statement history
   loadHistoryFromLocalStorage();
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Existing initialization...
+  committees = loadCommitteesFromLocalStorage();
+  populateCommitteeSelect();
+  let storedCommittee = localStorage.getItem("selectedCommittee");
+  if (storedCommittee && committees[storedCommittee]) {
+    document.getElementById("committeeSelect").value = storedCommittee;
+  }
+  let storedAutoCopy = localStorage.getItem("autoCopyEnabled");
+  if (storedAutoCopy !== null) {
+    autoCopyEnabled = storedAutoCopy === "true";
+    document.getElementById("autoCopyCheckbox").checked = autoCopyEnabled;
+  }
+  updateMembers();
+  loadHistoryFromLocalStorage();
+
+  // NEW: Load the XML member info.
+  loadMemberInfoXML();
+});
+
 
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
