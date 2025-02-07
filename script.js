@@ -1476,4 +1476,23 @@ document.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromLocalStorage();
 });
 
+// This runs in the main page environment (the same environment as your "script.js" functions).
+window.addEventListener("message", function (event) {
+  // 1) Only handle messages from our own content script
+  if (event.source !== window) return; // ignore if from an iframe
+  if (!event.data) return;
+  if (event.data.source !== "CLERK_EXTENSION") return;
+
+  // 2) Check the type
+  if (event.data.type === "HEARING_STATEMENT") {
+    // This is your hearing row text
+    const rowText = event.data.payload;
+    console.log("Page context received row text via postMessage:", rowText);
+
+    // 3) Now we CAN call your real function
+    insertHearingStatementDirect(rowText); 
+    // e.g. function that sets constructedStatement and calls createNewRowInHistory
+  }
+});
+
 
