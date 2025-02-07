@@ -235,6 +235,32 @@ function finalizeInProgressRow() {
   statementStartTime = null;
 }
 
+/**
+ * Inserts a brand-new statement row into the "History" table
+ * using the current local time and the given statement text.
+ */
+function insertHearingStatementDirect(statementText) {
+  // 1) If there's an in-progress row, finalize it so we don't interfere
+  if (inProgressRow !== null) {
+    resetAllAndFinalize();
+  }
+
+  // 2) Set the "constructedStatement" to the new text
+  constructedStatement = statementText;
+
+  // 3) Record the start time (like selectMember does)
+  statementStartTime = getCurrentTimestamp();
+
+  // 4) Create a new row in the history
+  createNewRowInHistory();
+
+  // 5) Immediately finalize it if you want it to be a "done" row with no further editing:
+  finalizeInProgressRow();
+
+  // Or if you prefer to keep it “in‐progress”, remove that finalizeInProgressRow() call.
+}
+
+
 /* --------------------------
    Auto Copy
    -------------------------- */
