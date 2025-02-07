@@ -3,6 +3,9 @@
    -------------------------- */
 let historyRecords = [];
 
+// Global variable for XML member info mapping:
+let memberInfoMapping = {};
+
 let inProgressRecordIndex = null; // track the current record in historyRecords..
 
 let selectedMember = "";
@@ -38,6 +41,64 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 /* --------------------------
    Utility Functions
    -------------------------- */
+
+function loadMemberInfoXML() {
+  fetch('allMember.xml')
+    .then(response => response.text())
+    .then(str => (new window.DOMParser()).parseFromString(str, "text/xml"))
+    .then(data => {
+      let hotKeys = data.getElementsByTagName("HotKey");
+      for (let i = 0; i < hotKeys.length; i++) {
+        let hotKey = hotKeys[i];
+        let nameElem = hotKey.getElementsByTagName("Name")[0];
+        let firstNameElem = hotKey.getElementsByTagName("FirstName")[0];
+        if (!nameElem || !firstNameElem) continue;
+        let name = nameElem.textContent.trim();
+        let firstName = firstNameElem.textContent.trim();
+        // Build a key – for example, "Representative B. Anderson"
+        let fullName = (firstName + " " + name).trim();
+        // (If you prefer to key by last name only, you might instead use the surname.)
+        let fieldsElement = hotKey.getElementsByTagName("Fields")[0];
+        let fields = fieldsElement.getElementsByTagName("Field");
+        let memberInfoStr = "";
+        for (let j = 0; j < fields.length; j++) {
+          let field = fields[j];
+          let keyElem = field.getElementsByTagName("Key")[0];
+          let valueElem = field.getElementsByTagName("Value")[0];
+          if (keyElem && valueElem) {
+            let key = keyElem.textContent.trim();
+            let value = valueElem.textContent.trim();
+            memberInfoStr += key + ":" + value + ";";
+          }
+        }
+        memberInfoMapping[fullName] = memberInfoStr;
+      }
+      console.log("Member info mapping loaded:", memberInfoMapping);
+    })
+    .catch(err => {
+      console.error("Failed to load member info XML:", err);
+    });
+}
+
+// 3. Helper function to get member info for a given member name.
+// It first tries an exact match and then falls back to matching by the last name.
+function getMemberInfoForMember(member) {
+  if (!member) return "";
+  // Try exact match.
+  if (memberInfoMapping && memberInfoMapping[member]) {
+    return memberInfoMapping[member];
+  }
+  // Otherwise, attempt to match by surname (last word in the member name).
+  let parts = member.split(" ");
+  let surname = parts[parts.length - 1].trim();
+  for (let key in memberInfoMapping) {
+    if (key.trim().endsWith(surname)) {
+      return memberInfoMapping[key];
+    }
+  }
+  return "";
+}
+
 function getCurrentTimestamp() {
   // Example: "3:05:07 PM" (12-hour format)
   return new Date().toLocaleTimeString([], {
