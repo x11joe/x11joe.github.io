@@ -216,7 +216,6 @@ function createNewRowInHistory(fileLink = "") {
   localTimeCell.textContent = recordTime;
   localTimeCell.classList.add("clickable");
   localTimeCell.addEventListener("click", function () {
-    // Normal single-click copy; remove commas.
     navigator.clipboard.writeText(localTimeCell.textContent.replace(/,/g, "")).then(() => {
       localTimeCell.classList.add("copied-cell");
       setTimeout(() => {
@@ -327,14 +326,20 @@ function createNewRowInHistory(fileLink = "") {
   // Append the row and update history.
   tableBody.appendChild(inProgressRow);
   inProgressRecordIndex = historyRecords.length;
-  // Store the member along with time and statement.
-  historyRecords.push({ time: recordTime, statement: constructedStatement, member: selectedMember });
+  // Save the fileLink along with the time, statement, and member.
+  historyRecords.push({ 
+    time: recordTime, 
+    statement: constructedStatement, 
+    member: selectedMember,
+    fileLink: fileLink
+  });
   saveHistoryToLocalStorage();
 
   // Update global references.
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 function finalizeInProgressRow() {
   inProgressRow = null;
@@ -1071,6 +1076,10 @@ function loadHistoryFromLocalStorage() {
       if (record.member) {
         tr.setAttribute("data-member", record.member);
       }
+      // If the record has a fileLink property, set it in the row's dataset.
+      if (record.fileLink) {
+        tr.dataset.fileLink = record.fileLink;
+      }
 
       // Time cell
       let tdTime = document.createElement("td");
@@ -1181,9 +1190,6 @@ function loadHistoryFromLocalStorage() {
     }
   }
 }
-
-
-
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
