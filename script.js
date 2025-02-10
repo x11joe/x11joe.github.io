@@ -339,7 +339,17 @@ function finalizeInProgressRow() {
  * Inserts a brand-new statement row into the "History" table
  * using the current local time and the given statement text.
  */
-function insertHearingStatementDirect(statementText) {
+function insertHearingStatementDirect(statementData) {
+  let statementText, fileLink;
+  // Check if we received an object with both text and link
+  if (typeof statementData === "object" && statementData !== null) {
+    statementText = statementData.text;
+    fileLink = statementData.link;
+  } else {
+    statementText = statementData;
+    fileLink = "";
+  }
+
   // 1) If there's an in-progress row, finalize it so we don't interfere
   if (inProgressRow !== null) {
     resetAllAndFinalize();
@@ -351,14 +361,13 @@ function insertHearingStatementDirect(statementText) {
   // 3) Record the start time (like selectMember does)
   statementStartTime = getCurrentTimestamp();
 
-  // 4) Create a new row in the history
-  createNewRowInHistory();
+  // 4) Create a new row in the history, passing the fileLink along
+  createNewRowInHistory(fileLink);
 
-  // 5) Immediately finalize it if you want it to be a "done" row with no further editing:
+  // 5) Immediately finalize it if you want it to be a "done" row with no further editing
   finalizeInProgressRow();
-
-  // Or if you prefer to keep it “in‐progress”, remove that finalizeInProgressRow() call.
 }
+
 
 
 /* --------------------------
