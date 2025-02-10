@@ -1100,10 +1100,34 @@ function loadHistoryFromLocalStorage() {
         tr.dataset.fileLink = record.fileLink;
       }
 
-      // Time cell
+      // Time cell as an editable field
       let tdTime = document.createElement("td");
       tdTime.textContent = record.time;
+      tdTime.contentEditable = "true";
       tdTime.classList.add("clickable");
+      // Prevent Enter key from inserting new lines
+      tdTime.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          tdTime.blur();
+        }
+      });
+      // When the user finishes editing, validate the new time.
+      tdTime.addEventListener("blur", function () {
+        let newTime = tdTime.textContent.trim();
+        // Regular expression: one or two digits for hour, colon, two digits for minutes, colon, two digits for seconds, space, then AM or PM.
+        let timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d:[0-5]\d\s+(AM|PM)$/i;
+        if (timeRegex.test(newTime)) {
+          // Valid – update the record and save to local storage.
+          record.time = newTime;
+          saveHistoryToLocalStorage();
+        } else {
+          alert("Invalid time format. Please enter time in the format H:mm:ss AM/PM (e.g., 5:15:32 PM).");
+          // Revert to the old value
+          tdTime.textContent = record.time;
+        }
+      });
+      // Also allow a click on the time cell to copy its content.
       tdTime.addEventListener("click", function () {
         navigator.clipboard.writeText(tdTime.textContent.replace(/,/g, "")).then(() => {
           tdTime.classList.add("copied-cell");
@@ -1194,7 +1218,7 @@ function loadHistoryFromLocalStorage() {
       btnDelete.textContent = "X";
       btnDelete.classList.add("copy-row-button");
       btnDelete.style.backgroundColor = "#dc3545";
-      btnDelete.onclick = function() {
+      btnDelete.onclick = function () {
         historyRecords.splice(i, 1);
         saveHistoryToLocalStorage();
         loadHistoryFromLocalStorage();
@@ -1209,6 +1233,7 @@ function loadHistoryFromLocalStorage() {
     }
   }
 }
+
 
 function clearHistory() {
   localStorage.removeItem("historyRecords");
