@@ -1619,7 +1619,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadMemberInfoXML();
 });
 
-
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
   // 1) Only handle messages from our own content script
@@ -1635,8 +1634,10 @@ window.addEventListener("message", function (event) {
 
     // 3) Now we CAN call your real function
     insertHearingStatementDirect(rowText); 
-    // e.g. function that sets constructedStatement and calls createNewRowInHistory
+    // Scroll the window so the bottom of the page is visible
+    window.scrollTo(0, document.body.scrollHeight);
   }
 });
+
 
 
