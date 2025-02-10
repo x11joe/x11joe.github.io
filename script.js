@@ -47,6 +47,7 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 // the row is highlighted yellow and a final string is built and copied.
 function addCtrlClickHandler(row) {
   row.addEventListener("click", function (e) {
+    // If Control key is held, copy full statement.
     if (e.ctrlKey) {
       e.stopPropagation();
       e.preventDefault();
@@ -58,7 +59,7 @@ function addCtrlClickHandler(row) {
       // Get the annotation from the second cell.
       let annotation = (row.cells[1].textContent || "").trim() || " ";
       
-      // Use the member attribute to fetch the "comments" (from your XML mapping).
+      // Use the member attribute to fetch "comments" from your XML mapping.
       let member = row.getAttribute("data-member") || "";
       let comments = getMemberInfoForMember(member).trim() || " ";
       
@@ -67,8 +68,7 @@ function addCtrlClickHandler(row) {
       
       // Build the final string in the desired four-field format.
       let finalString = `${timeStr} | ${annotation} | ${comments} | ${link}`;
-      // Optionally remove commas.
-      finalString = finalString.replace(/,/g, "");
+      finalString = finalString.replace(/,/g, ""); // remove commas if needed
       
       navigator.clipboard.writeText(finalString).then(() => {
         setTimeout(() => {
@@ -76,9 +76,23 @@ function addCtrlClickHandler(row) {
         }, 1000);
       });
       console.log("Ctrl-click copy:", finalString);
+    } 
+    // If Shift key is held, copy only the link.
+    else if (e.shiftKey) {
+      e.stopPropagation();
+      e.preventDefault();
+      row.style.backgroundColor = "purple";
+      let link = (row.dataset.fileLink || "").trim() || " ";
+      navigator.clipboard.writeText(link).then(() => {
+        setTimeout(() => {
+          row.style.backgroundColor = "";
+        }, 1000);
+      });
+      console.log("Shift-click copy (link only):", link);
     }
   }, true);
 }
+
 
 
 
