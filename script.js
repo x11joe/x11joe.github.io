@@ -46,33 +46,36 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 // When the user clicks with the Control key held down,
 // the row is highlighted yellow and a final string is built and copied.
 function addCtrlClickHandler(row) {
-  row.addEventListener("click", function(e) {
+  row.addEventListener("click", function (e) {
     if (e.ctrlKey) {
-      // Prevent any other click handlers from firing.
       e.stopPropagation();
       e.preventDefault();
-      // Highlight the row in yellow.
       row.style.backgroundColor = "yellow";
-      // Retrieve the time and statement from the first two cells.
       let timeStr = row.cells[0].textContent;
       let statementStr = row.cells[1].textContent;
-      // Retrieve the member from the row's data attribute.
       let member = row.getAttribute("data-member") || "";
-      // Look up member info using your helper function.
       let memberInfo = getMemberInfoForMember(member);
-      // Build the final string and remove commas.
-      let finalString = (timeStr + " | " + statementStr + " | " + memberInfo).replace(/,/g, "");
-      // Copy the final string to the clipboard.
+      
+      // Check if a file link was stored on the row.
+      let fileLink = row.dataset.fileLink || "";
+      
+      let finalString;
+      if (fileLink) {
+        finalString = (timeStr + " | " + statementStr + " | " + fileLink + " | " + memberInfo).replace(/,/g, "");
+      } else {
+        finalString = (timeStr + " | " + statementStr + " | " + memberInfo).replace(/,/g, "");
+      }
+      
       navigator.clipboard.writeText(finalString).then(() => {
-        // Remove the yellow highlight after 1 second.
         setTimeout(() => {
           row.style.backgroundColor = "";
         }, 1000);
       });
       console.log("Ctrl-click copy:", finalString);
     }
-  }, true); // Use capture mode so this runs before cell-level click handlers.
+  }, true);
 }
+
 
 function loadMemberInfoXML() {
   fetch('allMember.xml')
@@ -192,7 +195,7 @@ function groupCommitteeMembers(members) {
   return { chairs, viceChairs, others };
 }
 
-function createNewRowInHistory() {
+function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
   const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
@@ -201,6 +204,11 @@ function createNewRowInHistory() {
   // If a member is selected, store it as a data attribute on the row.
   if (selectedMember) {
     inProgressRow.setAttribute("data-member", selectedMember);
+  }
+
+  // Store the file link as a data attribute if available.
+  if (fileLink) {
+    inProgressRow.dataset.fileLink = fileLink;
   }
 
   // Time cell
