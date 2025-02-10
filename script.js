@@ -51,20 +51,24 @@ function addCtrlClickHandler(row) {
       e.stopPropagation();
       e.preventDefault();
       row.style.backgroundColor = "yellow";
-      let timeStr = row.cells[0].textContent;
-      let statementStr = row.cells[1].textContent;
+      
+      // Get the time from the first cell; if missing, use a single space.
+      let timeStr = (row.cells[0].textContent || "").trim() || " ";
+      
+      // Get the annotation from the second cell.
+      let annotation = (row.cells[1].textContent || "").trim() || " ";
+      
+      // Use the member attribute to fetch the "comments" (from your XML mapping).
       let member = row.getAttribute("data-member") || "";
-      let memberInfo = getMemberInfoForMember(member);
+      let comments = getMemberInfoForMember(member).trim() || " ";
       
-      // Check if a file link was stored on the row.
-      let fileLink = row.dataset.fileLink || "";
+      // Get the file link from the row's dataset (if stored); otherwise use a blank.
+      let link = (row.dataset.fileLink || "").trim() || " ";
       
-      let finalString;
-      if (fileLink) {
-        finalString = (timeStr + " | " + statementStr + " | " + fileLink + " | " + memberInfo).replace(/,/g, "");
-      } else {
-        finalString = (timeStr + " | " + statementStr + " | " + memberInfo).replace(/,/g, "");
-      }
+      // Build the final string in the desired four-field format.
+      let finalString = `${timeStr} | ${annotation} | ${comments} | ${link}`;
+      // Optionally remove commas.
+      finalString = finalString.replace(/,/g, "");
       
       navigator.clipboard.writeText(finalString).then(() => {
         setTimeout(() => {
@@ -75,6 +79,7 @@ function addCtrlClickHandler(row) {
     }
   }, true);
 }
+
 
 
 function loadMemberInfoXML() {
