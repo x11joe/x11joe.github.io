@@ -230,10 +230,42 @@ function createNewRowInHistory(fileLink = "") {
     inProgressRow.dataset.fileLink = fileLink;
   }
 
-  // Time cell
+  // Create a new record object that we will push into historyRecords.
+  const newRecord = { 
+    time: recordTime, 
+    statement: constructedStatement, 
+    member: selectedMember,
+    fileLink: fileLink
+  };
+
+  // Time cell as an editable field:
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = recordTime;
+  localTimeCell.contentEditable = "true";
   localTimeCell.classList.add("clickable");
+  // Prevent Enter key from inserting new lines and blur on Enter.
+  localTimeCell.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      localTimeCell.blur();
+    }
+  });
+  // On blur, validate the new time format and update the record.
+  localTimeCell.addEventListener("blur", function() {
+    let newTime = localTimeCell.textContent.trim();
+    // Regular expression: one or two digits for hour, colon, two digits for minutes, colon, two digits for seconds,
+    // a space, then AM or PM (case-insensitive)
+    let timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d:[0-5]\d\s+(AM|PM)$/i;
+    if (timeRegex.test(newTime)) {
+      newRecord.time = newTime;
+      saveHistoryToLocalStorage();
+    } else {
+      alert("Invalid time format. Please enter time in the format H:mm:ss AM/PM (e.g., 5:15:32 PM).");
+      // Revert to the old value.
+      localTimeCell.textContent = newRecord.time;
+    }
+  });
+  // Allow clicking to copy the time.
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent.replace(/,/g, "")).then(() => {
       localTimeCell.classList.add("copied-cell");
@@ -244,7 +276,7 @@ function createNewRowInHistory(fileLink = "") {
   });
   inProgressRow.appendChild(localTimeCell);
 
-  // Statement cell
+  // Statement cell (unchanged)
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   localStatementCell.classList.add("clickable");
@@ -262,7 +294,6 @@ function createNewRowInHistory(fileLink = "") {
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap";
 
-  // Helper to create a time adjustment button.
   function createTimeAdjustButton(label, secondsToAdjust) {
     const btn = document.createElement("button");
     btn.textContent = label;
@@ -270,12 +301,14 @@ function createNewRowInHistory(fileLink = "") {
     btn.onclick = () => {
       let timeDate = new Date("1970-01-01 " + localTimeCell.textContent);
       timeDate.setSeconds(timeDate.getSeconds() + secondsToAdjust);
-      const newTimeStr = timeDate.toLocaleTimeString([], {
+      let newTimeStr = timeDate.toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
       });
       localTimeCell.textContent = newTimeStr;
+      newRecord.time = newTimeStr; // update the record
+      saveHistoryToLocalStorage();
       btn.classList.add("copied-cell");
       setTimeout(() => {
         btn.classList.remove("copied-cell");
@@ -284,7 +317,6 @@ function createNewRowInHistory(fileLink = "") {
     return btn;
   }
 
-  // Create the minus and plus groups.
   const minusDiv = document.createElement("div");
   minusDiv.classList.add("time-control-group");
   minusDiv.appendChild(createTimeAdjustButton("-5s", -5));
@@ -297,7 +329,6 @@ function createNewRowInHistory(fileLink = "") {
   plusDiv.appendChild(createTimeAdjustButton("+3s", +3));
   plusDiv.appendChild(createTimeAdjustButton("+5s", +5));
 
-  // "Now" button.
   const nowDiv = document.createElement("div");
   nowDiv.classList.add("time-control-group");
   const nowBtn = document.createElement("button");
@@ -310,6 +341,8 @@ function createNewRowInHistory(fileLink = "") {
       second: '2-digit'
     });
     localTimeCell.textContent = newTimeStr;
+    newRecord.time = newTimeStr;
+    saveHistoryToLocalStorage();
     nowBtn.classList.add("copied-cell");
     setTimeout(() => {
       nowBtn.classList.remove("copied-cell");
@@ -344,20 +377,15 @@ function createNewRowInHistory(fileLink = "") {
 
   // Append the row and update history.
   tableBody.appendChild(inProgressRow);
-  inProgressRecordIndex = historyRecords.length;
-  // Save the fileLink along with the time, statement, and member.
-  historyRecords.push({ 
-    time: recordTime, 
-    statement: constructedStatement, 
-    member: selectedMember,
-    fileLink: fileLink
-  });
+  historyRecords.push(newRecord);
+  inProgressRecordIndex = historyRecords.length - 1;
   saveHistoryToLocalStorage();
 
   // Update global references.
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 function finalizeInProgressRow() {
