@@ -265,7 +265,7 @@ function createNewRowInHistory(fileLink = "") {
       localTimeCell.textContent = newRecord.time;
     }
   });
-  // Allow clicking to copy the time.
+  // Also allow a click on the time cell to copy its content.
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent.replace(/,/g, "")).then(() => {
       localTimeCell.classList.add("copied-cell");
@@ -276,7 +276,7 @@ function createNewRowInHistory(fileLink = "") {
   });
   inProgressRow.appendChild(localTimeCell);
 
-  // Statement cell (unchanged)
+  // Statement cell
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   localStatementCell.classList.add("clickable");
@@ -362,6 +362,12 @@ function createNewRowInHistory(fileLink = "") {
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
+    // For a live row, remove its record from historyRecords.
+    if (inProgressRecordIndex !== null) {
+      historyRecords.splice(inProgressRecordIndex, 1);
+      saveHistoryToLocalStorage();
+    }
+    // Remove the row from the DOM.
     const row = this.closest("tr");
     if (row) {
       row.remove();
@@ -385,7 +391,6 @@ function createNewRowInHistory(fileLink = "") {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
-
 
 
 function finalizeInProgressRow() {
