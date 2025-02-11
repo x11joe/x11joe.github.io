@@ -1057,11 +1057,13 @@ function appendMeetingAction(action) {
     alert("Please select a member first!");
     return;
   }
+  // Process the selectedMember through applyUseLastNamesOnly
+  let formattedMember = applyUseLastNamesOnly(selectedMember);
   if (action === "Seconded") {
-    constructedStatement = `${selectedMember} Seconded`;
+    constructedStatement = `${formattedMember} Seconded`;
   } else {
     // e.g. "Senator Boehm - Introduced Bill"
-    constructedStatement = `${selectedMember} - ${action}`;
+    constructedStatement = `${formattedMember} - ${action}`;
   }
   document.getElementById("log").innerText = constructedStatement;
   updateInProgressRow();
