@@ -116,7 +116,7 @@ button:hover {
   z-index: 1000; /* so it stays on top of other elements */
 }
 
-.manage-committees-button button {
+.manage-committees-button button, lookup-members-button button {
   margin: 0; /* override default margin if needed */
   background-color: #6c757d; /* for example, or leave the default color */
 }
