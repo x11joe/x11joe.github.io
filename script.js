@@ -45,6 +45,20 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+// Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
+function applyUseLastNamesOnly(fullName) {
+  if (!useLastNamesOnly) return fullName;
+  if (fullName.startsWith("Senator ")) {
+    // Split by spaces and assume the last word is the last name.
+    let parts = fullName.split(" ");
+    if (parts.length >= 3) {
+      return "Senator " + parts[parts.length - 1];
+    }
+  }
+  return fullName;
+}
+
+
 // Attach a control-click event listener to a row.
 // When the user clicks with the Control key held down,
 // the row is highlighted yellow and a final string is built and copied.
@@ -899,12 +913,12 @@ function updateInProgressRow() {
 function updateStatement() {
   // If a member is selected but no main action has been chosen
   if (selectedMember && !mainAction) {
-    constructedStatement = selectedMember;
-    document.getElementById("log").innerText = constructedStatement;
-    updateInProgressRow();
-    autoCopyIfEnabled();
-    return;
-  }
+     constructedStatement = applyUseLastNamesOnly(selectedMember);
+     document.getElementById("log").innerText = constructedStatement;
+     updateInProgressRow();
+     autoCopyIfEnabled();
+     return;
+   }
 
   // Allow no selectedMember only if mainAction is one of the vote actions
   if (!selectedMember &&
@@ -967,7 +981,7 @@ function updateStatement() {
 
   // 3) Moved
   else if (mainAction === "Moved") {
-     parts.push(selectedMember);
+     parts.push(applyUseLastNamesOnly(selectedMember));
    
      if (selectedBillType === "Reconsider") {
        parts.push("Moved to Reconsider");
@@ -998,7 +1012,7 @@ function updateStatement() {
 
   // 4) Other main actions (e.g. "Seconded")
   else if (mainAction) {
-    parts.push(`${selectedMember} - ${mainAction}`);
+    parts.push(`${applyUseLastNamesOnly(selectedMember)} - ${mainAction}`);
   }
 
   if (parts.length === 0) {
@@ -1746,20 +1760,15 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
     introBtn.style.padding = "5px 8px";
     introBtn.style.fontSize = "12px";
     introBtn.addEventListener("click", () => {
-      // Use the full member name from the mapping (or fallback to memberName)
-      let fullName = memberName;
-      // If you want to be sure the prefix is present (e.g. "Senator"), you could check:
-      // if (!/^Senator\s/i.test(fullName)) { fullName = "Senator " + fullName; }
-      // For now, we assume your XML data already returns the full title.
-      let message = `${fullName} - Introduced Bill`;
-      // Call your existing function to insert a new history record.
-      insertHearingStatementDirect(message);
-      console.log("Introduced Bill entry added:", message);
-      // Optionally, provide visual feedback on this button:
-      introBtn.textContent = "Added!";
-      setTimeout(() => {
-        introBtn.textContent = "Introduced Bill";
-      }, 1000);
+      // Use the full member name from the lookup result, processed by applyUseLastNamesOnly.
+        let fullName = applyUseLastNamesOnly(memberName);
+        let message = `${fullName} - Introduced Bill`;
+        insertHearingStatementDirect(message);
+        console.log("Introduced Bill entry added:", message);
+        introBtn.textContent = "Added!";
+        setTimeout(() => {
+          introBtn.textContent = "Introduced Bill";
+        }, 1000);
     });
     itemDiv.appendChild(introBtn);
 
