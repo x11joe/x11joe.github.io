@@ -1795,7 +1795,10 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
     introBtn.style.padding = "5px 8px";
     introBtn.style.fontSize = "12px";
     introBtn.addEventListener("click", () => {
-      // Use the full member name from the lookup result, processed by applyUseLastNamesOnly.
+        // Set selectedMember so that createNewRowInHistory() will store it
+        selectedMember = memberName;
+        // Process the member name using applyUseLastNamesOnly (this works for senators, representatives,
+        // as well as for chairs and vice chairs)
         let fullName = applyUseLastNamesOnly(memberName);
         let message = `${fullName} - Introduced Bill`;
         insertHearingStatementDirect(message);
@@ -1804,7 +1807,8 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
         setTimeout(() => {
           introBtn.textContent = "Introduced Bill";
         }, 1000);
-    });
+     });
+
     itemDiv.appendChild(introBtn);
 
     resultsDiv.appendChild(itemDiv);
