@@ -1754,67 +1754,79 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 
   // Create a list of matching results.
   matchingMembers.forEach(memberName => {
-    // Create a container for this result
-    const itemDiv = document.createElement("div");
-    itemDiv.style.display = "flex";
-    itemDiv.style.justifyContent = "space-between";
-    itemDiv.style.alignItems = "center";
-    itemDiv.style.padding = "5px 0";
-    itemDiv.style.borderBottom = "1px solid #eee";
-
-    // Create a span to hold the member's name.
-    const nameSpan = document.createElement("span");
-    nameSpan.textContent = memberName;
-    itemDiv.appendChild(nameSpan);
-
-    // Create a "Copy" button
-    const copyBtn = document.createElement("button");
-    copyBtn.textContent = "Copy Member Info";
-    copyBtn.style.marginLeft = "10px";
-    copyBtn.style.padding = "5px 8px";
-    copyBtn.style.fontSize = "12px";
-    copyBtn.addEventListener("click", () => {
-      // When clicked, copy the member info from memberInfoMapping.
-      let info = memberInfoMapping[memberName];
-      if (!info) info = memberName; // fallback if info missing
-      navigator.clipboard.writeText(info).then(() => {
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => {
-          copyBtn.textContent = "Copy";
-        }, 1000);
-      }).catch(err => {
-        console.error("Failed to copy member info:", err);
-      });
-    });
-    itemDiv.appendChild(copyBtn);
-
-    // Create an "Introduced Bill" shortcut button.
-    // When clicked, this will add a new entry into the history in the format:
-    // "Senator John Doe - Introduced Bill"
-    const introBtn = document.createElement("button");
-    introBtn.textContent = "Introduced Bill";
-    introBtn.style.marginLeft = "5px";
-    introBtn.style.padding = "5px 8px";
-    introBtn.style.fontSize = "12px";
-    introBtn.addEventListener("click", () => {
-        // Set selectedMember so that createNewRowInHistory() will store it
-        selectedMember = memberName;
-        // Process the member name using applyUseLastNamesOnly (this works for senators, representatives,
-        // as well as for chairs and vice chairs)
-        let fullName = applyUseLastNamesOnly(memberName);
-        let message = `${fullName} - Introduced Bill`;
-        insertHearingStatementDirect(message);
-        console.log("Introduced Bill entry added:", message);
-        introBtn.textContent = "Added!";
-        setTimeout(() => {
-          introBtn.textContent = "Introduced Bill";
-        }, 1000);
+     // Create a container for this result
+     const itemDiv = document.createElement("div");
+     itemDiv.style.display = "flex";
+     itemDiv.style.justifyContent = "space-between";
+     itemDiv.style.alignItems = "center";
+     itemDiv.style.padding = "5px 0";
+     itemDiv.style.borderBottom = "1px solid #eee";
+   
+     // Create a span to hold the member's name.
+     const nameSpan = document.createElement("span");
+     nameSpan.textContent = memberName;
+     
+     // *** NEW: Clicking the name copies the member name to the clipboard.
+     nameSpan.addEventListener("click", () => {
+       navigator.clipboard.writeText(memberName).then(() => {
+         // Temporarily change the background to a light green to indicate success.
+         nameSpan.style.backgroundColor = "#d4edda";
+         setTimeout(() => {
+           nameSpan.style.backgroundColor = "";
+         }, 1000);
+       }).catch(err => {
+         console.error("Failed to copy member name:", err);
+       });
      });
+     
+     itemDiv.appendChild(nameSpan);
+   
+     // Create a "Copy" button (if you still want to keep this button)
+     const copyBtn = document.createElement("button");
+     copyBtn.textContent = "Copy Member Info";
+     copyBtn.style.marginLeft = "10px";
+     copyBtn.style.padding = "5px 8px";
+     copyBtn.style.fontSize = "12px";
+     copyBtn.addEventListener("click", (e) => {
+       // Prevent the event from bubbling up to the nameSpan click.
+       e.stopPropagation();
+       let info = memberInfoMapping[memberName];
+       if (!info) info = memberName; // fallback if info missing
+       navigator.clipboard.writeText(info).then(() => {
+         copyBtn.textContent = "Copied!";
+         setTimeout(() => {
+           copyBtn.textContent = "Copy";
+         }, 1000);
+       }).catch(err => {
+         console.error("Failed to copy member info:", err);
+       });
+     });
+     itemDiv.appendChild(copyBtn);
+   
+     // Create an "Introduced Bill" shortcut button.
+     const introBtn = document.createElement("button");
+     introBtn.textContent = "Introduced Bill";
+     introBtn.style.marginLeft = "5px";
+     introBtn.style.padding = "5px 8px";
+     introBtn.style.fontSize = "12px";
+     introBtn.addEventListener("click", (e) => {
+         // Prevent the event from bubbling up so that the name click is not triggered.
+         e.stopPropagation();
+         selectedMember = memberName;
+         let fullName = applyUseLastNamesOnly(memberName);
+         let message = `${fullName} - Introduced Bill`;
+         insertHearingStatementDirect(message);
+         console.log("Introduced Bill entry added:", message);
+         introBtn.textContent = "Added!";
+         setTimeout(() => {
+           introBtn.textContent = "Introduced Bill";
+         }, 1000);
+      });
+     itemDiv.appendChild(introBtn);
+   
+     resultsDiv.appendChild(itemDiv);
+   });
 
-    itemDiv.appendChild(introBtn);
-
-    resultsDiv.appendChild(itemDiv);
-  });
 });
 
 
