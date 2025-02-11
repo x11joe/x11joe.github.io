@@ -1658,6 +1658,85 @@ function transformMemberLine(line, committeeName, femaleNames) {
   }
 }
 
+// --- Lookup Members Modal Functions ---
+
+// Open the Lookup Members modal
+function openLookupMembersModal() {
+  document.getElementById("lookupMembersModal").classList.remove("hidden");
+  document.getElementById("lookupInput").value = "";
+  document.getElementById("lookupResults").innerHTML = "";
+  document.getElementById("lookupInput").focus();
+}
+
+// Close the Lookup Members modal
+function closeLookupMembersModal() {
+  document.getElementById("lookupMembersModal").classList.add("hidden");
+}
+
+// Attach click event to the Lookup Members button
+document.getElementById("lookupMembersBtn").addEventListener("click", openLookupMembersModal);
+
+// When the user types in the lookup input, filter the members
+document.getElementById("lookupInput").addEventListener("keyup", function() {
+  const query = this.value.trim().toLowerCase();
+  const resultsDiv = document.getElementById("lookupResults");
+  resultsDiv.innerHTML = ""; // Clear previous results
+
+  // If the query is empty, do nothing further.
+  if (!query) return;
+
+  // Loop through the keys in memberInfoMapping.
+  // (Assuming memberInfoMapping is already loaded via loadMemberInfoXML().)
+  const matchingMembers = Object.keys(memberInfoMapping).filter(memberName => {
+    // For a more friendly search, you might remove common prefixes.
+    let normalized = memberName.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "");
+    return normalized.toLowerCase().includes(query);
+  });
+
+  if (matchingMembers.length === 0) {
+    resultsDiv.innerHTML = "<p>No matching members found.</p>";
+    return;
+  }
+
+  // Create a list of matching results.
+  matchingMembers.forEach(memberName => {
+    // Create a container for this result
+    const itemDiv = document.createElement("div");
+    itemDiv.style.display = "flex";
+    itemDiv.style.justifyContent = "space-between";
+    itemDiv.style.alignItems = "center";
+    itemDiv.style.padding = "5px 0";
+    itemDiv.style.borderBottom = "1px solid #eee";
+
+    // Create a span to hold the member's name (you can add additional formatting if needed)
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = memberName;
+    itemDiv.appendChild(nameSpan);
+
+    // Create a "Copy" button
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "Copy";
+    copyBtn.style.marginLeft = "10px";
+    copyBtn.style.padding = "5px 8px";
+    copyBtn.style.fontSize = "12px";
+    copyBtn.addEventListener("click", () => {
+      // When clicked, copy the member info from memberInfoMapping.
+      let info = memberInfoMapping[memberName];
+      if (!info) info = memberName; // fallback
+      navigator.clipboard.writeText(info).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.textContent = "Copy";
+        }, 1000);
+      }).catch(err => {
+        console.error("Failed to copy member info:", err);
+      });
+    });
+    itemDiv.appendChild(copyBtn);
+
+    resultsDiv.appendChild(itemDiv);
+  });
+});
 
 
 // Support Ctrl + Enter to copy
