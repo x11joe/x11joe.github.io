@@ -74,36 +74,51 @@ CoordMode("Mouse", "Screen")  ; Use screen coordinates for MouseMove
         ; --- Set the Link (if provided) ---
         if (Trim(match.link) != "")  ; Only process if link is not empty
         {
-            ; From the starting mouse position, move 30 pixels to the left and double-click to open the popup.
+            ; From the starting mouse position, move 30 pixels to the left
             MouseMove(startX - 30, startY, 0)  ; Use absolute coordinates: 30 pixels left of startX
             Sleep(100)
+            ; Double-click at this starting position to try and open the popup.
             Click("left", 2)
             Sleep(100)
             
-            ; Wait for the popup window titled "Annotation Metadata" (up to 3 seconds)
-            if !WinWaitActive("Annotation Metadata", "", 3)
+            ; Instead of a fixed 3-second wait, shift the Y coordinate downward by 5 pixels at a time (up to 100 pixels)
+            popupFound := false
+            shiftAmt := 0
+            while (shiftAmt <= 100) {
+                if WinExist("Annotation Metadata")
+                {
+                    popupFound := true
+                    break
+                }
+                shiftAmt += 5
+                MouseMove(startX - 30, startY + shiftAmt, 0)  ; Adjust the Y coordinate downward
+                Sleep(100)
+                ; Double-click at the new position
+                Click("left", 2)
+                Sleep(100)
+            }
+            if (!popupFound)
             {
-                MsgBox("Popup did not appear.")
+                MsgBox("Popup did not appear after shifting down 100 pixels.")
             }
             else
             {
                 ; Retrieve the popup's position.
-                winX := 0
-                winY := 0
-                winWidth := 0
-                winHeight := 0
+                winX := 0, winY := 0, winWidth := 0, winHeight := 0
                 WinGetPos(&winX, &winY, &winWidth, &winHeight, "Annotation Metadata")
                 ; Move to the text field: (122,42) relative to the popup.
                 MouseMove(winX + 122, winY + 42, 0)
                 Sleep(100)
-                Click  ; Click to focus the text field
+                ; Double-click the text field to ensure focus.
+                Click("left", 2)
                 Sleep(100)
                 SendInput(match.link)
                 Sleep(100)
                 ; Now move to the OK button: (355,74) relative to the popup.
                 MouseMove(winX + 355, winY + 74, 0)
                 Sleep(100)
-                Click
+                ; Double-click the OK button.
+                Click("left", 2)
                 Sleep(100)
             }
         }
