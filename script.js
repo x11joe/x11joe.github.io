@@ -1688,7 +1688,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
   // Loop through the keys in memberInfoMapping.
   // (Assuming memberInfoMapping is already loaded via loadMemberInfoXML().)
   const matchingMembers = Object.keys(memberInfoMapping).filter(memberName => {
-    // For a more friendly search, you might remove common prefixes.
+    // Remove common prefixes for a friendlier search.
     let normalized = memberName.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "");
     return normalized.toLowerCase().includes(query);
   });
@@ -1708,7 +1708,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
     itemDiv.style.padding = "5px 0";
     itemDiv.style.borderBottom = "1px solid #eee";
 
-    // Create a span to hold the member's name (you can add additional formatting if needed)
+    // Create a span to hold the member's name.
     const nameSpan = document.createElement("span");
     nameSpan.textContent = memberName;
     itemDiv.appendChild(nameSpan);
@@ -1722,7 +1722,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
     copyBtn.addEventListener("click", () => {
       // When clicked, copy the member info from memberInfoMapping.
       let info = memberInfoMapping[memberName];
-      if (!info) info = memberName; // fallback
+      if (!info) info = memberName; // fallback if info missing
       navigator.clipboard.writeText(info).then(() => {
         copyBtn.textContent = "Copied!";
         setTimeout(() => {
@@ -1733,6 +1733,32 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
       });
     });
     itemDiv.appendChild(copyBtn);
+
+    // Create an "Introduced Bill" shortcut button.
+    // When clicked, this will add a new entry into the history in the format:
+    // "Senator John Doe - Introduced Bill"
+    const introBtn = document.createElement("button");
+    introBtn.textContent = "Introduced Bill";
+    introBtn.style.marginLeft = "5px";
+    introBtn.style.padding = "5px 8px";
+    introBtn.style.fontSize = "12px";
+    introBtn.addEventListener("click", () => {
+      // Use the full member name from the mapping (or fallback to memberName)
+      let fullName = memberName;
+      // If you want to be sure the prefix is present (e.g. "Senator"), you could check:
+      // if (!/^Senator\s/i.test(fullName)) { fullName = "Senator " + fullName; }
+      // For now, we assume your XML data already returns the full title.
+      let message = `${fullName} - Introduced Bill`;
+      // Call your existing function to insert a new history record.
+      insertHearingStatementDirect(message);
+      console.log("Introduced Bill entry added:", message);
+      // Optionally, provide visual feedback on this button:
+      introBtn.textContent = "Added!";
+      setTimeout(() => {
+        introBtn.textContent = "Introduced Bill";
+      }, 1000);
+    });
+    itemDiv.appendChild(introBtn);
 
     resultsDiv.appendChild(itemDiv);
   });
