@@ -1715,7 +1715,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 
     // Create a "Copy" button
     const copyBtn = document.createElement("button");
-    copyBtn.textContent = "Copy";
+    copyBtn.textContent = "Copy Member Info";
     copyBtn.style.marginLeft = "10px";
     copyBtn.style.padding = "5px 8px";
     copyBtn.style.fontSize = "12px";
