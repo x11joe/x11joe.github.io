@@ -485,18 +485,33 @@ function updateMembers() {
   
   // Add chairs first.
   groups.chairs.forEach(member => {
-    const btn = document.createElement("button");
-    btn.innerText = member;
-    btn.onclick = () => selectMember(member, btn);
-    topDiv.appendChild(btn);
+     const btn = document.createElement("button");
+     btn.innerText = member;
+     btn.addEventListener("click", (e) => {
+       if (e.ctrlKey) {
+         // When Ctrl is held, handle the control‑click action.
+         handleMemberCtrlClick(member, btn);
+       } else {
+         // Otherwise, do the normal selectMember action.
+         selectMember(member, btn);
+       }
+     });
+     topDiv.appendChild(btn);
   });
+
   
   // Then vice chairs.
   groups.viceChairs.forEach(member => {
-    const btn = document.createElement("button");
-    btn.innerText = member;
-    btn.onclick = () => selectMember(member, btn);
-    topDiv.appendChild(btn);
+     const btn = document.createElement("button");
+     btn.innerText = member;
+     btn.addEventListener("click", (e) => {
+       if (e.ctrlKey) {
+         handleMemberCtrlClick(member, btn);
+       } else {
+         selectMember(member, btn);
+       }
+     });
+     topDiv.appendChild(btn);
   });
   
   membersContainer.appendChild(topDiv);
@@ -511,16 +526,44 @@ function updateMembers() {
   const othersDiv = document.createElement("div");
   othersDiv.classList.add("committee-others");
   groups.others.forEach(member => {
-    const btn = document.createElement("button");
-    btn.innerText = member;
-    btn.onclick = () => selectMember(member, btn);
-    othersDiv.appendChild(btn);
+     const btn = document.createElement("button");
+     btn.innerText = member;
+     btn.addEventListener("click", (e) => {
+       if (e.ctrlKey) {
+         handleMemberCtrlClick(member, btn);
+       } else {
+         selectMember(member, btn);
+       }
+     });
+     othersDiv.appendChild(btn);
   });
   membersContainer.appendChild(othersDiv);
 }
 
-
-
+function handleMemberCtrlClick(member, btn) {
+  // Retrieve the member info from your mapping.
+  let info = getMemberInfoForMember(member);
+  // If no info is found, you might fallback to using the member name.
+  if (!info) {
+    info = member;
+  }
+  // Optionally, if you need to massage the format further, do so here.
+  // For example, if you want to ensure it appears as "member-no:009;Mic:" 
+  // (assuming that’s the format stored in your XML mapping), then info should already be in that format.
+  
+  // Copy the member info to the clipboard.
+  navigator.clipboard.writeText(info).then(() => {
+    // Add a CSS class to make the button glow.
+    btn.classList.add("member-copied");
+    // Remove the glow after 1 second.
+    setTimeout(() => {
+      btn.classList.remove("member-copied");
+    }, 1000);
+    console.log("Control-click: Copied member info:", info);
+  }).catch((err) => {
+    console.error("Error copying member info:", err);
+  });
+}
 
 function selectMember(member, btn) {
   // Finalize any in-progress record if one exists.
