@@ -1795,7 +1795,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
        navigator.clipboard.writeText(info).then(() => {
          copyBtn.textContent = "Copied!";
          setTimeout(() => {
-           copyBtn.textContent = "Copy";
+           copyBtn.textContent = "Copy Member Info";
          }, 1000);
        }).catch(err => {
          console.error("Failed to copy member info:", err);
