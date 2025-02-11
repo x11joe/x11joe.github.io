@@ -48,16 +48,30 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
 function applyUseLastNamesOnly(fullName) {
   if (!useLastNamesOnly) return fullName;
-  if (fullName.startsWith("Senator ")) {
-    // Split by spaces and assume the last word is the last name.
-    let parts = fullName.split(" ");
-    if (parts.length >= 3) {
-      return "Senator " + parts[parts.length - 1];
+  
+  // List all title prefixes that should use last names only.
+  const prefixes = [
+    "Senator",
+    "Representative",
+    "Chairman",
+    "Chairwoman",
+    "Vice Chairman",
+    "Vice Chairwoman"
+  ];
+  
+  // Loop through each prefix; if the full name starts with one of them,
+  // split the name into parts and return the prefix followed by the last part.
+  for (let prefix of prefixes) {
+    if (fullName.startsWith(prefix + " ")) {
+      let parts = fullName.split(" ");
+      // Only proceed if there are at least 3 words (prefix + at least one first name and one last name)
+      if (parts.length >= 3) {
+        return prefix + " " + parts[parts.length - 1];
+      }
     }
   }
   return fullName;
 }
-
 
 // Attach a control-click event listener to a row.
 // When the user clicks with the Control key held down,
