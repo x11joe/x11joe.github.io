@@ -1675,6 +1675,27 @@ function transformMemberLine(line, committeeName, femaleNames) {
   }
 }
 
+function openSettingsModal() {
+  // Set the checkbox to the current setting
+  document.getElementById("useLastNamesCheckbox").checked = useLastNamesOnly;
+  document.getElementById("settingsModal").classList.remove("hidden");
+}
+
+function closeSettingsModal() {
+  document.getElementById("settingsModal").classList.add("hidden");
+}
+
+function saveSettings() {
+  useLastNamesOnly = document.getElementById("useLastNamesCheckbox").checked;
+  localStorage.setItem("useLastNamesOnly", useLastNamesOnly);
+  closeSettingsModal();
+  console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly);
+}
+
+// Attach event listener to the settings button.
+document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
+
+
 // --- Lookup Members Modal Functions ---
 
 // Open the Lookup Members modal
