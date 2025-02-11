@@ -68,6 +68,18 @@
       <div id="lookupResults" style="max-height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px;"></div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+      <button class="close-modal-x" onclick="closeSettingsModal()">X</button>
+      <h3>Settings</h3>
+      <div class="modal-content">
+        <label>
+          <input type="checkbox" id="useLastNamesCheckbox">
+          Use last names only for senators
+        </label>
+      </div>
+      <button onclick="saveSettings()">Save Settings</button>
+    </div>
 
     <!-- Committee selection -->
     <label for="committeeSelect"><b>Select Committee:</b></label>
