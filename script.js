@@ -49,6 +49,11 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+function getStartingTime() {
+  // If time mode is active, use the stored time; otherwise, use the current time.
+  return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
+}
+
 function resetTimeMode() {
   if (timeModeActivated) {
     timeModeActivated = false;
@@ -58,11 +63,6 @@ function resetTimeMode() {
   }
 }
 
-
-function getStartingTime() {
-  // If time mode is active, use the time from when it was toggled; otherwise, use the current time.
-  return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
-}
 
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
 function applyUseLastNamesOnly(fullName) {
@@ -455,7 +455,8 @@ function finalizeInProgressRow() {
  * using the current local time and the given statement text.
  */
 function insertHearingStatementDirect(statementData) {
-  // Disable time mode as we are now consuming the stored time.
+  // Capture the starting time from time mode (if active), then disable time mode.
+  let startingTime = getStartingTime();
   resetTimeMode();
 
   let statementText, fileLink;
@@ -468,23 +469,24 @@ function insertHearingStatementDirect(statementData) {
     fileLink = "";
   }
 
-  // 1) If there's an in-progress row, finalize it so we don't interfere.
+  // If there's an in-progress row, finalize it.
   if (inProgressRow !== null) {
     resetAllAndFinalize();
   }
 
-  // 2) Set the "constructedStatement" to the new text.
+  // Set the constructed statement.
   constructedStatement = statementText;
 
-  // 3) Record the start time (using time mode if active).
-  statementStartTime = getStartingTime();
+  // Record the start time using the stored value.
+  statementStartTime = startingTime;
 
-  // 4) Create a new row in the history, passing the fileLink along.
+  // Create a new row in the history, passing the fileLink along.
   createNewRowInHistory(fileLink);
 
-  // 5) Immediately finalize it if you want it to be a "done" row with no further editing.
+  // Immediately finalize it.
   finalizeInProgressRow();
 }
+
 
 
 
@@ -620,19 +622,15 @@ function handleMemberCtrlClick(member, btn) {
 }
 
 function selectMember(member, btn) {
-  // Disable time mode when a new member is selected.
-  resetTimeMode();
-
-  // Finalize any in-progress record if one exists.
-  if (inProgressRecordIndex !== null) {
-    resetAllAndFinalize();
-  }
-  // Reset UI selections without finalizing.
-  resetSelections(false);
-
+  // (Do not reset time mode immediately.)
   // Start a new statement with the newly selected member.
   selectedMember = member;
-  statementStartTime = getStartingTime(); // This will use the stored time if time mode was active.
+  // Capture the starting time from time mode (or current time if not active)
+  let startingTime = getStartingTime();
+  // Now disable time mode so it doesn't affect future actions.
+  resetTimeMode();
+  // Set the statement start time.
+  statementStartTime = startingTime;
   createNewRowInHistory();
   updateStatement();
 
@@ -642,36 +640,41 @@ function selectMember(member, btn) {
 }
 
 
+
 function setMainAction(button, action) {
-  // Disable time mode when an action is taken.
-  resetTimeMode();
+  // If an action that does not require a member is taken,
+  // we still want to consume the stored time.
+  if (action !== "Moved" && action !== "Seconded" && action !== "Introduced Bill") {
+    // Capture the starting time and then disable time mode.
+    let startingTime = getStartingTime();
+    resetTimeMode();
+    // If no row is in progress, create it using the stored time.
+    if (!inProgressRow) {
+      statementStartTime = startingTime;
+      createNewRowInHistory();
+    }
+  } else {
+    // For actions that require a member, ensure one is selected.
+    if ((action === "Moved" || action === "Seconded" || action === "Introduced Bill") && !selectedMember) {
+      alert("Please select a member first for '" + action + "'!");
+      return;
+    }
+    // For member-based actions, capture the starting time then disable time mode.
+    let startingTime = getStartingTime();
+    resetTimeMode();
+    if (!inProgressRow) {
+      statementStartTime = startingTime;
+      createNewRowInHistory();
+    }
+  }
 
-  // 1) If it requires a member, check that.
-  if (action === "Moved" && !selectedMember) {
-    alert("Please select a member first for 'Moved' actions!");
-    return;
-  }
-  if (action === "Seconded" && !selectedMember) {
-    alert("Please select a member first for 'Seconded' action!");
-    return;
-  }
-  if (action === "Introduced Bill" && !selectedMember) {
-    alert("Please select a member first for 'Introduced Bill'!");
-    return;
-  }
-
-  // 2) If no row is in progress, create it.
-  if (!inProgressRow) {
-    statementStartTime = getCurrentTimestamp();
-    createNewRowInHistory();
-  }
-
-  // 3) Clear old selections from all main-action buttons.
+  // Clear old selections from all main-action buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
     b.classList.remove("inactive");
   });
+
   // Mark the clicked button as selected.
   button.classList.add("selected");
   // Fade out (inactive) the others.
@@ -681,7 +684,7 @@ function setMainAction(button, action) {
     }
   });
 
-  // 4) Reset some global states.
+  // Reset some global states.
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
@@ -689,10 +692,8 @@ function setMainAction(button, action) {
   asAmended = false;
   voiceVoteOutcome = "";
 
-  // 5) Hide the meeting actions area once a main action is chosen.
+  // Hide the meeting actions area and other sections.
   document.getElementById("meetingActionsSection").classList.add("hidden");
-
-  // 6) Hide all dynamic sections by default.
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
@@ -701,7 +702,7 @@ function setMainAction(button, action) {
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
 
-  // 7) Decide what sections to show based on action.
+  // Decide which sections to show based on the action.
   if (action === "Moved") {
     showBillTypeSection(true);
   } else if (action === "Roll Call Vote on SB") {
@@ -727,9 +728,10 @@ function setMainAction(button, action) {
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
   }
 
-  // 8) Build/update the constructed statement.
+  // Build/update the constructed statement.
   updateStatement();
 }
+
 
 
 
