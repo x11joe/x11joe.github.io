@@ -1708,9 +1708,14 @@ function closeSettingsModal() {
 function saveSettings() {
   useLastNamesOnly = document.getElementById("useLastNamesCheckbox").checked;
   localStorage.setItem("useLastNamesOnly", useLastNamesOnly);
+  
+  meetingActionsWithoutMember = document.getElementById("meetingActionsWithoutMemberCheckbox").checked;
+  localStorage.setItem("meetingActionsWithoutMember", meetingActionsWithoutMember);
+  
   closeSettingsModal();
-  console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly);
+  console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly, "meetingActionsWithoutMember =", meetingActionsWithoutMember);
 }
+
 
 // Attach event listener to the settings button.
 document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
@@ -1930,6 +1935,13 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => logElem.classList.remove("copied"), 1000);
     });
   });
+
+   let storedMeetingActionsWithoutMember = localStorage.getItem("meetingActionsWithoutMember");
+   if (storedMeetingActionsWithoutMember !== null) {
+     meetingActionsWithoutMember = storedMeetingActionsWithoutMember === "true";
+     document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
+   }
+
 });
 
 document.addEventListener("DOMContentLoaded", () => {
