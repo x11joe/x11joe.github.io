@@ -49,6 +49,16 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+function resetTimeMode() {
+  if (timeModeActivated) {
+    timeModeActivated = false;
+    timeModeTime = null;
+    document.body.classList.remove("time-mode");
+    console.log("Time mode reset.");
+  }
+}
+
+
 function getStartingTime() {
   // If time mode is active, use the time from when it was toggled; otherwise, use the current time.
   return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
@@ -445,8 +455,11 @@ function finalizeInProgressRow() {
  * using the current local time and the given statement text.
  */
 function insertHearingStatementDirect(statementData) {
+  // Disable time mode as we are now consuming the stored time.
+  resetTimeMode();
+
   let statementText, fileLink;
-  // Check if we received an object with both text and link
+  // Check if we received an object with both text and link.
   if (typeof statementData === "object" && statementData !== null) {
     statementText = statementData.text;
     fileLink = statementData.link;
@@ -455,24 +468,24 @@ function insertHearingStatementDirect(statementData) {
     fileLink = "";
   }
 
-  // 1) If there's an in-progress row, finalize it so we don't interfere
+  // 1) If there's an in-progress row, finalize it so we don't interfere.
   if (inProgressRow !== null) {
     resetAllAndFinalize();
   }
 
-  // 2) Set the "constructedStatement" to the new text
+  // 2) Set the "constructedStatement" to the new text.
   constructedStatement = statementText;
 
-  // 3) Record the start time (like selectMember does)
+  // 3) Record the start time (using time mode if active).
   statementStartTime = getStartingTime();
 
-
-  // 4) Create a new row in the history, passing the fileLink along
+  // 4) Create a new row in the history, passing the fileLink along.
   createNewRowInHistory(fileLink);
 
-  // 5) Immediately finalize it if you want it to be a "done" row with no further editing
+  // 5) Immediately finalize it if you want it to be a "done" row with no further editing.
   finalizeInProgressRow();
 }
+
 
 
 
@@ -607,26 +620,33 @@ function handleMemberCtrlClick(member, btn) {
 }
 
 function selectMember(member, btn) {
+  // Disable time mode when a new member is selected.
+  resetTimeMode();
+
   // Finalize any in-progress record if one exists.
   if (inProgressRecordIndex !== null) {
     resetAllAndFinalize();
   }
-  // Reset UI selections without finalizing (we already finalized above)
+  // Reset UI selections without finalizing.
   resetSelections(false);
 
-  // Start a new statement with the newly selected member
+  // Start a new statement with the newly selected member.
   selectedMember = member;
-  statementStartTime = getStartingTime();
+  statementStartTime = getStartingTime(); // This will use the stored time if time mode was active.
   createNewRowInHistory();
   updateStatement();
 
-  // Highlight the selected member button
+  // Highlight the selected member button.
   document.querySelectorAll("#members-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
 }
 
+
 function setMainAction(button, action) {
-  // 1) If it requires a member, check that
+  // Disable time mode when an action is taken.
+  resetTimeMode();
+
+  // 1) If it requires a member, check that.
   if (action === "Moved" && !selectedMember) {
     alert("Please select a member first for 'Moved' actions!");
     return;
@@ -640,30 +660,28 @@ function setMainAction(button, action) {
     return;
   }
 
-  // 2) If no row is in progress, create it
+  // 2) If no row is in progress, create it.
   if (!inProgressRow) {
     statementStartTime = getCurrentTimestamp();
     createNewRowInHistory();
   }
 
-  // 3) Clear old selections from all main-action buttons
+  // 3) Clear old selections from all main-action buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
     b.classList.remove("inactive");
   });
-
-  // Mark the clicked button as selected (green)
+  // Mark the clicked button as selected.
   button.classList.add("selected");
-
-  // Fade out (inactive) the others
+  // Fade out (inactive) the others.
   allMainActionButtons.forEach((b) => {
     if (b !== button) {
       b.classList.add("inactive");
     }
   });
 
-  // 4) Reset some global states
+  // 4) Reset some global states.
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
@@ -671,10 +689,10 @@ function setMainAction(button, action) {
   asAmended = false;
   voiceVoteOutcome = "";
 
-  // 5) Hide the meeting actions area once a main action is chosen
+  // 5) Hide the meeting actions area once a main action is chosen.
   document.getElementById("meetingActionsSection").classList.add("hidden");
 
-  // 6) Hide all dynamic sections by default
+  // 6) Hide all dynamic sections by default.
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
@@ -683,41 +701,36 @@ function setMainAction(button, action) {
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
 
-  // 7) Decide what sections to show based on action
+  // 7) Decide what sections to show based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
-  }
-  else if (action === "Roll Call Vote on SB") {
+  } else if (action === "Roll Call Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     showBillCarrierSection(true);
     showAsAmendedSection(true);
-  }
-  else if (action === "Roll Call Vote on Amendment") {
+  } else if (action === "Roll Call Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-  }
-  else if (action === "Roll Call Vote on Reconsider") {
+  } else if (action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-  }
-  else if (action === "Voice Vote on SB") {
+  } else if (action === "Voice Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     showAsAmendedSection(true);
-  }
-  else if (action === "Voice Vote on Amendment") {
+  } else if (action === "Voice Vote on Amendment") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-  }
-  else if (action === "Voice Vote on Reconsider") {
+  } else if (action === "Voice Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
   }
 
-  // 8) Build/update the constructed statement
+  // 8) Build/update the constructed statement.
   updateStatement();
 }
+
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
