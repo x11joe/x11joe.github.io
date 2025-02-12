@@ -89,6 +89,33 @@
       <button onclick="saveSettings()">Save Settings</button>
     </div>
 
+    <div id="testimonyModal" class="modal hidden">
+      <button class="close-modal-x" onclick="closeTestimonyModal()">X</button>
+      <h3>Add Testimony</h3>
+      <div class="modal-content">
+        <label for="testimonyFirstName"><b>First Name:</b></label>
+        <input type="text" id="testimonyFirstName" placeholder="First Name" />
+        
+        <label for="testimonyLastName"><b>Last Name:</b></label>
+        <input type="text" id="testimonyLastName" placeholder="Last Name" />
+        
+        <label for="testimonyRole"><b>Role:</b></label>
+        <input type="text" id="testimonyRole" placeholder="Role (e.g., Dir of Policy)" />
+        
+        <label for="testimonyOrganization"><b>Organization:</b></label>
+        <input type="text" id="testimonyOrganization" placeholder="Organization" />
+        
+        <label for="testimonyPosition"><b>Testimony Position:</b></label>
+        <select id="testimonyPosition">
+          <option value="">Select Position</option>
+          <option value="In Favor">In Favor</option>
+          <option value="In Opposition">In Opposition</option>
+          <option value="Neutral">Neutral</option>
+        </select>
+      </div>
+      <button onclick="submitTestimonyModal()">Add Testimony</button>
+    </div>
+
     <!-- Committee selection -->
     <label for="committeeSelect"><b>Select Committee:</b></label>
     <select id="committeeSelect" onchange="updateMembers()">
