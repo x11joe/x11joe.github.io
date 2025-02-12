@@ -1057,22 +1057,28 @@ function resetVoteTally() {
 
 // Meeting actions
 function appendMeetingAction(action) {
-  if (!selectedMember) {
+  if (!meetingActionsWithoutMember && !selectedMember) {
     alert("Please select a member first!");
     return;
   }
-  // Process the selectedMember through applyUseLastNamesOnly
-  let formattedMember = applyUseLastNamesOnly(selectedMember);
-  if (action === "Seconded") {
-    constructedStatement = `${formattedMember} Seconded`;
+  
+  // If the setting is enabled, do not pre‑append the member's name.
+  if (meetingActionsWithoutMember) {
+    constructedStatement = action;
   } else {
-    // e.g. "Senator Boehm - Introduced Bill"
-    constructedStatement = `${formattedMember} - ${action}`;
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    if (action === "Seconded") {
+      constructedStatement = `${formattedMember} Seconded`;
+    } else {
+      constructedStatement = `${formattedMember} - ${action}`;
+    }
   }
+  
   document.getElementById("log").innerText = constructedStatement;
   updateInProgressRow();
   autoCopyIfEnabled();
 }
+
 
 function setVoiceVoteOutcome(outcome) {
   voiceVoteOutcome = outcome; // "Passed" or "Failed"
