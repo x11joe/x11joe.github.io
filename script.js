@@ -287,15 +287,18 @@ function editHistoryRecord(index) {
   // Instead of recalculating the statement, use the saved one.
   constructedStatement = record.statement;
   
+  // Mark that we are editing this record:
+  // Save both currentEditIndex and also mark this record as the in-progress record.
+  currentEditIndex = index;
+  inProgressRecordIndex = index;
+  
   // Populate the UI controls based on these saved values.
   populateEditUI();
-  
-  // Mark that we are editing this record.
-  currentEditIndex = index;
   
   // Add a visual cue to the log.
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
+
 
 function populateEditUI() {
   // Rehighlight the selected member button.
@@ -793,22 +796,27 @@ function handleMemberCtrlClick(member, btn) {
 }
 
 function selectMember(member, btn) {
-  // (Do not reset time mode immediately.)
-  // Start a new statement with the newly selected member.
+  // If we are already editing a record (currentEditIndex !== null),
+  // do not create a new row; simply update the member value.
   selectedMember = member;
-  // Capture the starting time from time mode (or current time if not active)
+  
+  // Capture the starting time.
   let startingTime = getStartingTime();
-  // Now disable time mode so it doesn't affect future actions.
   resetTimeMode();
-  // Set the statement start time.
   statementStartTime = startingTime;
-  createNewRowInHistory();
+  
+  // Only if not editing, create a new row.
+  if (currentEditIndex === null) {
+    createNewRowInHistory();
+  }
+  
   updateStatement();
 
   // Highlight the selected member button.
   document.querySelectorAll("#members-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
 }
+
 
 
 
