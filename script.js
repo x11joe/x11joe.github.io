@@ -1961,6 +1961,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // NEW: Load the XML member info.
   loadMemberInfoXML();
+
+  document.getElementById("addTestimonyBtn").addEventListener("click", openTestimonyModal);
 });
 
 // Listen for the backtick key (`) to toggle time mode.
