@@ -270,7 +270,9 @@ function groupCommitteeMembers(members) {
 // Called when the user clicks an "edit" (pencil) button in the history table.
 function editHistoryRecord(index) {
   let record = historyRecords[index];
-  // Populate globals with the saved values:
+  console.log("Editing record:", record);
+  
+  // Populate globals from the saved record.
   selectedMember = record.member || "";
   mainAction = record.mainAction || "";
   selectedSubAction = record.selectedSubAction || "";
@@ -283,26 +285,25 @@ function editHistoryRecord(index) {
   neutralVal = record.neutralVal || 0;
   selectedRereferCommittee = record.selectedRereferCommittee || "";
   
-  // Set the constructed statement from the record.
+  // Instead of rebuilding the statement from globals,
+  // use the saved statement from the record.
   constructedStatement = record.statement;
+  document.getElementById("log").innerText = constructedStatement;
   
-  // Update the statement log.
-  updateStatement();
-  
-  // Now populate the UI based on the saved state.
+  // Populate the rest of the UI based on the saved globals.
   populateEditUI();
   
   // Mark that we are editing this record.
   currentEditIndex = index;
   
-  // Highlight the log as a reminder
+  // Add a border to the log to indicate edit mode.
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
 
+
 function populateEditUI() {
-  // --- REPOPULATE THE MEMBER SELECTION ---
+  // Rehighlight the member button.
   document.querySelectorAll("#members-container button").forEach(btn => {
-    // Compare by the canonical member name (you might wish to use your applyUseLastNamesOnly here)
     if (btn.innerText.trim() === selectedMember) {
       btn.classList.add("selected");
     } else {
@@ -310,7 +311,7 @@ function populateEditUI() {
     }
   });
   
-  // --- REPOPULATE THE MAIN ACTION SELECTION ---
+  // Rehighlight the main action button.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     if (btn.innerText.trim() === mainAction) {
       btn.classList.add("selected");
@@ -321,10 +322,11 @@ function populateEditUI() {
     }
   });
   
-  // --- SHOW/HIDE SUB-SECTIONS BASED ON mainAction ---
+  // Show/hide the sub-sections based on the mainAction value.
   if (mainAction === "Moved") {
-    // Show the bill type section and highlight the saved type:
+    // Show the Bill Type section.
     showBillTypeSection(true);
+    // Highlight the saved bill type.
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
         btn.classList.add("selected");
@@ -332,9 +334,9 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // If a sub‑action is saved, show sub‑actions and highlight:
+    // If a sub-action is saved, show and highlight it.
     if (selectedSubAction) {
-      showMovedSubActions(); // rebuilds the sub‑action buttons
+      showMovedSubActions(); // This rebuilds the sub-action buttons.
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
@@ -343,12 +345,12 @@ function populateEditUI() {
         }
       });
     }
-    // Also, if a rerefer committee is set, set the select:
+    // Set the rerefer committee, if any.
     if (selectedRereferCommittee) {
       document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
-    // Hide members section and show vote tally and carrier sections:
+    // Hide the members container and show vote tally and carrier.
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
@@ -364,7 +366,7 @@ function populateEditUI() {
         }
       });
     }
-    // Show "as amended" button if applicable.
+    // Show the "as amended" button if applicable.
     if (asAmended) {
       document.getElementById("as-amended-section").classList.remove("hidden");
       document.getElementById("asAmendedBtn").classList.add("selected");
@@ -373,7 +375,7 @@ function populateEditUI() {
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
   } else if (mainAction.startsWith("Voice Vote on")) {
-    // Hide members and show the voice vote section:
+    // Hide members and show voice vote outcome.
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     document.querySelectorAll("#voice-vote-outcome-section button").forEach(btn => {
@@ -385,7 +387,7 @@ function populateEditUI() {
     });
   }
   
-  // Finally, update the log
+  // Finally, update the log with the saved statement.
   document.getElementById("log").innerText = constructedStatement;
 }
 
