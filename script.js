@@ -343,9 +343,11 @@ function populateEditUI() {
           btn.classList.remove("selected");
         }
       });
-    }
-    if (selectedRereferCommittee) {
-      document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
+      // *** NEW: If a rereference exists, unhide the rerefer section and set its value.
+      if (selectedRereferCommittee) {
+        document.getElementById("rerefer-section").classList.remove("hidden");
+        document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
+      }
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
@@ -385,6 +387,7 @@ function populateEditUI() {
   // Finally, set the log text to the saved constructed statement.
   document.getElementById("log").innerText = constructedStatement;
 }
+
 
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
@@ -2118,33 +2121,7 @@ document.addEventListener("keydown", function (event) {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  // (Your existing code at the bottom of DOMContentLoaded is fine, just add this inside)
-
-  const logElem = document.getElementById("log");
-  logElem.addEventListener("click", () => {
-    if (
-      !constructedStatement ||
-      constructedStatement.startsWith("[Click a member")
-    ) {
-      return;
-    }
-    // Attempt to copy
-    navigator.clipboard.writeText(constructedStatement).then(() => {
-      logElem.classList.add("copied");
-      setTimeout(() => logElem.classList.remove("copied"), 1000);
-    });
-  });
-
-   let storedMeetingActionsWithoutMember = localStorage.getItem("meetingActionsWithoutMember");
-   if (storedMeetingActionsWithoutMember !== null) {
-     meetingActionsWithoutMember = storedMeetingActionsWithoutMember === "true";
-     document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
-   }
-
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  // Existing initialization...
+  // Initialization
   committees = loadCommitteesFromLocalStorage();
   populateCommitteeSelect();
   let storedCommittee = localStorage.getItem("selectedCommittee");
@@ -2158,12 +2135,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   updateMembers();
   loadHistoryFromLocalStorage();
-
-  // NEW: Load the XML member info.
+  
+  // Load XML member info.
   loadMemberInfoXML();
-
+  
   document.getElementById("addTestimonyBtn").addEventListener("click", openTestimonyModal);
+  
+  // Set up the log copy-on-click.
+  const logElem = document.getElementById("log");
+  logElem.addEventListener("click", () => {
+    if (!constructedStatement || constructedStatement.startsWith("[Click a member")) {
+      return;
+    }
+    navigator.clipboard.writeText(constructedStatement).then(() => {
+      logElem.classList.add("copied");
+      setTimeout(() => logElem.classList.remove("copied"), 1000);
+    });
+  });
+  
+  let storedMeetingActionsWithoutMember = localStorage.getItem("meetingActionsWithoutMember");
+  if (storedMeetingActionsWithoutMember !== null) {
+    meetingActionsWithoutMember = storedMeetingActionsWithoutMember === "true";
+    document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
+  }
 });
+
 
 // Listen for the backtick key (`) to toggle time mode.
 document.addEventListener("keydown", (e) => {
