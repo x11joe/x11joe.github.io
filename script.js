@@ -7,6 +7,8 @@ let historyRecords = [];
 let timeModeActivated = false;
 let timeModeTime = null;
 
+let currentEditIndex = null;
+
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
 
@@ -265,6 +267,72 @@ function groupCommitteeMembers(members) {
   return { chairs, viceChairs, others };
 }
 
+function editHistoryRecord(index) {
+  let record = historyRecords[index];
+  // Populate globals with the saved values:
+  selectedMember = record.member || "";
+  mainAction = record.mainAction || "";
+  selectedSubAction = record.selectedSubAction || "";
+  selectedBillType = record.selectedBillType || "";
+  selectedCarrier = record.selectedCarrier || "";
+  asAmended = record.asAmended || false;
+  voiceVoteOutcome = record.voiceVoteOutcome || "";
+  forVal = record.forVal || 0;
+  againstVal = record.againstVal || 0;
+  neutralVal = record.neutralVal || 0;
+  selectedRereferCommittee = record.selectedRereferCommittee || "";
+  
+  // Set the constructed statement to the current record's statement.
+  constructedStatement = record.statement;
+  
+  // Update the UI (this will cause the appropriate sections to show).
+  updateStatement();
+  
+  // Mark that we are now editing this record.
+  currentEditIndex = index;
+  
+  // (Optional) Scroll to or highlight your main actions area to let the user know they are editing.
+  document.getElementById("log").style.border = "2px dashed #007bff";
+}
+
+function finalizeEdit() {
+  // If it's a roll call vote, do not allow a 0-0-0 tally.
+  if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
+    alert("Roll call vote cannot have a 0-0-0 tally.");
+    return;
+  }
+  // Update the record at currentEditIndex with the current global variables:
+  let record = historyRecords[currentEditIndex];
+  record.member = selectedMember;
+  record.mainAction = mainAction;
+  record.selectedSubAction = selectedSubAction;
+  record.selectedBillType = selectedBillType;
+  record.selectedCarrier = selectedCarrier;
+  record.asAmended = asAmended;
+  record.voiceVoteOutcome = voiceVoteOutcome;
+  record.forVal = forVal;
+  record.againstVal = againstVal;
+  record.neutralVal = neutralVal;
+  record.selectedRereferCommittee = selectedRereferCommittee;
+  
+  // Rebuild the constructed statement from the UI
+  updateStatement();
+  record.statement = constructedStatement;
+  
+  // Save and refresh.
+  saveHistoryToLocalStorage();
+  loadHistoryFromLocalStorage();
+  
+  // Clear the edit marker.
+  currentEditIndex = null;
+  document.getElementById("log").style.border = "none";
+  
+  // Optionally, reset the main UI.
+  resetSelections();
+}
+
+
+
 function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
   const recordTime = statementStartTime;
@@ -286,8 +354,19 @@ function createNewRowInHistory(fileLink = "") {
     time: recordTime, 
     statement: constructedStatement, 
     member: selectedMember,
-    fileLink: fileLink
+    fileLink: fileLink,
+    mainAction: mainAction,
+    selectedSubAction: selectedSubAction,
+    selectedBillType: selectedBillType,
+    selectedCarrier: selectedCarrier,
+    forVal: forVal,
+    againstVal: againstVal,
+    neutralVal: neutralVal,
+    asAmended: asAmended,
+    voiceVoteOutcome: voiceVoteOutcome,
+    selectedRereferCommittee: selectedRereferCommittee
   };
+  
 
   // Time cell as an editable field:
   const localTimeCell = document.createElement("td");
@@ -1346,6 +1425,18 @@ function loadHistoryFromLocalStorage() {
       tdDelete.appendChild(btnDelete);
       tr.appendChild(tdDelete);
 
+      // Edit cell with an edit button.
+      let tdEdit = document.createElement("td");
+      let editButton = document.createElement("button");
+      editButton.textContent = "✏️"; // pencil emoji
+      editButton.classList.add("copy-row-button");
+      editButton.style.backgroundColor = "#ffc107"; // for example, a yellow button
+      editButton.onclick = function() {
+          editHistoryRecord(i);
+      };
+      tdEdit.appendChild(editButton);
+      tr.appendChild(tdEdit);
+      
       // Attach the Control‑click handler to the row.
       addCtrlClickHandler(tr);
 
@@ -1907,23 +1998,23 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 // Support Ctrl + Enter to copy
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
-    event.preventDefault();       // Stop default button activati
+    event.preventDefault();
     copyToClipboard();
   }
-
-   // If just Enter (without Ctrl), reset everything
-  if (event.key === "Enter") {
-    event.preventDefault();       // Stop default button activati
-    resetAllAndFinalize();
+  else if (event.key === "Enter") {
+    event.preventDefault();
+    if (currentEditIndex !== null) {
+      finalizeEdit();
+    } else {
+      resetAllAndFinalize();
+    }
   }
-
-   // ESC => Cancel current in-progress action (no record saved~)
-  if (event.key === "Escape") {
+  else if (event.key === "Escape") {
     event.preventDefault();
     cancelCurrentAction();
   }
-
 });
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // (Your existing code at the bottom of DOMContentLoaded is fine, just add this inside)
