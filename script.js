@@ -289,19 +289,20 @@ function editHistoryRecord(index) {
   // Update the statement log.
   updateStatement();
   
-  // Now update the UI to reflect the record’s state:
+  // Now populate the UI based on the saved state.
   populateEditUI();
   
   // Mark that we are editing this record.
   currentEditIndex = index;
   
-  // Optionally highlight the log so the user knows we are editing:
+  // Highlight the log as a reminder
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
 
 function populateEditUI() {
-  // Highlight the selected member (if found in the members container).
+  // --- REPOPULATE THE MEMBER SELECTION ---
   document.querySelectorAll("#members-container button").forEach(btn => {
+    // Compare by the canonical member name (you might wish to use your applyUseLastNamesOnly here)
     if (btn.innerText.trim() === selectedMember) {
       btn.classList.add("selected");
     } else {
@@ -309,7 +310,7 @@ function populateEditUI() {
     }
   });
   
-  // Highlight the main action button in the Main Actions section.
+  // --- REPOPULATE THE MAIN ACTION SELECTION ---
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     if (btn.innerText.trim() === mainAction) {
       btn.classList.add("selected");
@@ -320,11 +321,10 @@ function populateEditUI() {
     }
   });
   
-  // Show/hide and highlight sections based on mainAction:
+  // --- SHOW/HIDE SUB-SECTIONS BASED ON mainAction ---
   if (mainAction === "Moved") {
-    // Make sure the "Moved" UI is visible:
+    // Show the bill type section and highlight the saved type:
     showBillTypeSection(true);
-    // Highlight the bill type button:
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
         btn.classList.add("selected");
@@ -332,9 +332,9 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // If a sub‑action was chosen, show sub‑actions:
+    // If a sub‑action is saved, show sub‑actions and highlight:
     if (selectedSubAction) {
-      showMovedSubActions(); // This rebuilds the sub‑actions container.
+      showMovedSubActions(); // rebuilds the sub‑action buttons
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
@@ -343,20 +343,17 @@ function populateEditUI() {
         }
       });
     }
-    // Set the rerefer committee select if available.
+    // Also, if a rerefer committee is set, set the select:
     if (selectedRereferCommittee) {
       document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
-    // Hide the members container.
+    // Hide members section and show vote tally and carrier sections:
     document.getElementById("members-container").classList.add("hidden");
-    // Show the vote tally section.
     showVoteTallySection(true);
-    // Set the tally numbers.
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
-    // If a bill carrier is saved, show and highlight it:
     if (selectedCarrier) {
       showBillCarrierSection(true);
       document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
@@ -367,7 +364,7 @@ function populateEditUI() {
         }
       });
     }
-    // If "as amended" was chosen, show that button as selected:
+    // Show "as amended" button if applicable.
     if (asAmended) {
       document.getElementById("as-amended-section").classList.remove("hidden");
       document.getElementById("asAmendedBtn").classList.add("selected");
@@ -376,6 +373,7 @@ function populateEditUI() {
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
   } else if (mainAction.startsWith("Voice Vote on")) {
+    // Hide members and show the voice vote section:
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     document.querySelectorAll("#voice-vote-outcome-section button").forEach(btn => {
@@ -387,18 +385,19 @@ function populateEditUI() {
     });
   }
   
-  // Finally, update the constructed statement log:
+  // Finally, update the log
   document.getElementById("log").innerText = constructedStatement;
 }
 
-// When the user presses Enter in edit mode, finalize the edit rather than creating a new row.
+// When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
-  // For roll call votes, prevent a 0-0-0 tally.
+  // Prevent a 0-0-0 tally for roll call votes:
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
     return;
   }
-  // Update the record at currentEditIndex with the current global state:
+  
+  // Update the record in the history array:
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
   record.mainAction = mainAction;
@@ -416,7 +415,7 @@ function finalizeEdit() {
   updateStatement();
   record.statement = constructedStatement;
   
-  // Save changes and refresh the history table.
+  // Save and refresh the history table.
   saveHistoryToLocalStorage();
   loadHistoryFromLocalStorage();
   
@@ -424,7 +423,7 @@ function finalizeEdit() {
   currentEditIndex = null;
   document.getElementById("log").style.border = "none";
   
-  // Optionally reset the rest of the UI.
+  // Optionally reset the UI for a new entry.
   resetSelections();
 }
 
@@ -2092,7 +2091,169 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 });
 
 
-// Support Ctrl + Enter to copy
+// --- EDIT FLOW FUNCTIONS --- 
+
+function editHistoryRecord(index) {
+  let record = historyRecords[index];
+  // Populate globals with the saved values:
+  selectedMember = record.member || "";
+  mainAction = record.mainAction || "";
+  selectedSubAction = record.selectedSubAction || "";
+  selectedBillType = record.selectedBillType || "";
+  selectedCarrier = record.selectedCarrier || "";
+  asAmended = record.asAmended || false;
+  voiceVoteOutcome = record.voiceVoteOutcome || "";
+  forVal = record.forVal || 0;
+  againstVal = record.againstVal || 0;
+  neutralVal = record.neutralVal || 0;
+  selectedRereferCommittee = record.selectedRereferCommittee || "";
+  
+  // Set the constructed statement from the record.
+  constructedStatement = record.statement;
+  
+  // Update the statement log.
+  updateStatement();
+  
+  // Now populate the UI based on the saved state.
+  populateEditUI();
+  
+  // Mark that we are editing this record.
+  currentEditIndex = index;
+  
+  // Highlight the log as a reminder
+  document.getElementById("log").style.border = "2px dashed #007bff";
+}
+
+function populateEditUI() {
+  // --- REPOPULATE THE MEMBER SELECTION ---
+  document.querySelectorAll("#members-container button").forEach(btn => {
+    // Compare by the canonical member name (you might wish to use your applyUseLastNamesOnly here)
+    if (btn.innerText.trim() === selectedMember) {
+      btn.classList.add("selected");
+    } else {
+      btn.classList.remove("selected");
+    }
+  });
+  
+  // --- REPOPULATE THE MAIN ACTION SELECTION ---
+  document.querySelectorAll("#mainActionsSection button").forEach(btn => {
+    if (btn.innerText.trim() === mainAction) {
+      btn.classList.add("selected");
+      btn.classList.remove("inactive");
+    } else {
+      btn.classList.remove("selected");
+      btn.classList.add("inactive");
+    }
+  });
+  
+  // --- SHOW/HIDE SUB-SECTIONS BASED ON mainAction ---
+  if (mainAction === "Moved") {
+    // Show the bill type section and highlight the saved type:
+    showBillTypeSection(true);
+    document.querySelectorAll("#bill-type-container button").forEach(btn => {
+      if (btn.innerText.trim() === selectedBillType) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+    });
+    // If a sub‑action is saved, show sub‑actions and highlight:
+    if (selectedSubAction) {
+      showMovedSubActions(); // rebuilds the sub‑action buttons
+      document.querySelectorAll("#sub-actions-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedSubAction) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    }
+    // Also, if a rerefer committee is set, set the select:
+    if (selectedRereferCommittee) {
+      document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
+    }
+  } else if (mainAction.startsWith("Roll Call Vote on")) {
+    // Hide members section and show vote tally and carrier sections:
+    document.getElementById("members-container").classList.add("hidden");
+    showVoteTallySection(true);
+    document.getElementById("forCount").innerText = forVal;
+    document.getElementById("againstCount").innerText = againstVal;
+    document.getElementById("neutralCount").innerText = neutralVal;
+    if (selectedCarrier) {
+      showBillCarrierSection(true);
+      document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedCarrier) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    }
+    // Show "as amended" button if applicable.
+    if (asAmended) {
+      document.getElementById("as-amended-section").classList.remove("hidden");
+      document.getElementById("asAmendedBtn").classList.add("selected");
+    } else {
+      document.getElementById("as-amended-section").classList.add("hidden");
+      document.getElementById("asAmendedBtn").classList.remove("selected");
+    }
+  } else if (mainAction.startsWith("Voice Vote on")) {
+    // Hide members and show the voice vote section:
+    document.getElementById("members-container").classList.add("hidden");
+    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
+    document.querySelectorAll("#voice-vote-outcome-section button").forEach(btn => {
+      if (btn.innerText.includes(voiceVoteOutcome)) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+    });
+  }
+  
+  // Finally, update the log
+  document.getElementById("log").innerText = constructedStatement;
+}
+
+// When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
+function finalizeEdit() {
+  // Prevent a 0-0-0 tally for roll call votes:
+  if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
+    alert("Roll call vote cannot have a 0-0-0 tally.");
+    return;
+  }
+  
+  // Update the record in the history array:
+  let record = historyRecords[currentEditIndex];
+  record.member = selectedMember;
+  record.mainAction = mainAction;
+  record.selectedSubAction = selectedSubAction;
+  record.selectedBillType = selectedBillType;
+  record.selectedCarrier = selectedCarrier;
+  record.asAmended = asAmended;
+  record.voiceVoteOutcome = voiceVoteOutcome;
+  record.forVal = forVal;
+  record.againstVal = againstVal;
+  record.neutralVal = neutralVal;
+  record.selectedRereferCommittee = selectedRereferCommittee;
+  
+  // Rebuild the constructed statement and update the record.
+  updateStatement();
+  record.statement = constructedStatement;
+  
+  // Save and refresh the history table.
+  saveHistoryToLocalStorage();
+  loadHistoryFromLocalStorage();
+  
+  // Clear the edit marker and remove the highlight.
+  currentEditIndex = null;
+  document.getElementById("log").style.border = "none";
+  
+  // Optionally reset the UI for a new entry.
+  resetSelections();
+}
+
+// --- KEYDOWN HANDLER ---
+// In your keydown event, check if currentEditIndex is not null. If so, finalize the edit.
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
     event.preventDefault();
@@ -2111,6 +2272,7 @@ document.addEventListener("keydown", function (event) {
     cancelCurrentAction();
   }
 });
+
 
 
 document.addEventListener("DOMContentLoaded", () => {
