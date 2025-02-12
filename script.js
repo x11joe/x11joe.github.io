@@ -282,17 +282,91 @@ function editHistoryRecord(index) {
   neutralVal = record.neutralVal || 0;
   selectedRereferCommittee = record.selectedRereferCommittee || "";
   
-  // Set the constructed statement to the current record's statement.
+  // Set the constructed statement from the record.
   constructedStatement = record.statement;
   
-  // Update the UI (this will cause the appropriate sections to show).
+  // Rebuild the statement (this updates the log text).
   updateStatement();
+  // Now populate the UI (show/hide sections, mark buttons) based on these globals.
+  populateEditUI();
   
   // Mark that we are now editing this record.
   currentEditIndex = index;
-  
-  // (Optional) Scroll to or highlight your main actions area to let the user know they are editing.
   document.getElementById("log").style.border = "2px dashed #007bff";
+}
+
+function populateEditUI() {
+  // This function should show or hide the proper sections and “select” the buttons
+  // based on the globals that were loaded from the record.
+  
+  // For actions that require a member, you might want to show the members area:
+  if (mainAction === "Moved" || mainAction === "Seconded" || mainAction === "Introduced Bill") {
+    document.getElementById("members-container").classList.remove("hidden");
+    // Optionally highlight the selected member (if you have a way to find its button)
+  } else {
+    document.getElementById("members-container").classList.add("hidden");
+  }
+  
+  // Now show the sections based on the mainAction:
+  if (mainAction === "Moved") {
+    showBillTypeSection(true);
+    // Highlight the stored bill type button (if any)
+    let billButtons = document.querySelectorAll("#bill-type-container button");
+    billButtons.forEach(btn => {
+      if (btn.innerText === selectedBillType) {
+        btn.classList.add("selected");
+      }
+    });
+    // If there is a sub‑action, show sub‑actions and select the proper one:
+    if (selectedSubAction) {
+      showMovedSubActions();
+      let subButtons = document.querySelectorAll("#sub-actions-container button");
+      subButtons.forEach(btn => {
+        if (btn.innerText === selectedSubAction) {
+          btn.classList.add("selected");
+        }
+      });
+    }
+    // If a rerefer committee was saved, set that value:
+    if (selectedRereferCommittee) {
+      document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
+    }
+  } else if (mainAction.startsWith("Roll Call Vote on")) {
+    // Hide members and show the vote tally section
+    document.getElementById("members-container").classList.add("hidden");
+    showVoteTallySection(true);
+    // Set the current tally values:
+    document.getElementById("forCount").innerText = forVal;
+    document.getElementById("againstCount").innerText = againstVal;
+    document.getElementById("neutralCount").innerText = neutralVal;
+    // Also, if a bill carrier was stored, show the carrier section and mark it.
+    if (selectedCarrier) {
+      showBillCarrierSection(true);
+      let carrierButtons = document.querySelectorAll("#bill-carrier-container button");
+      carrierButtons.forEach(btn => {
+        if (btn.innerText === selectedCarrier) {
+          btn.classList.add("selected");
+        }
+      });
+    }
+    // And if the "as amended" flag is set, mark its button:
+    if (asAmended) {
+      document.getElementById("asAmendedBtn").classList.add("selected");
+    }
+  } else if (mainAction.startsWith("Voice Vote on")) {
+    document.getElementById("members-container").classList.add("hidden");
+    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
+    // Highlight the stored outcome:
+    let voiceButtons = document.querySelectorAll("#voice-vote-outcome-section button");
+    voiceButtons.forEach(btn => {
+      if (btn.innerText.includes(voiceVoteOutcome)) {
+        btn.classList.add("selected");
+      }
+    });
+  }
+  
+  // Finally, update the log text with the constructed statement.
+  document.getElementById("log").innerText = constructedStatement;
 }
 
 function finalizeEdit() {
