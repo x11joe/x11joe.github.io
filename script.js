@@ -267,6 +267,7 @@ function groupCommitteeMembers(members) {
   return { chairs, viceChairs, others };
 }
 
+// Called when the user clicks an "edit" (pencil) button in the history table.
 function editHistoryRecord(index) {
   let record = historyRecords[index];
   // Populate globals with the saved values:
@@ -285,97 +286,119 @@ function editHistoryRecord(index) {
   // Set the constructed statement from the record.
   constructedStatement = record.statement;
   
-  // Rebuild the statement (this updates the log text).
+  // Update the statement log.
   updateStatement();
-  // Now populate the UI (show/hide sections, mark buttons) based on these globals.
+  
+  // Now update the UI to reflect the record’s state:
   populateEditUI();
   
-  // Mark that we are now editing this record.
+  // Mark that we are editing this record.
   currentEditIndex = index;
+  
+  // Optionally highlight the log so the user knows we are editing:
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
 
 function populateEditUI() {
-  // This function should show or hide the proper sections and “select” the buttons
-  // based on the globals that were loaded from the record.
+  // Highlight the selected member (if found in the members container).
+  document.querySelectorAll("#members-container button").forEach(btn => {
+    if (btn.innerText.trim() === selectedMember) {
+      btn.classList.add("selected");
+    } else {
+      btn.classList.remove("selected");
+    }
+  });
   
-  // For actions that require a member, you might want to show the members area:
-  if (mainAction === "Moved" || mainAction === "Seconded" || mainAction === "Introduced Bill") {
-    document.getElementById("members-container").classList.remove("hidden");
-    // Optionally highlight the selected member (if you have a way to find its button)
-  } else {
-    document.getElementById("members-container").classList.add("hidden");
-  }
+  // Highlight the main action button in the Main Actions section.
+  document.querySelectorAll("#mainActionsSection button").forEach(btn => {
+    if (btn.innerText.trim() === mainAction) {
+      btn.classList.add("selected");
+      btn.classList.remove("inactive");
+    } else {
+      btn.classList.remove("selected");
+      btn.classList.add("inactive");
+    }
+  });
   
-  // Now show the sections based on the mainAction:
+  // Show/hide and highlight sections based on mainAction:
   if (mainAction === "Moved") {
+    // Make sure the "Moved" UI is visible:
     showBillTypeSection(true);
-    // Highlight the stored bill type button (if any)
-    let billButtons = document.querySelectorAll("#bill-type-container button");
-    billButtons.forEach(btn => {
-      if (btn.innerText === selectedBillType) {
+    // Highlight the bill type button:
+    document.querySelectorAll("#bill-type-container button").forEach(btn => {
+      if (btn.innerText.trim() === selectedBillType) {
         btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
       }
     });
-    // If there is a sub‑action, show sub‑actions and select the proper one:
+    // If a sub‑action was chosen, show sub‑actions:
     if (selectedSubAction) {
-      showMovedSubActions();
-      let subButtons = document.querySelectorAll("#sub-actions-container button");
-      subButtons.forEach(btn => {
-        if (btn.innerText === selectedSubAction) {
+      showMovedSubActions(); // This rebuilds the sub‑actions container.
+      document.querySelectorAll("#sub-actions-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
         }
       });
     }
-    // If a rerefer committee was saved, set that value:
+    // Set the rerefer committee select if available.
     if (selectedRereferCommittee) {
       document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
-    // Hide members and show the vote tally section
+    // Hide the members container.
     document.getElementById("members-container").classList.add("hidden");
+    // Show the vote tally section.
     showVoteTallySection(true);
-    // Set the current tally values:
+    // Set the tally numbers.
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
-    // Also, if a bill carrier was stored, show the carrier section and mark it.
+    // If a bill carrier is saved, show and highlight it:
     if (selectedCarrier) {
       showBillCarrierSection(true);
-      let carrierButtons = document.querySelectorAll("#bill-carrier-container button");
-      carrierButtons.forEach(btn => {
-        if (btn.innerText === selectedCarrier) {
+      document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedCarrier) {
           btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
         }
       });
     }
-    // And if the "as amended" flag is set, mark its button:
+    // If "as amended" was chosen, show that button as selected:
     if (asAmended) {
+      document.getElementById("as-amended-section").classList.remove("hidden");
       document.getElementById("asAmendedBtn").classList.add("selected");
+    } else {
+      document.getElementById("as-amended-section").classList.add("hidden");
+      document.getElementById("asAmendedBtn").classList.remove("selected");
     }
   } else if (mainAction.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // Highlight the stored outcome:
-    let voiceButtons = document.querySelectorAll("#voice-vote-outcome-section button");
-    voiceButtons.forEach(btn => {
+    document.querySelectorAll("#voice-vote-outcome-section button").forEach(btn => {
       if (btn.innerText.includes(voiceVoteOutcome)) {
         btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
       }
     });
   }
   
-  // Finally, update the log text with the constructed statement.
+  // Finally, update the constructed statement log:
   document.getElementById("log").innerText = constructedStatement;
 }
 
+// When the user presses Enter in edit mode, finalize the edit rather than creating a new row.
 function finalizeEdit() {
-  // If it's a roll call vote, do not allow a 0-0-0 tally.
+  // For roll call votes, prevent a 0-0-0 tally.
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
     return;
   }
-  // Update the record at currentEditIndex with the current global variables:
+  // Update the record at currentEditIndex with the current global state:
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
   record.mainAction = mainAction;
@@ -389,19 +412,19 @@ function finalizeEdit() {
   record.neutralVal = neutralVal;
   record.selectedRereferCommittee = selectedRereferCommittee;
   
-  // Rebuild the constructed statement from the UI
+  // Rebuild the constructed statement and update the record.
   updateStatement();
   record.statement = constructedStatement;
   
-  // Save and refresh.
+  // Save changes and refresh the history table.
   saveHistoryToLocalStorage();
   loadHistoryFromLocalStorage();
   
-  // Clear the edit marker.
+  // Clear the edit marker and remove the highlight.
   currentEditIndex = null;
   document.getElementById("log").style.border = "none";
   
-  // Optionally, reset the main UI.
+  // Optionally reset the rest of the UI.
   resetSelections();
 }
 
