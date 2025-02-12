@@ -14,6 +14,7 @@ let inProgressRecordIndex = null; // track the current record in historyRecords.
 
 // whether to use last names only for senators
 let useLastNamesOnly = (localStorage.getItem("useLastNamesOnly") === "true");
+let meetingActionsWithoutMember = localStorage.getItem("meetingActionsWithoutMember") === "true";
 
 let selectedMember = "";
 let mainAction = "";
