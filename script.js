@@ -290,19 +290,19 @@ function editHistoryRecord(index) {
   constructedStatement = record.statement;
   document.getElementById("log").innerText = constructedStatement;
   
-  // Populate the rest of the UI based on the saved globals.
+  // Populate the UI controls based on these saved values.
   populateEditUI();
   
   // Mark that we are editing this record.
   currentEditIndex = index;
   
-  // Add a border to the log to indicate edit mode.
+  // Add a visual cue to the log.
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
 
 
 function populateEditUI() {
-  // Rehighlight the member button.
+  // Rehighlight the selected member button.
   document.querySelectorAll("#members-container button").forEach(btn => {
     if (btn.innerText.trim() === selectedMember) {
       btn.classList.add("selected");
@@ -322,11 +322,9 @@ function populateEditUI() {
     }
   });
   
-  // Show/hide the sub-sections based on the mainAction value.
+  // Based on mainAction, show/hide sub–sections and highlight saved values.
   if (mainAction === "Moved") {
-    // Show the Bill Type section.
     showBillTypeSection(true);
-    // Highlight the saved bill type.
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
         btn.classList.add("selected");
@@ -334,9 +332,8 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // If a sub-action is saved, show and highlight it.
     if (selectedSubAction) {
-      showMovedSubActions(); // This rebuilds the sub-action buttons.
+      showMovedSubActions(); // rebuilds the sub–action buttons
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
@@ -345,12 +342,10 @@ function populateEditUI() {
         }
       });
     }
-    // Set the rerefer committee, if any.
     if (selectedRereferCommittee) {
       document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
-    // Hide the members container and show vote tally and carrier.
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
@@ -366,7 +361,6 @@ function populateEditUI() {
         }
       });
     }
-    // Show the "as amended" button if applicable.
     if (asAmended) {
       document.getElementById("as-amended-section").classList.remove("hidden");
       document.getElementById("asAmendedBtn").classList.add("selected");
@@ -375,7 +369,6 @@ function populateEditUI() {
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
   } else if (mainAction.startsWith("Voice Vote on")) {
-    // Hide members and show voice vote outcome.
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     document.querySelectorAll("#voice-vote-outcome-section button").forEach(btn => {
@@ -387,19 +380,19 @@ function populateEditUI() {
     });
   }
   
-  // Finally, update the log with the saved statement.
+  // Finally, set the log text to the saved statement.
   document.getElementById("log").innerText = constructedStatement;
 }
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
-  // Prevent a 0-0-0 tally for roll call votes:
+  // Prevent a 0-0-0 tally for roll call votes.
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
     return;
   }
   
-  // Update the record in the history array:
+  // Update the record in the history array.
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
   record.mainAction = mainAction;
@@ -413,19 +406,19 @@ function finalizeEdit() {
   record.neutralVal = neutralVal;
   record.selectedRereferCommittee = selectedRereferCommittee;
   
-  // Rebuild the constructed statement and update the record.
+  // Rebuild the constructed statement from the current globals.
   updateStatement();
   record.statement = constructedStatement;
   
-  // Save and refresh the history table.
+  // Save changes and refresh the history table.
   saveHistoryToLocalStorage();
   loadHistoryFromLocalStorage();
   
-  // Clear the edit marker and remove the highlight.
+  // Clear the edit marker and remove the border.
   currentEditIndex = null;
   document.getElementById("log").style.border = "none";
   
-  // Optionally reset the UI for a new entry.
+  // Reset the UI for a new entry.
   resetSelections();
 }
 
