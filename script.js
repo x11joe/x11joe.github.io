@@ -3,6 +3,10 @@
    -------------------------- */
 let historyRecords = [];
 
+// Time Mode feature variables and helper function
+let timeModeActivated = false;
+let timeModeTime = null;
+
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
 
@@ -44,6 +48,11 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
 /* --------------------------
    Utility Functions
    -------------------------- */
+
+function getStartingTime() {
+  // If time mode is active, use the time from when it was toggled; otherwise, use the current time.
+  return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
+}
 
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
 function applyUseLastNamesOnly(fullName) {
@@ -455,7 +464,8 @@ function insertHearingStatementDirect(statementData) {
   constructedStatement = statementText;
 
   // 3) Record the start time (like selectMember does)
-  statementStartTime = getCurrentTimestamp();
+  statementStartTime = getStartingTime();
+
 
   // 4) Create a new row in the history, passing the fileLink along
   createNewRowInHistory(fileLink);
@@ -606,7 +616,7 @@ function selectMember(member, btn) {
 
   // Start a new statement with the newly selected member
   selectedMember = member;
-  statementStartTime = getCurrentTimestamp();
+  statementStartTime = getStartingTime();
   createNewRowInHistory();
   updateStatement();
 
@@ -1889,6 +1899,37 @@ document.addEventListener("DOMContentLoaded", () => {
   // NEW: Load the XML member info.
   loadMemberInfoXML();
 });
+
+// Listen for the backtick key (`) to toggle time mode.
+document.addEventListener("keydown", (e) => {
+  if (e.key === "`") {
+    timeModeActivated = !timeModeActivated;
+    if (timeModeActivated) {
+      timeModeTime = getCurrentTimestamp();
+      document.body.classList.add("time-mode");
+      console.log("Time mode activated at", timeModeTime);
+    } else {
+      timeModeTime = null;
+      document.body.classList.remove("time-mode");
+      console.log("Time mode deactivated.");
+    }
+  }
+});
+
+// Inject CSS for the pulsing green effect.
+const style = document.createElement("style");
+style.textContent = `
+  .time-mode {
+    animation: pulseGreen 1s infinite;
+  }
+  @keyframes pulseGreen {
+    0% { background-color: #d4edda; }
+    50% { background-color: #c3e6cb; }
+    100% { background-color: #d4edda; }
+  }
+`;
+document.head.appendChild(style);
+
 
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
