@@ -1062,8 +1062,8 @@ function appendMeetingAction(action) {
     return;
   }
   
-  // If the setting is enabled, do not pre‑append the member's name.
   if (meetingActionsWithoutMember) {
+    // With the setting enabled, simply use the action text.
     constructedStatement = action;
   } else {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
@@ -1074,10 +1074,11 @@ function appendMeetingAction(action) {
     }
   }
   
-  document.getElementById("log").innerText = constructedStatement;
-  updateInProgressRow();
+  // Immediately insert the statement into history.
+  insertHearingStatementDirect(constructedStatement);
   autoCopyIfEnabled();
 }
+
 
 
 function setVoiceVoteOutcome(outcome) {
