@@ -1770,15 +1770,13 @@ function submitTestimonyModal() {
   const role = document.getElementById("testimonyRole").value.trim();
   const organization = document.getElementById("testimonyOrganization").value.trim();
   const testimonyPosition = document.getElementById("testimonyPosition").value;
+  const testimonyNumber = document.getElementById("testimonyNumber").value.trim();
   
   // Validate required fields.
-  if (!firstName || !lastName || !role || !organization || !testimonyPosition) {
+  if (!firstName || !lastName || !role || !organization || !testimonyPosition || !testimonyNumber) {
     alert("Please fill in all fields.");
     return;
   }
-  
-  // Generate a testimony number (here using a random 5-digit number).
-  const testimonyNumber = Math.floor(Math.random() * 90000) + 10000;
   
   // Construct the testimony string.
   // Example format:
@@ -1791,13 +1789,15 @@ function submitTestimonyModal() {
   // Close the modal.
   closeTestimonyModal();
   
-  // (Optional) Clear the modal fields.
+  // Clear the modal fields.
   document.getElementById("testimonyFirstName").value = "";
   document.getElementById("testimonyLastName").value = "";
   document.getElementById("testimonyRole").value = "";
   document.getElementById("testimonyOrganization").value = "";
   document.getElementById("testimonyPosition").value = "";
+  document.getElementById("testimonyNumber").value = "";
 }
+
 
 
 // Attach click event to the Lookup Members button
