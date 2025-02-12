@@ -1752,6 +1752,54 @@ function closeLookupMembersModal() {
   document.getElementById("lookupMembersModal").classList.add("hidden");
 }
 
+// Opens the Testimony modal.
+function openTestimonyModal() {
+  document.getElementById("testimonyModal").classList.remove("hidden");
+}
+
+// Closes the Testimony modal.
+function closeTestimonyModal() {
+  document.getElementById("testimonyModal").classList.add("hidden");
+}
+
+// Called when the user clicks the "Add Testimony" button in the modal.
+function submitTestimonyModal() {
+  // Get values from the modal input fields.
+  const firstName = document.getElementById("testimonyFirstName").value.trim();
+  const lastName = document.getElementById("testimonyLastName").value.trim();
+  const role = document.getElementById("testimonyRole").value.trim();
+  const organization = document.getElementById("testimonyOrganization").value.trim();
+  const testimonyPosition = document.getElementById("testimonyPosition").value;
+  
+  // Validate required fields.
+  if (!firstName || !lastName || !role || !organization || !testimonyPosition) {
+    alert("Please fill in all fields.");
+    return;
+  }
+  
+  // Generate a testimony number (here using a random 5-digit number).
+  const testimonyNumber = Math.floor(Math.random() * 90000) + 10000;
+  
+  // Construct the testimony string.
+  // Example format:
+  // "Tami Brown Rodriquez - Dir of Policy Jaco Booyens Ministries - In Favor - Testimony#36316"
+  const testimonyString = `${firstName} ${lastName} - ${role} ${organization} - ${testimonyPosition} - Testimony#${testimonyNumber}`;
+  
+  // Insert the testimony into history (and copy to clipboard if auto copy is enabled)
+  insertHearingStatementDirect(testimonyString);
+  
+  // Close the modal.
+  closeTestimonyModal();
+  
+  // (Optional) Clear the modal fields.
+  document.getElementById("testimonyFirstName").value = "";
+  document.getElementById("testimonyLastName").value = "";
+  document.getElementById("testimonyRole").value = "";
+  document.getElementById("testimonyOrganization").value = "";
+  document.getElementById("testimonyPosition").value = "";
+}
+
+
 // Attach click event to the Lookup Members button
 document.getElementById("lookupMembersBtn").addEventListener("click", openLookupMembersModal);
 
