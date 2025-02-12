@@ -268,7 +268,12 @@ button:hover {
 
 #historyTable th:nth-child(4),
 #historyTable td:nth-child(4) {
-  width: 10%;
+  width: 5%;
+}
+
+#historyTable th:nth-child(5),
+#historyTable td:nth-child(5) {
+  width: 5%;
 }
 
 /* Time control groups for +/- second adjustments */
