@@ -245,11 +245,12 @@ button:hover {
   word-wrap: break-word;
 }
 
-/* Now we have 4 columns:
+/* Now we have 5 columns:
    1: Time (10%)
    2: Statement (60%)
    3: Time Control (20%)
-   4: Delete (10%)
+   4: Delete (5%)
+   5: Edit (5%)
 */
 #historyTable th:nth-child(1),
 #historyTable td:nth-child(1) {
