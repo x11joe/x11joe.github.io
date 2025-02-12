@@ -950,122 +950,100 @@ function updateInProgressRow() {
 
 // Build the statement
 function updateStatement() {
-  // If a member is selected but no main action has been chosen
-  if (selectedMember && !mainAction) {
-     constructedStatement = applyUseLastNamesOnly(selectedMember);
-     document.getElementById("log").innerText = constructedStatement;
-     updateInProgressRow();
-     autoCopyIfEnabled();
-     return;
-   }
+  // Define the list of actions that don't require a member.
+  const actionsNotRequiringMember = [
+    "Roll Call Vote on SB",
+    "Roll Call Vote on Amendment",
+    "Roll Call Vote on Reconsider",
+    "Voice Vote on SB",
+    "Voice Vote on Amendment",
+    "Voice Vote on Reconsider",
+    "Motion Failed for lack of a second",
+    "Motion for Do Pass failed for lack of a second",
+    "Motion for Do Not Pass failed for lack of a second"
+  ];
 
-  // Allow no selectedMember only if mainAction is one of the vote actions
-  if (!selectedMember &&
-      mainAction !== "Roll Call Vote on SB" &&
-      mainAction !== "Roll Call Vote on Amendment" &&
-      mainAction !== "Roll Call Vote on Reconsider" &&
-      mainAction !== "Voice Vote on SB" &&
-      mainAction !== "Voice Vote on Amendment" &&
-      mainAction !== "Voice Vote on Reconsider"
-  ) {
+  // If no member is selected and the main action is not one of the allowed actions, show placeholder.
+  if (!selectedMember && !actionsNotRequiringMember.includes(mainAction)) {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
-
+  
+  // Handle the new additional motion actions directly.
+  if (mainAction === "Motion Failed for lack of a second" ||
+      mainAction === "Motion for Do Pass failed for lack of a second" ||
+      mainAction === "Motion for Do Not Pass failed for lack of a second") {
+    constructedStatement = mainAction;
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+    return;
+  }
+  
+  // If a member is selected but no main action is chosen.
+  if (selectedMember && !mainAction) {
+    constructedStatement = applyUseLastNamesOnly(selectedMember);
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+    return;
+  }
+  
   let parts = [];
-
-  // 1) Roll Call Votes (SB, Amendment, Reconsider)
+  
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = mainAction;
-
-    // If "Roll Call Vote on SB as Amended"
     if (mainAction === "Roll Call Vote on SB" && asAmended) {
       actionText = "Roll Call Vote on SB as Amended";
     }
-
     parts.push(actionText);
-
-    // Then the motion result, e.g. "Motion Passed" or "Motion Failed"
-    // We can use your existing numeric logic + getMotionResultText()
     parts.push(getMotionResultText());
-    // e.g. "7-0-0"
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-
-    // If it's SB (not "Amendment" or "Reconsider"), check for carrier
     if (actionText.includes("SB") && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
-  }
-
-  // 2) Voice Vote (SB, Amendment, Reconsider)
-  else if (mainAction.startsWith("Voice Vote on")) {
+  } else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
-
-    // If "Voice Vote on SB as Amended"
     if (mainAction === "Voice Vote on SB" && asAmended) {
       actionText = "Voice Vote on SB as Amended";
     }
-
     parts.push(actionText);
-
-    // Instead of a numeric tally, we do "Motion Passed" or "Motion Failed"
-    // if the user picked one:
     if (voiceVoteOutcome) {
       parts.push(`Motion ${voiceVoteOutcome}`);
     } else {
-      // If user hasn't clicked Passed/Failed yet, show placeholder:
       parts.push("[Pick Passed/Failed]");
     }
-  }
-
-  // 3) Moved
-  else if (mainAction === "Moved") {
-     parts.push(applyUseLastNamesOnly(selectedMember));
-   
-     if (selectedBillType === "Reconsider") {
-       parts.push("Moved to Reconsider");
-     }
-     else if (selectedBillType) {
-       if (selectedBillType === "Amendment") {
-         parts.push(`Moved ${selectedBillType}`);
-       } else {
-         if (selectedSubAction) {
-           parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
-         } else {
-           parts.push(`Moved on ${selectedBillType}`);
-         }
-       }
-     }
-     else if (selectedSubAction) {
-       parts.push(`Moved ${selectedSubAction}`);
-     }
-     else {
-       parts.push("Moved");
-     }
-   
-     // *** NEW: If user picked a subAction AND a rerefer committee
-     if (selectedSubAction && selectedRereferCommittee) {
-       parts.push(`and rereferred to ${selectedRereferCommittee}`);
-     }
-  }
-
-  // 4) Other main actions (e.g. "Seconded")
-  else if (mainAction) {
+  } else if (mainAction === "Moved") {
+    parts.push(applyUseLastNamesOnly(selectedMember));
+    if (selectedBillType === "Reconsider") {
+      parts.push("Moved to Reconsider");
+    } else if (selectedBillType) {
+      if (selectedBillType === "Amendment") {
+        parts.push(`Moved ${selectedBillType}`);
+      } else {
+        if (selectedSubAction) {
+          parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+        } else {
+          parts.push(`Moved on ${selectedBillType}`);
+        }
+      }
+    } else if (selectedSubAction) {
+      parts.push(`Moved ${selectedSubAction}`);
+    } else {
+      parts.push("Moved");
+    }
+    if (selectedSubAction && selectedRereferCommittee) {
+      parts.push(`and rereferred to ${selectedRereferCommittee}`);
+    }
+  } else if (mainAction) {
     parts.push(`${applyUseLastNamesOnly(selectedMember)} - ${mainAction}`);
   }
-
-  if (parts.length === 0) {
-    constructedStatement = "[Click a member and an action]";
-  } else {
-    constructedStatement = parts.join(" - ");
-  }
-
-  // Show it on screen
+  
+  constructedStatement = parts.length ? parts.join(" - ") : "[Click a member and an action]";
   document.getElementById("log").innerText = constructedStatement;
   updateInProgressRow();
   autoCopyIfEnabled();
 }
-
 
 function resetVoteTally() {
   forVal = 0;
