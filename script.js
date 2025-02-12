@@ -1772,18 +1772,30 @@ function submitTestimonyModal() {
   const testimonyPosition = document.getElementById("testimonyPosition").value;
   const testimonyNumber = document.getElementById("testimonyNumber").value.trim();
   
-  // Validate required fields.
-  if (!firstName || !lastName || !role || !organization || !testimonyPosition || !testimonyNumber) {
-    alert("Please fill in all fields.");
+  // Only testimony position is required.
+  if (!testimonyPosition) {
+    alert("Testimony position is required.");
     return;
   }
   
-  // Construct the testimony string.
-  // Example format:
-  // "Tami Brown Rodriquez - Dir of Policy Jaco Booyens Ministries - In Favor - Testimony#36316"
-  const testimonyString = `${firstName} ${lastName} - ${role} ${organization} - ${testimonyPosition} - Testimony#${testimonyNumber}`;
+  // Build the testimony string using only the fields that have a value.
+  const parts = [];
+  if (firstName || lastName) {
+    parts.push(`${firstName}${firstName && lastName ? ' ' : ''}${lastName}`);
+  }
+  if (role || organization) {
+    parts.push(`${role}${role && organization ? ' ' : ''}${organization}`);
+  }
+  // Always include the testimony position.
+  parts.push(testimonyPosition);
+  // Append the testimony number if provided.
+  if (testimonyNumber) {
+    parts.push(`Testimony#${testimonyNumber}`);
+  }
   
-  // Insert the testimony into history (and copy to clipboard if auto copy is enabled)
+  const testimonyString = parts.join(" - ");
+  
+  // Insert the testimony into history (and auto-copy if enabled)
   insertHearingStatementDirect(testimonyString);
   
   // Close the modal.
@@ -1797,9 +1809,6 @@ function submitTestimonyModal() {
   document.getElementById("testimonyPosition").value = "";
   document.getElementById("testimonyNumber").value = "";
 }
-
-
-
 
 // Attach click event to the Lookup Members button
 document.getElementById("lookupMembersBtn").addEventListener("click", openLookupMembersModal);
