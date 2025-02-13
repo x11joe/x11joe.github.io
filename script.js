@@ -2349,38 +2349,35 @@ document.head.appendChild(style);
 
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
-  // Only handle messages from our own content script.
-  if (event.source !== window) return;
+  // 1) Only handle messages from our own content script
+  if (event.source !== window) return; // ignore if from an iframe
   if (!event.data) return;
   if (event.data.source !== "CLERK_EXTENSION") return;
 
   if (event.data.type === "HEARING_STATEMENT") {
-    const rowText = event.data.payload;
+    // Convert the payload to a string.
+    const rowText = String(event.data.payload);
     console.log("Page context received row text via postMessage:", rowText);
 
     // If the string contains "Testimony#", assume it's a testimony entry.
     if (rowText.includes("Testimony#")) {
-      // Parse the testimony string into its details.
       const testimonyDetails = parseTestimonyString(rowText);
-      // Pre-fill the testimony modal fields.
       document.getElementById("testimonyFirstName").value = testimonyDetails.firstName || "";
       document.getElementById("testimonyLastName").value = testimonyDetails.lastName || "";
       document.getElementById("testimonyRole").value = testimonyDetails.role || "";
       document.getElementById("testimonyOrganization").value = testimonyDetails.organization || "";
       document.getElementById("testimonyPosition").value = testimonyDetails.position || "";
       document.getElementById("testimonyNumber").value = testimonyDetails.number || "";
-      // Change the submit button text so the user sees “Save Changes”
       document.getElementById("submitTestimonyButton").textContent = "Save Changes";
-      // (If you want to treat this as a new testimony record from the extension, you might leave editingTestimonyIndex as null.)
       editingTestimonyIndex = null;
       openTestimonyModal();
     } else {
-      // Otherwise, treat it as a regular record.
       insertHearingStatementDirect(rowText);
       window.scrollTo(0, document.body.scrollHeight);
     }
   }
 });
+
 
 
 
