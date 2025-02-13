@@ -1340,7 +1340,6 @@ function updateStatement() {
     return;
   }
   
-  
   if (mainAction === "Motion Failed for lack of a second" ||
       mainAction === "Motion for Do Pass failed for lack of a second" ||
       mainAction === "Motion for Do Not Pass failed for lack of a second") {
@@ -1378,7 +1377,7 @@ function updateStatement() {
     if (selectedBillType === "SB" && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
-  }  
+  }
   else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
     if (mainAction === "Voice Vote on SB" && asAmended) {
@@ -1390,7 +1389,8 @@ function updateStatement() {
     } else {
       parts.push("[Pick Passed/Failed]");
     }
-  } else if (mainAction === "Moved") {
+  }
+  else if (mainAction === "Moved") {
     parts.push(applyUseLastNamesOnly(selectedMember));
     if (selectedBillType === "Reconsider") {
       parts.push("Moved to Reconsider");
@@ -1414,8 +1414,12 @@ function updateStatement() {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
   }
-  
-  
+  // NEW branch for Seconded and Introduced Bill actions
+  else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    parts.push(formattedMember);
+    parts.push(mainAction);
+  }
   
   constructedStatement = parts.length ? parts.join(" - ") : "[Click a member and an action]";
   document.getElementById("log").innerText = constructedStatement;
@@ -1423,7 +1427,6 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
-
 
 
 function resetVoteTally() {
