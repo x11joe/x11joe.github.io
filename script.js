@@ -1013,22 +1013,26 @@ function setMainAction(button, action) {
   
   // Normalize mainAction for roll call votes.
   if (action.startsWith("Roll Call Vote on")) {
-    // Always store mainAction as "Roll Call Vote on Bill"
-    mainAction = "Roll Call Vote on Bill";
-    if (action.includes("SB")) {
-      selectedBillType = "SB";
-    } else if (action.includes("HB")) {
-      selectedBillType = "HB";
-    } else if (action.includes("Amendment")) {
+    if (action.includes("Amendment")) {
+      mainAction = "Roll Call Vote on Amendment";
       selectedBillType = "Amendment";
     } else if (action.includes("Reconsider")) {
+      mainAction = "Roll Call Vote on Reconsider";
       selectedBillType = "Reconsider";
+    } else if (action.includes("SB")) {
+      mainAction = "Roll Call Vote on Bill";
+      selectedBillType = "SB";
+    } else if (action.includes("HB")) {
+      mainAction = "Roll Call Vote on Bill";
+      selectedBillType = "HB";
     } else {
+      mainAction = "Roll Call Vote on Bill";
       selectedBillType = "";
     }
   } else {
     mainAction = action;
   }
+  
   
   // Clear and mark buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
