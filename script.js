@@ -270,8 +270,8 @@ function groupCommitteeMembers(members) {
 // EDIT FLOW
 // Called when the user clicks an "edit" (pencil) button in the history table.
 function editHistoryRecord(index) {
+  console.log("Editing history record at index:", index);
   let record = historyRecords[index];
-  // Populate globals from the saved record.
   selectedMember = record.member || "";
   mainAction = record.mainAction || "";
   selectedSubAction = record.selectedSubAction || "";
@@ -284,26 +284,28 @@ function editHistoryRecord(index) {
   neutralVal = record.neutralVal || 0;
   selectedRereferCommittee = record.selectedRereferCommittee || "";
   
-  // Instead of recalculating the statement, use the saved one.
   constructedStatement = record.statement;
   
-  // Mark that we are editing this record:
-  // Save both currentEditIndex and also mark this record as the in-progress record.
   currentEditIndex = index;
   inProgressRecordIndex = index;
   
-  // Populate the UI controls based on these saved values.
-  populateEditUI();
+  console.log("Loaded record for editing:", record);
   
-  // Add a visual cue to the log.
+  populateEditUI();
   document.getElementById("log").style.border = "2px dashed #007bff";
 }
 
 
 function populateEditUI() {
-  // Rehighlight the selected member button.
+  console.log("Populating edit UI. Record values:", {
+    member: selectedMember,
+    mainAction: mainAction,
+    subAction: selectedSubAction,
+    billType: selectedBillType,
+    rerefer: selectedRereferCommittee
+  });
+  // Rehighlight selected member buttons.
   document.querySelectorAll("#members-container button").forEach(btn => {
-    // Compare in lowercase and check if the button’s text contains the saved member’s text.
     let btnText = btn.innerText.trim().toLowerCase();
     let savedMember = selectedMember.toLowerCase();
     if (btnText.includes(savedMember) || savedMember.includes(btnText)) {
@@ -313,7 +315,7 @@ function populateEditUI() {
     }
   });
   
-  // Rehighlight the main action button.
+  // Rehighlight main action button.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     if (btn.innerText.trim() === mainAction) {
       btn.classList.add("selected");
@@ -324,7 +326,7 @@ function populateEditUI() {
     }
   });
   
-  // Based on mainAction, show/hide sub–sections and highlight saved values.
+  // For "Moved", unhide relevant sections.
   if (mainAction === "Moved") {
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -335,7 +337,7 @@ function populateEditUI() {
       }
     });
     if (selectedSubAction) {
-      showMovedSubActions(); // rebuilds the sub–action buttons
+      showMovedSubActions(); // rebuild sub-action buttons
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
@@ -343,10 +345,13 @@ function populateEditUI() {
           btn.classList.remove("selected");
         }
       });
-      // *** NEW: If a rereference exists, unhide the rerefer section and set its value.
+      // NEW: Unhide rerefer section if a rereference exists.
       if (selectedRereferCommittee) {
         document.getElementById("rerefer-section").classList.remove("hidden");
         document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
+        console.log("Rerefer section unhidden with value:", selectedRereferCommittee);
+      } else {
+        console.log("No rerefer value set.");
       }
     }
   } else if (mainAction.startsWith("Roll Call Vote on")) {
@@ -384,21 +389,21 @@ function populateEditUI() {
     });
   }
   
-  // Finally, set the log text to the saved constructed statement.
   document.getElementById("log").innerText = constructedStatement;
+  console.log("Constructed statement in edit UI:", constructedStatement);
 }
-
 
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
+  console.log("Finalizing edit for record index:", currentEditIndex);
   // Prevent a 0-0-0 tally for roll call votes.
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
+    console.log("Edit finalization aborted due to vote tally being 0-0-0.");
     return;
   }
   
-  // Update the record in the history array.
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
   record.mainAction = mainAction;
@@ -412,21 +417,20 @@ function finalizeEdit() {
   record.neutralVal = neutralVal;
   record.selectedRereferCommittee = selectedRereferCommittee;
   
-  // Rebuild the constructed statement from the current globals.
+  // Rebuild the constructed statement from current globals.
   updateStatement();
   record.statement = constructedStatement;
   
-  // Save changes and refresh the history table.
+  console.log("Record after edit finalization:", record);
+  
   saveHistoryToLocalStorage();
   loadHistoryFromLocalStorage();
   
-  // Clear the edit marker and remove the border.
   currentEditIndex = null;
   document.getElementById("log").style.border = "none";
-  
-  // Reset the UI for a new entry.
   resetSelections();
 }
+
 
 
 
@@ -1555,27 +1559,33 @@ function clearHistory() {
 }
 
 function cancelCurrentAction() {
-  // If there's an in-progress record, remove it from historyRecords:
+  console.log("cancelCurrentAction invoked. currentEditIndex:", currentEditIndex);
+  // If in edit mode, do NOT delete the record – simply exit edit mode.
+  if (currentEditIndex !== null) {
+    console.log("Edit mode active. Exiting edit mode without deletion.");
+    currentEditIndex = null;
+    document.getElementById("log").style.border = "none";
+    // Optionally, re-populate the UI from the record if needed.
+    return;
+  }
+  
+  // If not editing, then remove any in-progress record.
   if (inProgressRecordIndex !== null && inProgressRecordIndex < historyRecords.length) {
+    console.log("Deleting in-progress record at index:", inProgressRecordIndex);
     historyRecords.splice(inProgressRecordIndex, 1);
     saveHistoryToLocalStorage();
   }
-
-  // If there's a row in progress, remove it from the DOM:
+  
   if (inProgressRow) {
     inProgressRow.remove();
   }
-
-  // Clear references so we are no longer in "edit mode":
   finalizeInProgressRow();
-
-  // Reset the UI selections without finalizing
   resetSelections(false);
-
-  // Make sure the log text is set back to the placeholder
+  
   constructedStatement = "";
   document.getElementById("log").innerText = "[Click a member and an action]";
 }
+
 
 function loadCommitteesFromLocalStorage() {
   let stored = localStorage.getItem("allCommittees");
@@ -2102,23 +2112,25 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
     event.preventDefault();
+    console.log("CTRL+Enter detected – copying to clipboard.");
     copyToClipboard();
   }
   else if (event.key === "Enter") {
     event.preventDefault();
     if (currentEditIndex !== null) {
+      console.log("Enter pressed in edit mode for record index:", currentEditIndex);
       finalizeEdit();
     } else {
+      console.log("Enter pressed in new record mode – finalizing new record.");
       resetAllAndFinalize();
     }
   }
   else if (event.key === "Escape") {
     event.preventDefault();
+    console.log("Escape key detected.");
     cancelCurrentAction();
   }
 });
-
-
 
 document.addEventListener("DOMContentLoaded", () => {
   // Initialization
