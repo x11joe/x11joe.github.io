@@ -2354,22 +2354,32 @@ window.addEventListener("message", function (event) {
   if (!event.data) return;
   if (event.data.source !== "CLERK_EXTENSION") return;
 
+  // 2) Check the type
   if (event.data.type === "HEARING_STATEMENT") {
-    // Convert the payload to a string.
-    const rowText = String(event.data.payload);
+    let payload = event.data.payload;
+    let rowText = "";
+    // If the payload is an object, extract the text property; otherwise, convert it to string.
+    if (typeof payload === "object" && payload !== null) {
+      rowText = payload.text || "";
+    } else {
+      rowText = String(payload);
+    }
     console.log("Page context received row text via postMessage:", rowText);
 
     // If the string contains "Testimony#", assume it's a testimony entry.
     if (rowText.includes("Testimony#")) {
-      const testimonyDetails = parseTestimonyString(rowText);
+      // (Your code to open the testimony modal and prefill it goes here.)
+      // For example:
+      const testimonyDetails = parseTestimonyString(rowText); // You'd need to implement parseTestimonyString() to extract details.
       document.getElementById("testimonyFirstName").value = testimonyDetails.firstName || "";
       document.getElementById("testimonyLastName").value = testimonyDetails.lastName || "";
       document.getElementById("testimonyRole").value = testimonyDetails.role || "";
       document.getElementById("testimonyOrganization").value = testimonyDetails.organization || "";
       document.getElementById("testimonyPosition").value = testimonyDetails.position || "";
       document.getElementById("testimonyNumber").value = testimonyDetails.number || "";
+      // Also change the modal button text from "Add Testimony" to "Save Changes"
       document.getElementById("submitTestimonyButton").textContent = "Save Changes";
-      editingTestimonyIndex = null;
+      editingTestimonyIndex = null;  // reset edit flag if needed
       openTestimonyModal();
     } else {
       insertHearingStatementDirect(rowText);
@@ -2377,6 +2387,7 @@ window.addEventListener("message", function (event) {
     }
   }
 });
+
 
 
 
