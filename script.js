@@ -335,24 +335,29 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    if (selectedSubAction) {
+    // If either a subAction or a rerefer value exists, display the sub-actions and rerefer section.
+    if (selectedSubAction || selectedRereferCommittee) {
       showMovedSubActions();
-      document.querySelectorAll("#sub-actions-container button").forEach(btn => {
-        if (btn.innerText.trim() === selectedSubAction) {
-          btn.classList.add("selected");
-        } else {
-          btn.classList.remove("selected");
-        }
-      });
+      if (selectedSubAction) {
+        document.querySelectorAll("#sub-actions-container button").forEach(btn => {
+          if (btn.innerText.trim() === selectedSubAction) {
+            btn.classList.add("selected");
+          } else {
+            btn.classList.remove("selected");
+          }
+        });
+      }
       if (selectedRereferCommittee) {
         document.getElementById("rerefer-section").classList.remove("hidden");
         document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
         console.log("Rerefer section unhidden with value:", selectedRereferCommittee);
       } else {
+        document.getElementById("rerefer-section").classList.add("hidden");
         console.log("No rerefer value set.");
       }
     }
-  } else if (mainAction.startsWith("Roll Call Vote on")) {
+  }
+  else if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
@@ -1220,12 +1225,13 @@ function updateStatement() {
     } else {
       parts.push("Moved");
     }
-    if (selectedSubAction && selectedRereferCommittee) {
+    // Append rerefer info if any (do not require selectedSubAction)
+    if (selectedRereferCommittee) {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
-  } else if (mainAction) {
-    parts.push(`${applyUseLastNamesOnly(selectedMember)} - ${mainAction}`);
   }
+  
+  
   
   constructedStatement = parts.length ? parts.join(" - ") : "[Click a member and an action]";
   document.getElementById("log").innerText = constructedStatement;
