@@ -1360,11 +1360,15 @@ function updateStatement() {
   let parts = [];
   
   if (mainAction.startsWith("Roll Call Vote on")) {
-    // Build actionText based on selectedBillType and asAmended
-    let billTypeText = selectedBillType ? selectedBillType : "Bill";
-    let actionText = "Roll Call Vote on " + billTypeText;
-    if (selectedBillType === "SB" && asAmended) {
-      actionText += " as Amended";
+    let actionText = "Roll Call Vote on ";
+    if (selectedBillType) {
+      actionText += selectedBillType;
+      // Always display the amended state so the user can click to toggle it.
+      if (selectedBillType === "SB") {
+        actionText += asAmended ? " as Amended" : " - Not Amended";
+      }
+    } else {
+      actionText += "Bill";
     }
     parts.push(actionText);
     parts.push(getMotionResultText());
@@ -1372,7 +1376,7 @@ function updateStatement() {
     if (selectedBillType === "SB" && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
-  }
+  }  
   else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
     if (mainAction === "Voice Vote on SB" && asAmended) {
