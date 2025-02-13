@@ -826,24 +826,21 @@ function selectMember(member, btn) {
 
 
 function setMainAction(button, action) {
-  // If an action that does not require a member is taken,
-  // we still want to consume the stored time.
+  console.log("setMainAction() called with action:", action);
+  // For actions that do NOT require a member:
   if (action !== "Moved" && action !== "Seconded" && action !== "Introduced Bill") {
-    // Capture the starting time and then disable time mode.
     let startingTime = getStartingTime();
     resetTimeMode();
-    // If no row is in progress, create it using the stored time.
     if (!inProgressRow) {
       statementStartTime = startingTime;
       createNewRowInHistory();
     }
   } else {
-    // For actions that require a member, ensure one is selected.
+    // For member-based actions, ensure a member is selected.
     if ((action === "Moved" || action === "Seconded" || action === "Introduced Bill") && !selectedMember) {
       alert("Please select a member first for '" + action + "'!");
       return;
     }
-    // For member-based actions, capture the starting time then disable time mode.
     let startingTime = getStartingTime();
     resetTimeMode();
     if (!inProgressRow) {
@@ -851,32 +848,37 @@ function setMainAction(button, action) {
       createNewRowInHistory();
     }
   }
-
-  // Clear old selections from all main-action buttons.
+  
+  // Clear old selections from main-action buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
     b.classList.remove("inactive");
   });
-
-  // Mark the clicked button as selected.
   button.classList.add("selected");
-  // Fade out (inactive) the others.
   allMainActionButtons.forEach((b) => {
     if (b !== button) {
       b.classList.add("inactive");
     }
   });
-
-  // Reset some global states.
+  
+  // Set globals and log their values.
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
-
-  // Hide the meeting actions area and other sections.
+  console.log("After setMainAction, globals:", {
+    mainAction,
+    selectedSubAction,
+    selectedBillType,
+    selectedCarrier,
+    asAmended,
+    voiceVoteOutcome
+  });
+  
+  // Hide sections.
   document.getElementById("meetingActionsSection").classList.add("hidden");
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
@@ -885,8 +887,8 @@ function setMainAction(button, action) {
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
-
-  // Decide which sections to show based on the action.
+  
+  // Show sections based on the action.
   if (action === "Moved") {
     showBillTypeSection(true);
   } else if (action === "Roll Call Vote on SB") {
@@ -894,29 +896,20 @@ function setMainAction(button, action) {
     showVoteTallySection(true);
     showBillCarrierSection(true);
     showAsAmendedSection(true);
-  } else if (action === "Roll Call Vote on Amendment") {
-    document.getElementById("members-container").classList.add("hidden");
-    showVoteTallySection(true);
-  } else if (action === "Roll Call Vote on Reconsider") {
+  } else if (action === "Roll Call Vote on Amendment" || action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
   } else if (action === "Voice Vote on SB") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     showAsAmendedSection(true);
-  } else if (action === "Voice Vote on Amendment") {
-    document.getElementById("members-container").classList.add("hidden");
-    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-  } else if (action === "Voice Vote on Reconsider") {
+  } else if (action === "Voice Vote on Amendment" || action === "Voice Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
   }
-
-  // Build/update the constructed statement.
+  
   updateStatement();
 }
-
-
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
@@ -936,28 +929,22 @@ function showMovedSubActions() {
 
 function handleMovedSubAction(button, subAction) {
   selectedSubAction = subAction;
+  console.log("handleMovedSubAction() – selectedSubAction set to:", selectedSubAction);
   updateStatement();
-
-  // Highlight the chosen sub action
-  document.querySelectorAll("#sub-actions-container button")
-    .forEach((b) => b.classList.remove("selected"));
-  button.classList.add("selected");
-
-  // Show the "rerefer" section
-  document.getElementById("rerefer-section").classList.remove("hidden");
-
-  // We can reset selectedRereferCommittee if we want
-  selectedRereferCommittee = "";
-
-  // Determine if it’s a House or Senate committee
-  //  e.g. if currentCommittee name includes "house"
-  let isHouse = currentCommittee.toLowerCase().includes("house");
   
-  // Build a list of possible committees to rerefer to, either House or Senate
+  // Highlight the chosen sub action.
+  document.querySelectorAll("#sub-actions-container button").forEach((b) => b.classList.remove("selected"));
+  button.classList.add("selected");
+  
+  // Unhide the rerefer section.
+  document.getElementById("rerefer-section").classList.remove("hidden");
+  selectedRereferCommittee = "";
+  
+  // Build a list of possible committees (House vs. Senate).
+  let isHouse = currentCommittee.toLowerCase().includes("house");
   let possibleCommittees = [];
   for (let cName in committees) {
     let cNameLower = cName.toLowerCase();
-    // If we want to allow House -> House only, and Senate -> Senate only:
     if (isHouse && cNameLower.includes("house")) {
       possibleCommittees.push(cName);
     } else if (!isHouse && cNameLower.includes("senate")) {
@@ -965,28 +952,25 @@ function handleMovedSubAction(button, subAction) {
     }
   }
   
-  // Populate the <select> with these committees
   const rereferSelect = document.getElementById("rereferCommitteeSelect");
   rereferSelect.innerHTML = "";
   
-  // Add a "(No rerefer)" option
   const noneOpt = document.createElement("option");
   noneOpt.value = "";
   noneOpt.textContent = "(No rerefer)";
   rereferSelect.appendChild(noneOpt);
-
-  // Add each possible committee
+  
   possibleCommittees.forEach((cName) => {
     const opt = document.createElement("option");
-    opt.value = cName;   // e.g. "Senate Appropriations Committee"
-    opt.textContent = cName; // display the same
+    opt.value = cName;
+    opt.textContent = cName;
     rereferSelect.appendChild(opt);
   });
   
-  // Listen for changes
   rereferSelect.onchange = () => {
-    selectedRereferCommittee = rereferSelect.value; // store
-    updateStatement(); // re-build the final statement
+    selectedRereferCommittee = rereferSelect.value;
+    console.log("Rerefer committee selected:", selectedRereferCommittee);
+    updateStatement();
   };
 }
 
@@ -1014,24 +998,23 @@ function showBillTypeSection(visible) {
 
 function selectBillType(type, btn) {
   selectedBillType = type;
+  console.log("selectBillType() – selectedBillType set to:", selectedBillType);
   updateStatement();
-
-  // Highlight the chosen bill type
-  document.querySelectorAll("#bill-type-container button")
-    .forEach((b) => b.classList.remove("selected"));
+  
+  // Highlight the chosen bill type.
+  document.querySelectorAll("#bill-type-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
-
-  // If the user picked SB or HB, THEN show sub-actions (Do Pass / Do Not Pass).
-  // If Amendment, skip sub-actions
+  
+  // If SB or HB, show sub-actions; otherwise, hide sub-actions.
   if (type === "SB" || type === "HB") {
-    showMovedSubActions();  // "Do Pass" / "Do Not Pass"
+    showMovedSubActions();
   } else {
-     // If it's "Amendment," hide sub-actions (no Do Pass / Do Not Pass for amendments)
-     document.getElementById("sub-actions").classList.add("hidden");
-     document.getElementById("rerefer-section").classList.add("hidden");
-     selectedRereferCommittee = "";
+    document.getElementById("sub-actions").classList.add("hidden");
+    document.getElementById("rerefer-section").classList.add("hidden");
+    selectedRereferCommittee = "";
   }
 }
+
 
 // "As Amended" for Roll Call Vote on SB
 function showAsAmendedSection(visible) {
@@ -1131,10 +1114,19 @@ function updateInProgressRow() {
   }
 }
 
-
 // Build the statement
 function updateStatement() {
-  // Define the list of actions that don't require a member.
+  console.log("updateStatement() – current globals:", {
+    selectedMember,
+    mainAction,
+    selectedSubAction,
+    selectedBillType,
+    selectedCarrier,
+    asAmended,
+    voiceVoteOutcome,
+    selectedRereferCommittee
+  });
+  
   const actionsNotRequiringMember = [
     "Roll Call Vote on SB",
     "Roll Call Vote on Amendment",
@@ -1146,14 +1138,13 @@ function updateStatement() {
     "Motion for Do Pass failed for lack of a second",
     "Motion for Do Not Pass failed for lack of a second"
   ];
-
-  // If no member is selected and the main action is not one of the allowed actions, show placeholder.
+  
   if (!selectedMember && !actionsNotRequiringMember.includes(mainAction)) {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
   
-  // Handle the new additional motion actions directly.
+  // Handle special motion actions.
   if (mainAction === "Motion Failed for lack of a second" ||
       mainAction === "Motion for Do Pass failed for lack of a second" ||
       mainAction === "Motion for Do Not Pass failed for lack of a second") {
@@ -1227,7 +1218,9 @@ function updateStatement() {
   document.getElementById("log").innerText = constructedStatement;
   updateInProgressRow();
   autoCopyIfEnabled();
+  console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 function resetVoteTally() {
   forVal = 0;
