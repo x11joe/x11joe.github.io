@@ -468,13 +468,15 @@ function populateEditUI() {
     }
     
     // Show or hide the "As Amended" section.
+    // Always show the "As Amended" section so the button is available.
+    // Just update its visual state.
+    document.getElementById("as-amended-section").classList.remove("hidden");
     if (asAmended) {
-      document.getElementById("as-amended-section").classList.remove("hidden");
       document.getElementById("asAmendedBtn").classList.add("selected");
     } else {
-      document.getElementById("as-amended-section").classList.add("hidden");
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
+
   } else if (mainAction === "Moved") {
     // (Your existing branch for "Moved" remains unchanged.)
     showBillTypeSection(true);
@@ -1365,7 +1367,7 @@ function updateStatement() {
       actionText += selectedBillType;
       // Always display the amended state so the user can click to toggle it.
       if (selectedBillType === "SB") {
-        actionText += asAmended ? " as Amended" : " - Not Amended";
+        actionText += asAmended ? " as Amended" : "";
       }
     } else {
       actionText += "Bill";
