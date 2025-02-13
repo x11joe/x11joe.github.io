@@ -395,7 +395,8 @@ function populateEditUI() {
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
   console.log("Finalizing edit for record index:", currentEditIndex);
-  // Prevent a 0-0-0 tally for roll call votes.
+  
+  // Abort if vote tally is 0-0-0 for roll call votes.
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
     console.log("Edit finalization aborted due to vote tally being 0-0-0.");
@@ -404,7 +405,7 @@ function finalizeEdit() {
   
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
-  record.mainAction = mainAction; // make sure this is set from your UI buttons
+  record.mainAction = mainAction;
   record.selectedSubAction = selectedSubAction;
   record.selectedBillType = selectedBillType;
   record.selectedCarrier = selectedCarrier;
@@ -415,7 +416,7 @@ function finalizeEdit() {
   record.neutralVal = neutralVal;
   record.selectedRereferCommittee = selectedRereferCommittee;
   
-  // Rebuild the constructed statement from current globals.
+  // Rebuild and update the constructed statement.
   updateStatement();
   record.statement = constructedStatement;
   
@@ -430,6 +431,7 @@ function finalizeEdit() {
   resetSelections();
   console.log("Edit finalization completed.");
 }
+
 
 
 function createNewRowInHistory(fileLink = "") {
@@ -849,7 +851,7 @@ function setMainAction(button, action) {
     }
   }
   
-  // Clear old selections from main-action buttons.
+  // Clear and mark buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
@@ -862,13 +864,14 @@ function setMainAction(button, action) {
     }
   });
   
-  // Set globals and log their values.
+  // Set globals.
   mainAction = action;
   selectedSubAction = "";
   selectedBillType = "";
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
+  
   console.log("After setMainAction, globals:", {
     mainAction,
     selectedSubAction,
@@ -878,7 +881,7 @@ function setMainAction(button, action) {
     voiceVoteOutcome
   });
   
-  // Hide sections.
+  // Hide all optional sections.
   document.getElementById("meetingActionsSection").classList.add("hidden");
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
@@ -888,7 +891,7 @@ function setMainAction(button, action) {
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
   
-  // Show sections based on the action.
+  // Show sections based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
   } else if (action === "Roll Call Vote on SB") {
@@ -912,6 +915,7 @@ function setMainAction(button, action) {
 }
 
 
+
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
   const subActionsContainer = document.getElementById("sub-actions-container");
@@ -932,15 +936,12 @@ function handleMovedSubAction(button, subAction) {
   console.log("handleMovedSubAction() – selectedSubAction set to:", selectedSubAction);
   updateStatement();
   
-  // Highlight the chosen sub action.
   document.querySelectorAll("#sub-actions-container button").forEach((b) => b.classList.remove("selected"));
   button.classList.add("selected");
   
-  // Unhide the rerefer section.
   document.getElementById("rerefer-section").classList.remove("hidden");
   selectedRereferCommittee = "";
   
-  // Build a list of possible committees (House vs. Senate).
   let isHouse = currentCommittee.toLowerCase().includes("house");
   let possibleCommittees = [];
   for (let cName in committees) {
@@ -954,7 +955,6 @@ function handleMovedSubAction(button, subAction) {
   
   const rereferSelect = document.getElementById("rereferCommitteeSelect");
   rereferSelect.innerHTML = "";
-  
   const noneOpt = document.createElement("option");
   noneOpt.value = "";
   noneOpt.textContent = "(No rerefer)";
@@ -1001,11 +1001,11 @@ function selectBillType(type, btn) {
   console.log("selectBillType() – selectedBillType set to:", selectedBillType);
   updateStatement();
   
-  // Highlight the chosen bill type.
+  // Highlight the selected bill type.
   document.querySelectorAll("#bill-type-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
   
-  // If SB or HB, show sub-actions; otherwise, hide sub-actions.
+  // If SB or HB, show sub-actions; if Amendment, hide sub-actions.
   if (type === "SB" || type === "HB") {
     showMovedSubActions();
   } else {
@@ -1104,15 +1104,30 @@ function getMotionResultText() {
 }
 
 function updateInProgressRow() {
+  // If a row is in progress, update its statement cell.
   if (inProgressRow && statementCell) {
     statementCell.textContent = constructedStatement;
   }
+  // If we have a record index, update the record fields from the current globals.
   if (inProgressRecordIndex !== null) {
-    // Update only the statement field; do not update time.
-    historyRecords[inProgressRecordIndex].statement = constructedStatement;
+    let rec = historyRecords[inProgressRecordIndex];
+    rec.member = selectedMember;
+    rec.mainAction = mainAction;
+    rec.selectedSubAction = selectedSubAction;
+    rec.selectedBillType = selectedBillType;
+    rec.selectedCarrier = selectedCarrier;
+    rec.asAmended = asAmended;
+    rec.voiceVoteOutcome = voiceVoteOutcome;
+    rec.forVal = forVal;
+    rec.againstVal = againstVal;
+    rec.neutralVal = neutralVal;
+    rec.selectedRereferCommittee = selectedRereferCommittee;
+    rec.statement = constructedStatement;
+    console.log("updateInProgressRow() – updated record:", rec);
     saveHistoryToLocalStorage();
   }
 }
+
 
 // Build the statement
 function updateStatement() {
@@ -1144,7 +1159,6 @@ function updateStatement() {
     return;
   }
   
-  // Handle special motion actions.
   if (mainAction === "Motion Failed for lack of a second" ||
       mainAction === "Motion for Do Pass failed for lack of a second" ||
       mainAction === "Motion for Do Not Pass failed for lack of a second") {
@@ -1155,7 +1169,6 @@ function updateStatement() {
     return;
   }
   
-  // If a member is selected but no main action is chosen.
   if (selectedMember && !mainAction) {
     constructedStatement = applyUseLastNamesOnly(selectedMember);
     document.getElementById("log").innerText = constructedStatement;
@@ -1220,6 +1233,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 
 function resetVoteTally() {
