@@ -407,6 +407,7 @@ function populateEditUI() {
     billType: selectedBillType,
     rerefer: selectedRereferCommittee
   });
+  
   // Highlight member buttons.
   document.querySelectorAll("#members-container button").forEach(btn => {
     let btnText = btn.innerText.trim().toLowerCase();
@@ -418,10 +419,14 @@ function populateEditUI() {
     }
   });
   
-  // Highlight main action.
+  // Highlight main action buttons.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
-    // Using includes so extra text (like vote tallies) won’t break the match.
-    if (mainAction.includes(btn.innerText.trim())) {
+    let btnText = btn.innerText.trim();
+    // Special case: if the button text is "Roll Call Vote on Bill" and our stored mainAction starts with "Roll Call Vote on"
+    if (btnText === "Roll Call Vote on Bill" && mainAction.startsWith("Roll Call Vote on")) {
+      btn.classList.add("selected");
+      btn.classList.remove("inactive");
+    } else if (mainAction.includes(btnText)) {
       btn.classList.add("selected");
       btn.classList.remove("inactive");
     } else {
@@ -433,7 +438,8 @@ function populateEditUI() {
   // --- For Roll Call Vote actions, show the vote tally, bill type, and carrier UI ---
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
-    // Show bill type section and highlight the saved bill type
+    
+    // Show bill type section and highlight the saved bill type.
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -442,12 +448,14 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // Now show the vote tally section (which no longer resets counts if editing)
+    
+    // Now show the vote tally section (and populate the counts).
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
-    // Show carrier section if available...
+    
+    // Show and highlight the carrier button if one was saved.
     if (selectedCarrier) {
       showBillCarrierSection(true);
       document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
@@ -458,6 +466,7 @@ function populateEditUI() {
         }
       });
     }
+    
     // Show or hide the "As Amended" section.
     if (asAmended) {
       document.getElementById("as-amended-section").classList.remove("hidden");
@@ -466,8 +475,8 @@ function populateEditUI() {
       document.getElementById("as-amended-section").classList.add("hidden");
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
-  }
-  else if (mainAction === "Moved") {
+  } else if (mainAction === "Moved") {
+    // (Your existing branch for "Moved" remains unchanged.)
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -520,7 +529,6 @@ function populateEditUI() {
       console.log("Rerefer committee selected:", selectedRereferCommittee);
       updateStatement();
     };
-  
   } else if (mainAction.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
@@ -536,6 +544,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 
