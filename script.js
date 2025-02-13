@@ -335,29 +335,54 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // If either a subAction or a rerefer value exists, display the sub-actions and rerefer section.
-    if (selectedSubAction || selectedRereferCommittee) {
-      showMovedSubActions();
-      if (selectedSubAction) {
-        document.querySelectorAll("#sub-actions-container button").forEach(btn => {
-          if (btn.innerText.trim() === selectedSubAction) {
-            btn.classList.add("selected");
-          } else {
-            btn.classList.remove("selected");
-          }
-        });
-      }
-      if (selectedRereferCommittee) {
-        document.getElementById("rerefer-section").classList.remove("hidden");
-        document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
-        console.log("Rerefer section unhidden with value:", selectedRereferCommittee);
+    // Always show sub-actions so the user can select one if needed.
+    showMovedSubActions();
+    document.querySelectorAll("#sub-actions-container button").forEach(btn => {
+      if (btn.innerText.trim() === selectedSubAction) {
+        btn.classList.add("selected");
       } else {
-        document.getElementById("rerefer-section").classList.add("hidden");
-        console.log("No rerefer value set.");
+        btn.classList.remove("selected");
+      }
+    });
+    
+    // Rebuild the rerefer dropdown
+    let isHouse = currentCommittee.toLowerCase().includes("house");
+    let possibleCommittees = [];
+    for (let cName in committees) {
+      let cNameLower = cName.toLowerCase();
+      if (isHouse && cNameLower.includes("house")) {
+        possibleCommittees.push(cName);
+      } else if (!isHouse && cNameLower.includes("senate")) {
+        possibleCommittees.push(cName);
       }
     }
-  }
-  else if (mainAction.startsWith("Roll Call Vote on")) {
+    const rereferSelect = document.getElementById("rereferCommitteeSelect");
+    rereferSelect.innerHTML = "";
+    const noneOpt = document.createElement("option");
+    noneOpt.value = "";
+    noneOpt.textContent = "(No rerefer)";
+    rereferSelect.appendChild(noneOpt);
+    possibleCommittees.forEach((cName) => {
+      const opt = document.createElement("option");
+      opt.value = cName;
+      opt.textContent = cName;
+      rereferSelect.appendChild(opt);
+    });
+    // If a rerefer value was saved, set it now and unhide the section; otherwise, hide it.
+    if (selectedRereferCommittee) {
+      rereferSelect.value = selectedRereferCommittee;
+      document.getElementById("rerefer-section").classList.remove("hidden");
+      console.log("Rerefer section unhidden with value:", selectedRereferCommittee);
+    } else {
+      document.getElementById("rerefer-section").classList.add("hidden");
+      console.log("No rerefer value set.");
+    }
+    rereferSelect.onchange = () => {
+      selectedRereferCommittee = rereferSelect.value;
+      console.log("Rerefer committee selected:", selectedRereferCommittee);
+      updateStatement();
+    };
+  } else if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
