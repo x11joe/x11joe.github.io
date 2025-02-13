@@ -1042,7 +1042,6 @@ function setMainAction(button, action) {
     mainAction = action;
   }
   
-  
   // Clear and mark buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
@@ -1084,7 +1083,7 @@ function setMainAction(button, action) {
   // Show sections based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
-  } else if (mainAction === "Roll Call Vote on Bill") {
+  } else if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     // Only show bill carrier and "As Amended" if the bill type is SB or HB.
@@ -1111,6 +1110,7 @@ function setMainAction(button, action) {
   
   updateStatement();
 }
+
 
 
 
