@@ -446,15 +446,19 @@ function populateEditUI() {
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     
-    // Show bill type section and highlight the saved bill type.
-    showBillTypeSection(true);
-    document.querySelectorAll("#bill-type-container button").forEach(btn => {
-      if (btn.innerText.trim() === selectedBillType) {
-        btn.classList.add("selected");
-      } else {
-        btn.classList.remove("selected");
-      }
-    });
+    // For SB or HB, show the bill type section; for Amendment/Reconsider, hide it.
+    if (selectedBillType === "SB" || selectedBillType === "HB") {
+      showBillTypeSection(true);
+      document.querySelectorAll("#bill-type-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedBillType) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    } else {
+      document.getElementById("bill-type-section").classList.add("hidden");
+    }
     
     // Now show the vote tally section and populate counts.
     showVoteTallySection(true);
@@ -462,8 +466,8 @@ function populateEditUI() {
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
     
-    // Show and highlight the carrier button if one was saved.
-    if (selectedCarrier) {
+    // Show and highlight the carrier button if one was saved (only for SB/HB votes).
+    if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
       showBillCarrierSection(true);
       document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedCarrier) {
@@ -474,12 +478,16 @@ function populateEditUI() {
       });
     }
     
-    // Always show the "As Amended" section so the button is available.
-    document.getElementById("as-amended-section").classList.remove("hidden");
-    if (asAmended) {
-      document.getElementById("asAmendedBtn").classList.add("selected");
+    // Show the "As Amended" section only for SB votes.
+    if (selectedBillType === "SB") {
+      document.getElementById("as-amended-section").classList.remove("hidden");
+      if (asAmended) {
+        document.getElementById("asAmendedBtn").classList.add("selected");
+      } else {
+        document.getElementById("asAmendedBtn").classList.remove("selected");
+      }
     } else {
-      document.getElementById("asAmendedBtn").classList.remove("selected");
+      document.getElementById("as-amended-section").classList.add("hidden");
     }
     
   } else if (mainAction === "Moved") {
@@ -557,6 +565,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 
