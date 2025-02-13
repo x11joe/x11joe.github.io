@@ -326,7 +326,6 @@ function populateEditUI() {
     }
   });
   
-  // For "Moved", unhide relevant sections.
   if (mainAction === "Moved") {
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -345,7 +344,6 @@ function populateEditUI() {
           btn.classList.remove("selected");
         }
       });
-      // NEW: Unhide rerefer section if a rereference exists.
       if (selectedRereferCommittee) {
         document.getElementById("rerefer-section").classList.remove("hidden");
         document.getElementById("rereferCommitteeSelect").value = selectedRereferCommittee;
@@ -393,7 +391,6 @@ function populateEditUI() {
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
 
-
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
   console.log("Finalizing edit for record index:", currentEditIndex);
@@ -427,12 +424,11 @@ function finalizeEdit() {
   loadHistoryFromLocalStorage();
   
   currentEditIndex = null;
+  inProgressRecordIndex = null;
   document.getElementById("log").style.border = "none";
   resetSelections();
+  console.log("Edit finalization completed.");
 }
-
-
-
 
 function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
@@ -1559,17 +1555,24 @@ function clearHistory() {
 }
 
 function cancelCurrentAction() {
-  console.log("cancelCurrentAction invoked. currentEditIndex:", currentEditIndex);
-  // If in edit mode, do NOT delete the record – simply exit edit mode.
+  console.log("cancelCurrentAction invoked. currentEditIndex:", currentEditIndex, "inProgressRecordIndex:", inProgressRecordIndex);
+  // If in edit mode, exit edit mode and do nothing further.
   if (currentEditIndex !== null) {
     console.log("Edit mode active. Exiting edit mode without deletion.");
     currentEditIndex = null;
+    // Also clear any temporary in-progress index so subsequent escapes do not trigger deletion.
+    inProgressRecordIndex = null;
     document.getElementById("log").style.border = "none";
-    // Optionally, re-populate the UI from the record if needed.
     return;
   }
   
-  // If not editing, then remove any in-progress record.
+  // If no in-progress record exists, do nothing.
+  if (!inProgressRow && inProgressRecordIndex === null) {
+    console.log("No in-progress record exists. Nothing to cancel.");
+    return;
+  }
+  
+  // Otherwise, delete the in-progress record.
   if (inProgressRecordIndex !== null && inProgressRecordIndex < historyRecords.length) {
     console.log("Deleting in-progress record at index:", inProgressRecordIndex);
     historyRecords.splice(inProgressRecordIndex, 1);
@@ -1584,8 +1587,8 @@ function cancelCurrentAction() {
   
   constructedStatement = "";
   document.getElementById("log").innerText = "[Click a member and an action]";
+  console.log("cancelCurrentAction completed.");
 }
-
 
 function loadCommitteesFromLocalStorage() {
   let stored = localStorage.getItem("allCommittees");
@@ -2108,7 +2111,6 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 
 
 // --- KEYDOWN HANDLER ---
-// In your keydown event, check if currentEditIndex is not null. If so, finalize the edit.
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
     event.preventDefault();
@@ -2131,6 +2133,7 @@ document.addEventListener("keydown", function (event) {
     cancelCurrentAction();
   }
 });
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // Initialization
