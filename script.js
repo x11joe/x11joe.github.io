@@ -435,7 +435,6 @@ function populateEditUI() {
     }
   });
   
-  // --- For Roll Call Vote actions, show the vote tally, bill type, and carrier UI ---
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     
@@ -449,7 +448,7 @@ function populateEditUI() {
       }
     });
     
-    // Now show the vote tally section (and populate the counts).
+    // Now show the vote tally section and populate counts.
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
@@ -467,18 +466,15 @@ function populateEditUI() {
       });
     }
     
-    // Show or hide the "As Amended" section.
     // Always show the "As Amended" section so the button is available.
-    // Just update its visual state.
     document.getElementById("as-amended-section").classList.remove("hidden");
     if (asAmended) {
       document.getElementById("asAmendedBtn").classList.add("selected");
     } else {
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
-
+    
   } else if (mainAction === "Moved") {
-    // (Your existing branch for "Moved" remains unchanged.)
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -487,15 +483,22 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    showMovedSubActions();
-    document.querySelectorAll("#sub-actions-container button").forEach(btn => {
-      if (btn.innerText.trim() === selectedSubAction) {
-        btn.classList.add("selected");
-      } else {
-        btn.classList.remove("selected");
-      }
-    });
-    // Rebuild the rerefer dropdown...
+    
+    // Only show the sub-actions if the bill type is SB or HB.
+    if (selectedBillType === "SB" || selectedBillType === "HB") {
+      showMovedSubActions();
+      document.querySelectorAll("#sub-actions-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedSubAction) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    } else {
+      document.getElementById("sub-actions").classList.add("hidden");
+    }
+    
+    // Rebuild the rerefer dropdown.
     let isHouse = currentCommittee.toLowerCase().includes("house");
     let possibleCommittees = [];
     for (let cName in committees) {
@@ -546,8 +549,6 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
-
-
 
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
