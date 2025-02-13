@@ -432,10 +432,8 @@ function populateEditUI() {
   
   // --- For Roll Call Vote actions, show the vote tally, bill type, and carrier UI ---
   if (mainAction.startsWith("Roll Call Vote on")) {
-    // Hide members container
     document.getElementById("members-container").classList.add("hidden");
-    
-    // *** NEW: Show bill type section and highlight selected bill type ***
+    // Show bill type section and highlight the saved bill type
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -444,14 +442,12 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    
-    // Now show the vote tally section without resetting vote counts (see our change above)
+    // Now show the vote tally section (which no longer resets counts if editing)
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
-    
-    // Show and highlight the carrier button if one was saved.
+    // Show carrier section if available...
     if (selectedCarrier) {
       showBillCarrierSection(true);
       document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
@@ -470,9 +466,8 @@ function populateEditUI() {
       document.getElementById("as-amended-section").classList.add("hidden");
       document.getElementById("asAmendedBtn").classList.remove("selected");
     }
-  
-  // --- For other types (Moved, Voice Vote, etc.) keep your existing branches ---
-  } else if (mainAction === "Moved") {
+  }
+  else if (mainAction === "Moved") {
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -1004,6 +999,26 @@ function setMainAction(button, action) {
     }
   }
   
+  // *** Optional Suggestion C ***
+  // For roll call votes, normalize the mainAction text so that the UI button (e.g. "Roll Call Vote on Bill")
+  // will match even if the passed-in action says "Roll Call Vote on SB" (or HB).
+  if (action.startsWith("Roll Call Vote on")) {
+    // We always want to store mainAction as "Roll Call Vote on Bill"
+    mainAction = "Roll Call Vote on Bill";
+    // And extract the bill type from the original action.
+    if (action.includes("SB")) {
+      selectedBillType = "SB";
+    } else if (action.includes("HB")) {
+      selectedBillType = "HB";
+    } else if (action.includes("Amendment")) {
+      selectedBillType = "Amendment";
+    } else {
+      selectedBillType = "";
+    }
+  } else {
+    mainAction = action;
+  }
+  
   // Clear and mark buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
@@ -1017,25 +1032,12 @@ function setMainAction(button, action) {
     }
   });
   
-  // Set globals.
-  mainAction = action;
+  // Set remaining globals.
   selectedSubAction = "";
-  selectedBillType = ""; // reset first
+  // selectedBillType is already set for vote actions.
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
-  
-  // *** Optional Suggestion C ***
-  // If the main action starts with "Roll Call Vote on", try to extract a bill type.
-  if (mainAction.startsWith("Roll Call Vote on")) {
-    if (mainAction.includes("SB")) {
-      selectedBillType = "SB";
-    } else if (mainAction.includes("HB")) {
-      selectedBillType = "HB";
-    } else if (mainAction.includes("Amendment")) {
-      selectedBillType = "Amendment";
-    }
-  }
   
   console.log("After setMainAction, globals:", {
     mainAction,
@@ -1059,7 +1061,7 @@ function setMainAction(button, action) {
   // Show sections based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
-  } else if (action === "Roll Call Vote on SB") {
+  } else if (mainAction === "Roll Call Vote on Bill") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     showBillCarrierSection(true);
@@ -1067,13 +1069,10 @@ function setMainAction(button, action) {
   } else if (action === "Roll Call Vote on Amendment" || action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-  } else if (action === "Voice Vote on SB") {
+  } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     showAsAmendedSection(true);
-  } else if (action === "Voice Vote on Amendment" || action === "Voice Vote on Reconsider") {
-    document.getElementById("members-container").classList.add("hidden");
-    document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
   }
   
   updateStatement();
