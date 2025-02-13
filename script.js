@@ -2096,15 +2096,20 @@ function closeLookupMembersModal() {
   document.getElementById("lookupMembersModal").classList.add("hidden");
 }
 
-// Opens the Testimony modal.
 function openTestimonyModal() {
+  // If we're not editing a testimony, reset the button text to "Add Testimony"
+  if (editingTestimonyIndex === null) {
+    document.getElementById("submitTestimonyButton").textContent = "Add Testimony";
+  }
   document.getElementById("testimonyModal").classList.remove("hidden");
 }
 
-// Closes the Testimony modal.
 function closeTestimonyModal() {
   document.getElementById("testimonyModal").classList.add("hidden");
+  // Always reset the button text on close
+  document.getElementById("submitTestimonyButton").textContent = "Add Testimony";
 }
+
 
 // Called when the user clicks the "Add Testimony" button in the modal.
 function submitTestimonyModal() {
