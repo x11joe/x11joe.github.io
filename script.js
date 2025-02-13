@@ -420,7 +420,8 @@ function populateEditUI() {
   
   // Highlight main action.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
-    if (btn.innerText.trim() === mainAction) {
+    // Use 'includes' so that extra text (like vote tallies) won’t break the match.
+    if (mainAction.includes(btn.innerText.trim())) {
       btn.classList.add("selected");
       btn.classList.remove("inactive");
     } else {
@@ -428,6 +429,7 @@ function populateEditUI() {
       btn.classList.add("inactive");
     }
   });
+  
   
   if (mainAction === "Moved") {
     showBillTypeSection(true);
@@ -961,9 +963,6 @@ function selectMember(member, btn) {
   btn.classList.add("selected");
 }
 
-
-
-
 function setMainAction(button, action) {
   console.log("setMainAction() called with action:", action);
   // For actions that do NOT require a member:
@@ -1004,10 +1003,22 @@ function setMainAction(button, action) {
   // Set globals.
   mainAction = action;
   selectedSubAction = "";
-  selectedBillType = "";
+  selectedBillType = ""; // reset first
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
+  
+  // *** Optional Suggestion C ***
+  // If the main action starts with "Roll Call Vote on", try to extract a bill type.
+  if (mainAction.startsWith("Roll Call Vote on")) {
+    if (mainAction.includes("SB")) {
+      selectedBillType = "SB";
+    } else if (mainAction.includes("HB")) {
+      selectedBillType = "HB";
+    } else if (mainAction.includes("Amendment")) {
+      selectedBillType = "Amendment";
+    }
+  }
   
   console.log("After setMainAction, globals:", {
     mainAction,
@@ -1050,6 +1061,7 @@ function setMainAction(button, action) {
   
   updateStatement();
 }
+
 
 
 
@@ -1709,6 +1721,8 @@ function cancelCurrentAction() {
     currentEditIndex = null;
     inProgressRecordIndex = null; // clear any in-progress index
     document.getElementById("log").style.border = "none";
+    // Restore member button functionality
+    updateMembers();
     return;
   }
   
@@ -1734,7 +1748,11 @@ function cancelCurrentAction() {
   constructedStatement = "";
   document.getElementById("log").innerText = "[Click a member and an action]";
   console.log("cancelCurrentAction completed.");
+
+  // Ensure that after canceling, the members container is re-enabled.
+  updateMembers();
 }
+
 
 
 function loadCommitteesFromLocalStorage() {
