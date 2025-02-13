@@ -1322,7 +1322,6 @@ function updateStatement() {
   });
   
   const actionsNotRequiringMember = [
-    "Roll Call Vote on SB",
     "Roll Call Vote on Amendment",
     "Roll Call Vote on Reconsider",
     "Voice Vote on SB",
@@ -1333,10 +1332,12 @@ function updateStatement() {
     "Motion for Do Not Pass failed for lack of a second"
   ];
   
-  if (!selectedMember && !actionsNotRequiringMember.includes(mainAction)) {
+  // If the main action starts with "Roll Call Vote on", we treat it as not requiring a member.
+  if (!selectedMember && !mainAction.startsWith("Roll Call Vote on") && !actionsNotRequiringMember.includes(mainAction)) {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
   }
+  
   
   if (mainAction === "Motion Failed for lack of a second" ||
       mainAction === "Motion for Do Pass failed for lack of a second" ||
