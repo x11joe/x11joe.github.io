@@ -2509,28 +2509,29 @@ window.addEventListener("message", function (event) {
 
     // If the string contains "Testimony#", assume it's a testimony entry.
     if (rowText.includes("Testimony#")) {
-      // (Your code to open the testimony modal and prefill it goes here.)
-      // For example:
-      const testimonyDetails = parseTestimonyString(rowText); // You'd need to implement parseTestimonyString() to extract details.
+      // Extract testimony details from the text.
+      const testimonyDetails = parseTestimonyString(rowText);
       document.getElementById("testimonyFirstName").value = testimonyDetails.firstName || "";
       document.getElementById("testimonyLastName").value = testimonyDetails.lastName || "";
       document.getElementById("testimonyRole").value = testimonyDetails.role || "";
       document.getElementById("testimonyOrganization").value = testimonyDetails.organization || "";
       document.getElementById("testimonyPosition").value = testimonyDetails.position || "";
       document.getElementById("testimonyNumber").value = testimonyDetails.number || "";
-      
+      // NEW: Prefill the testimony link if provided.
+      document.getElementById("testimonyLink").value = (payload.link) ? payload.link : "";
+
       editingTestimonyIndex = null;  // reset edit flag if needed
       openTestimonyModal();
 
-      // Also change the modal button text from "Add Testimony" to "Save Changes"
+      // Change the modal button text to "Save Changes"
       document.getElementById("submitTestimonyButton").textContent = "Save Changes";
-
     } else {
       insertHearingStatementDirect(rowText);
       window.scrollTo(0, document.body.scrollHeight);
     }
   }
 });
+
 
 
 
