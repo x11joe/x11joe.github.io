@@ -187,6 +187,9 @@ function addCtrlClickHandler(row) {
       // Get the file link from the row's dataset (if stored); otherwise use a blank.
       let link = (row.dataset.fileLink || "").trim() || " ";
       
+      // Debug: log the fileLink value
+      console.log("Row fileLink:", row.dataset.fileLink);
+      
       // Build the final string in the desired four-field format.
       let finalString = `${timeStr} | ${annotation} | ${comments} | ${link}`;
       finalString = finalString.replace(/,/g, ""); // remove commas if needed
@@ -213,6 +216,7 @@ function addCtrlClickHandler(row) {
     }
   }, true);
 }
+
 
 
 
