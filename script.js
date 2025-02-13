@@ -68,6 +68,47 @@ function resetTimeMode() {
   }
 }
 
+function parseTestimonyString(str) {
+  // Split the string by " - " into parts.
+  const parts = str.split(" - ");
+  let testimonyDetails = {};
+  
+  // Assume first part is the full name.
+  if (parts.length >= 1) {
+    testimonyDetails.fullName = parts[0].trim();
+    let nameParts = testimonyDetails.fullName.split(" ");
+    if (nameParts.length > 1) {
+      testimonyDetails.firstName = nameParts.slice(0, -1).join(" ");
+      testimonyDetails.lastName = nameParts[nameParts.length - 1];
+    } else {
+      testimonyDetails.firstName = testimonyDetails.fullName;
+      testimonyDetails.lastName = "";
+    }
+  }
+  // Second part as role (if present)
+  if (parts.length >= 2) {
+    testimonyDetails.role = parts[1].trim();
+  }
+  // Third part as organization
+  if (parts.length >= 3) {
+    testimonyDetails.organization = parts[2].trim();
+  }
+  // Fourth part as testimony position
+  if (parts.length >= 4) {
+    testimonyDetails.position = parts[3].trim();
+  }
+  // Fifth part as testimony number (remove prefix "Testimony#" if present)
+  if (parts.length >= 5) {
+    let num = parts[4].trim();
+    if (num.startsWith("Testimony#")) {
+      num = num.substring("Testimony#".length);
+    }
+    testimonyDetails.number = num;
+  }
+  return testimonyDetails;
+}
+
+
 
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
 function applyUseLastNamesOnly(fullName) {
@@ -2308,23 +2349,39 @@ document.head.appendChild(style);
 
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
-  // 1) Only handle messages from our own content script
-  if (event.source !== window) return; // ignore if from an iframe
+  // Only handle messages from our own content script.
+  if (event.source !== window) return;
   if (!event.data) return;
   if (event.data.source !== "CLERK_EXTENSION") return;
 
-  // 2) Check the type
   if (event.data.type === "HEARING_STATEMENT") {
-    // This is your hearing row text
     const rowText = event.data.payload;
     console.log("Page context received row text via postMessage:", rowText);
 
-    // 3) Now we CAN call your real function
-    insertHearingStatementDirect(rowText); 
-    // Scroll the window so the bottom of the page is visible
-    window.scrollTo(0, document.body.scrollHeight);
+    // If the string contains "Testimony#", assume it's a testimony entry.
+    if (rowText.includes("Testimony#")) {
+      // Parse the testimony string into its details.
+      const testimonyDetails = parseTestimonyString(rowText);
+      // Pre-fill the testimony modal fields.
+      document.getElementById("testimonyFirstName").value = testimonyDetails.firstName || "";
+      document.getElementById("testimonyLastName").value = testimonyDetails.lastName || "";
+      document.getElementById("testimonyRole").value = testimonyDetails.role || "";
+      document.getElementById("testimonyOrganization").value = testimonyDetails.organization || "";
+      document.getElementById("testimonyPosition").value = testimonyDetails.position || "";
+      document.getElementById("testimonyNumber").value = testimonyDetails.number || "";
+      // Change the submit button text so the user sees “Save Changes”
+      document.getElementById("submitTestimonyButton").textContent = "Save Changes";
+      // (If you want to treat this as a new testimony record from the extension, you might leave editingTestimonyIndex as null.)
+      editingTestimonyIndex = null;
+      openTestimonyModal();
+    } else {
+      // Otherwise, treat it as a regular record.
+      insertHearingStatementDirect(rowText);
+      window.scrollTo(0, document.body.scrollHeight);
+    }
   }
 });
+
 
 
 
