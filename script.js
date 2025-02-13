@@ -1360,17 +1360,20 @@ function updateStatement() {
   let parts = [];
   
   if (mainAction.startsWith("Roll Call Vote on")) {
-    let actionText = mainAction;
-    if (mainAction === "Roll Call Vote on SB" && asAmended) {
-      actionText = "Roll Call Vote on SB as Amended";
+    // Build actionText based on selectedBillType and asAmended
+    let billTypeText = selectedBillType ? selectedBillType : "Bill";
+    let actionText = "Roll Call Vote on " + billTypeText;
+    if (selectedBillType === "SB" && asAmended) {
+      actionText += " as Amended";
     }
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-    if (actionText.includes("SB") && selectedCarrier) {
+    if (selectedBillType === "SB" && selectedCarrier) {
       parts.push(`${selectedCarrier} Carried the Bill`);
     }
-  } else if (mainAction.startsWith("Voice Vote on")) {
+  }
+  else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
     if (mainAction === "Voice Vote on SB" && asAmended) {
       actionText = "Voice Vote on SB as Amended";
