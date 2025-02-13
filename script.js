@@ -2222,6 +2222,8 @@ function submitTestimonyModal() {
   const organization = document.getElementById("testimonyOrganization").value.trim();
   const testimonyPosition = document.getElementById("testimonyPosition").value;
   const testimonyNumber = document.getElementById("testimonyNumber").value.trim();
+  // NEW: Get the link value.
+  const testimonyLink = document.getElementById("testimonyLink").value.trim();
   
   // Only testimony position is required.
   if (!testimonyPosition) {
@@ -2253,19 +2255,24 @@ function submitTestimonyModal() {
     number: testimonyNumber
   };
   
-  // If we’re editing an existing testimony, update that record.
   if (editingTestimonyIndex !== null) {
     let record = historyRecords[editingTestimonyIndex];
     record.statement = testimonyString;
     record.testimony = testimonyDetails;
-    // Also update the global constructedStatement for consistency.
+    // Save the link in the record (it will also be passed to insertHearingStatementDirect).
+    record.fileLink = testimonyLink;
     constructedStatement = testimonyString;
     saveHistoryToLocalStorage();
     loadHistoryFromLocalStorage();
     editingTestimonyIndex = null;  // reset edit flag
   } else {
-    // Otherwise, insert a new testimony entry.
-    insertHearingStatementDirect({ text: testimonyString, isTestimony: true, testimony: testimonyDetails });
+    // Pass the link as part of the object so that insertHearingStatementDirect saves it.
+    insertHearingStatementDirect({ 
+      text: testimonyString, 
+      isTestimony: true, 
+      testimony: testimonyDetails,
+      link: testimonyLink
+    });
   }
   
   // Close and clear the modal.
@@ -2276,7 +2283,9 @@ function submitTestimonyModal() {
   document.getElementById("testimonyOrganization").value = "";
   document.getElementById("testimonyPosition").value = "";
   document.getElementById("testimonyNumber").value = "";
+  document.getElementById("testimonyLink").value = "";
 }
+
 
 
 // Attach click event to the Lookup Members button
