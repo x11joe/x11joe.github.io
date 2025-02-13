@@ -2106,10 +2106,13 @@ function openTestimonyModal() {
 }
 
 function closeTestimonyModal() {
-  document.getElementById("testimonyModal").classList.add("hidden");
-  // Reset to default text when closing.
+  // Reset the editing flag if needed
+  editingTestimonyIndex = null;
+  // Reset the submit button text to default
   document.getElementById("submitTestimonyButton").textContent = "Add Testimony";
+  document.getElementById("testimonyModal").classList.add("hidden");
 }
+
 
 // Called when the user clicks the "Add Testimony" button in the modal.
 function submitTestimonyModal() {
@@ -2413,7 +2416,7 @@ window.addEventListener("message", function (event) {
 
       // Also change the modal button text from "Add Testimony" to "Save Changes"
       document.getElementById("submitTestimonyButton").textContent = "Save Changes";
-      
+
     } else {
       insertHearingStatementDirect(rowText);
       window.scrollTo(0, document.body.scrollHeight);
