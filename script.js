@@ -420,7 +420,7 @@ function populateEditUI() {
   
   // Highlight main action.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
-    // Use 'includes' so that extra text (like vote tallies) won’t break the match.
+    // Using includes so extra text (like vote tallies) won’t break the match.
     if (mainAction.includes(btn.innerText.trim())) {
       btn.classList.add("selected");
       btn.classList.remove("inactive");
@@ -430,8 +430,12 @@ function populateEditUI() {
     }
   });
   
-  
-  if (mainAction === "Moved") {
+  // --- For Roll Call Vote actions, show the vote tally, bill type, and carrier UI ---
+  if (mainAction.startsWith("Roll Call Vote on")) {
+    // Hide members container
+    document.getElementById("members-container").classList.add("hidden");
+    
+    // *** NEW: Show bill type section and highlight selected bill type ***
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedBillType) {
@@ -440,7 +444,43 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    // Always show sub-actions so the user can select one if needed.
+    
+    // Now show the vote tally section without resetting vote counts (see our change above)
+    showVoteTallySection(true);
+    document.getElementById("forCount").innerText = forVal;
+    document.getElementById("againstCount").innerText = againstVal;
+    document.getElementById("neutralCount").innerText = neutralVal;
+    
+    // Show and highlight the carrier button if one was saved.
+    if (selectedCarrier) {
+      showBillCarrierSection(true);
+      document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedCarrier) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    }
+    // Show or hide the "As Amended" section.
+    if (asAmended) {
+      document.getElementById("as-amended-section").classList.remove("hidden");
+      document.getElementById("asAmendedBtn").classList.add("selected");
+    } else {
+      document.getElementById("as-amended-section").classList.add("hidden");
+      document.getElementById("asAmendedBtn").classList.remove("selected");
+    }
+  
+  // --- For other types (Moved, Voice Vote, etc.) keep your existing branches ---
+  } else if (mainAction === "Moved") {
+    showBillTypeSection(true);
+    document.querySelectorAll("#bill-type-container button").forEach(btn => {
+      if (btn.innerText.trim() === selectedBillType) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+    });
     showMovedSubActions();
     document.querySelectorAll("#sub-actions-container button").forEach(btn => {
       if (btn.innerText.trim() === selectedSubAction) {
@@ -449,8 +489,7 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    
-    // Rebuild the rerefer dropdown
+    // Rebuild the rerefer dropdown...
     let isHouse = currentCommittee.toLowerCase().includes("house");
     let possibleCommittees = [];
     for (let cName in committees) {
@@ -473,7 +512,6 @@ function populateEditUI() {
       opt.textContent = cName;
       rereferSelect.appendChild(opt);
     });
-    // If a rerefer value was saved, set it now and unhide the section; otherwise, hide it.
     if (selectedRereferCommittee) {
       rereferSelect.value = selectedRereferCommittee;
       document.getElementById("rerefer-section").classList.remove("hidden");
@@ -487,29 +525,7 @@ function populateEditUI() {
       console.log("Rerefer committee selected:", selectedRereferCommittee);
       updateStatement();
     };
-  } else if (mainAction.startsWith("Roll Call Vote on")) {
-    document.getElementById("members-container").classList.add("hidden");
-    showVoteTallySection(true);
-    document.getElementById("forCount").innerText = forVal;
-    document.getElementById("againstCount").innerText = againstVal;
-    document.getElementById("neutralCount").innerText = neutralVal;
-    if (selectedCarrier) {
-      showBillCarrierSection(true);
-      document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
-        if (btn.innerText.trim() === selectedCarrier) {
-          btn.classList.add("selected");
-        } else {
-          btn.classList.remove("selected");
-        }
-      });
-    }
-    if (asAmended) {
-      document.getElementById("as-amended-section").classList.remove("hidden");
-      document.getElementById("asAmendedBtn").classList.add("selected");
-    } else {
-      document.getElementById("as-amended-section").classList.add("hidden");
-      document.getElementById("asAmendedBtn").classList.remove("selected");
-    }
+  
   } else if (mainAction.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
@@ -525,6 +541,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
@@ -1186,15 +1203,20 @@ function toggleAsAmended(btn) {
 }
 
 // Vote Tally
+// Modify showVoteTallySection so it resets only when not editing:
 function showVoteTallySection(visible) {
   const tallySec = document.getElementById("vote-tally-section");
   if (visible) {
     tallySec.classList.remove("hidden");
-    resetVoteTally();
+    // Only reset if we're not editing an existing record.
+    if (currentEditIndex === null) {
+      resetVoteTally();
+    }
   } else {
     tallySec.classList.add("hidden");
   }
 }
+
 
 // Bill Carrier
 function showBillCarrierSection(visible) {
