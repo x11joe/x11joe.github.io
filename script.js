@@ -415,7 +415,7 @@ function populateEditUI() {
     billType: selectedBillType,
     rerefer: selectedRereferCommittee
   });
-  
+
   // Highlight member buttons.
   document.querySelectorAll("#members-container button").forEach(btn => {
     let btnText = btn.innerText.trim().toLowerCase();
@@ -426,15 +426,16 @@ function populateEditUI() {
       btn.classList.remove("selected");
     }
   });
-  
+
   // Highlight main action buttons.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     let btnText = btn.innerText.trim();
-    // Special case: if the button text is "Roll Call Vote on Bill" and our stored mainAction starts with "Roll Call Vote on"
-    if (btnText === "Roll Call Vote on Bill" && mainAction.startsWith("Roll Call Vote on")) {
-      btn.classList.add("selected");
-      btn.classList.remove("inactive");
-    } else if (mainAction.includes(btnText)) {
+    // Only highlight the button if it exactly matches the stored mainAction for roll call votes.
+    if (
+      (mainAction === "Roll Call Vote on Bill" && btnText === "Roll Call Vote on Bill") ||
+      (mainAction === "Roll Call Vote on Amendment" && btnText === "Roll Call Vote on Amendment") ||
+      (mainAction === "Roll Call Vote on Reconsider" && btnText === "Roll Call Vote on Reconsider")
+    ) {
       btn.classList.add("selected");
       btn.classList.remove("inactive");
     } else {
@@ -442,11 +443,11 @@ function populateEditUI() {
       btn.classList.add("inactive");
     }
   });
-  
+
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
-    
-    // For SB or HB, show the bill type section; for Amendment/Reconsider, hide it.
+
+    // For SB or HB votes, show the bill type section; for Amendment/Reconsider, hide it.
     if (selectedBillType === "SB" || selectedBillType === "HB") {
       showBillTypeSection(true);
       document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -459,13 +460,13 @@ function populateEditUI() {
     } else {
       document.getElementById("bill-type-section").classList.add("hidden");
     }
-    
-    // Now show the vote tally section and populate counts.
+
+    // Show the vote tally section and populate counts.
     showVoteTallySection(true);
     document.getElementById("forCount").innerText = forVal;
     document.getElementById("againstCount").innerText = againstVal;
     document.getElementById("neutralCount").innerText = neutralVal;
-    
+
     // Show and highlight the carrier button if one was saved (only for SB/HB votes).
     if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
       showBillCarrierSection(true);
@@ -477,7 +478,7 @@ function populateEditUI() {
         }
       });
     }
-    
+
     // Show the "As Amended" section only for SB votes.
     if (selectedBillType === "SB") {
       document.getElementById("as-amended-section").classList.remove("hidden");
@@ -489,7 +490,7 @@ function populateEditUI() {
     } else {
       document.getElementById("as-amended-section").classList.add("hidden");
     }
-    
+
   } else if (mainAction === "Moved") {
     showBillTypeSection(true);
     document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -499,8 +500,8 @@ function populateEditUI() {
         btn.classList.remove("selected");
       }
     });
-    
-    // Only show the sub-actions if the bill type is SB or HB.
+
+    // Only show sub-actions if the bill type is SB or HB.
     if (selectedBillType === "SB" || selectedBillType === "HB") {
       showMovedSubActions();
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
@@ -513,7 +514,7 @@ function populateEditUI() {
     } else {
       document.getElementById("sub-actions").classList.add("hidden");
     }
-    
+
     // Rebuild the rerefer dropdown.
     let isHouse = currentCommittee.toLowerCase().includes("house");
     let possibleCommittees = [];
@@ -550,6 +551,7 @@ function populateEditUI() {
       console.log("Rerefer committee selected:", selectedRereferCommittee);
       updateStatement();
     };
+
   } else if (mainAction.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
@@ -561,10 +563,11 @@ function populateEditUI() {
       }
     });
   }
-  
+
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 
