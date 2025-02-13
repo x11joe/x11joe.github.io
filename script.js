@@ -1074,28 +1074,31 @@ function setMainAction(button, action) {
   } else if (mainAction === "Roll Call Vote on Bill") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-    showBillCarrierSection(true);
-    // Only show the "As Amended" section if the bill type is SB (for regular roll call vote on bill)
-    if (selectedBillType === "SB") {
-      showAsAmendedSection(true);
+    // Only show bill carrier and "As Amended" if the bill type is SB or HB.
+    if (selectedBillType === "SB" || selectedBillType === "HB") {
+      showBillCarrierSection(true);
+      if (selectedBillType === "SB") {
+        showAsAmendedSection(true);
+      }
+    } else {
+      // For Amendment/Reconsider, ensure these sections remain hidden.
+      document.getElementById("bill-carrier-section").classList.add("hidden");
+      document.getElementById("as-amended-section").classList.add("hidden");
     }
-  } else if (action === "Roll Call Vote on Amendment" || action === "Roll Call Vote on Reconsider") {
-    document.getElementById("members-container").classList.add("hidden");
-    showVoteTallySection(true);
-    // Hide the bill carrier section in these cases.
-    document.getElementById("bill-carrier-section").classList.add("hidden");
-    // Do not show the "As Amended" section for Amendment or Reconsider.
   } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // Only show "As Amended" for standard voice vote on SB; hide for Amendment or Reconsider.
-    if (action !== "Voice Vote on Amendment" && action !== "Voice Vote on Reconsider") {
+    // Only show "As Amended" for a standard Voice Vote on SB.
+    if (selectedBillType === "SB") {
       showAsAmendedSection(true);
+    } else {
+      document.getElementById("as-amended-section").classList.add("hidden");
     }
   }
   
   updateStatement();
 }
+
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
