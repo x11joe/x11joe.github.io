@@ -1096,6 +1096,7 @@ function setMainAction(button, action) {
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
   document.getElementById("bill-carrier-section").classList.add("hidden");
+  // NEW: Always hide the As Amended section for voice votes.
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
@@ -1113,25 +1114,18 @@ function setMainAction(button, action) {
         showAsAmendedSection(true);
       }
     } else {
-      // For Amendment/Reconsider, ensure these sections remain hidden.
       document.getElementById("bill-carrier-section").classList.add("hidden");
       document.getElementById("as-amended-section").classList.add("hidden");
     }
   } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // Only show "As Amended" for a standard Voice Vote on SB.
-    if (selectedBillType === "SB") {
-      showAsAmendedSection(true);
-    } else {
-      document.getElementById("as-amended-section").classList.add("hidden");
-    }
+    // Always hide the "As Amended" section for voice votes.
+    document.getElementById("as-amended-section").classList.add("hidden");
   }
   
   updateStatement();
 }
-
-
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
