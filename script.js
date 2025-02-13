@@ -304,7 +304,7 @@ function populateEditUI() {
     billType: selectedBillType,
     rerefer: selectedRereferCommittee
   });
-  // Rehighlight selected member buttons.
+  // Highlight member buttons.
   document.querySelectorAll("#members-container button").forEach(btn => {
     let btnText = btn.innerText.trim().toLowerCase();
     let savedMember = selectedMember.toLowerCase();
@@ -315,7 +315,7 @@ function populateEditUI() {
     }
   });
   
-  // Rehighlight main action button.
+  // Highlight main action.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     if (btn.innerText.trim() === mainAction) {
       btn.classList.add("selected");
@@ -336,7 +336,7 @@ function populateEditUI() {
       }
     });
     if (selectedSubAction) {
-      showMovedSubActions(); // rebuild sub-action buttons
+      showMovedSubActions();
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedSubAction) {
           btn.classList.add("selected");
@@ -391,6 +391,7 @@ function populateEditUI() {
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
 
+
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
   console.log("Finalizing edit for record index:", currentEditIndex);
@@ -403,7 +404,7 @@ function finalizeEdit() {
   
   let record = historyRecords[currentEditIndex];
   record.member = selectedMember;
-  record.mainAction = mainAction;
+  record.mainAction = mainAction; // make sure this is set from your UI buttons
   record.selectedSubAction = selectedSubAction;
   record.selectedBillType = selectedBillType;
   record.selectedCarrier = selectedCarrier;
@@ -429,6 +430,7 @@ function finalizeEdit() {
   resetSelections();
   console.log("Edit finalization completed.");
 }
+
 
 function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
@@ -1556,17 +1558,16 @@ function clearHistory() {
 
 function cancelCurrentAction() {
   console.log("cancelCurrentAction invoked. currentEditIndex:", currentEditIndex, "inProgressRecordIndex:", inProgressRecordIndex);
-  // If in edit mode, exit edit mode and do nothing further.
+  // If in edit mode, exit edit mode without deleting anything.
   if (currentEditIndex !== null) {
     console.log("Edit mode active. Exiting edit mode without deletion.");
     currentEditIndex = null;
-    // Also clear any temporary in-progress index so subsequent escapes do not trigger deletion.
-    inProgressRecordIndex = null;
+    inProgressRecordIndex = null; // clear any in-progress index
     document.getElementById("log").style.border = "none";
     return;
   }
   
-  // If no in-progress record exists, do nothing.
+  // If no in-progress row exists, do nothing.
   if (!inProgressRow && inProgressRecordIndex === null) {
     console.log("No in-progress record exists. Nothing to cancel.");
     return;
@@ -1589,6 +1590,7 @@ function cancelCurrentAction() {
   document.getElementById("log").innerText = "[Click a member and an action]";
   console.log("cancelCurrentAction completed.");
 }
+
 
 function loadCommitteesFromLocalStorage() {
   let stored = localStorage.getItem("allCommittees");
