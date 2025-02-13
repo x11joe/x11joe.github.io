@@ -400,6 +400,14 @@ function editTestimonyRecord(index) {
 
 
 function populateEditUI() {
+  // --- Added fix for edit mode ---
+  // If mainAction is stored as "Roll Call Vote on Bill" but selectedBillType is Amendment or Reconsider,
+  // override mainAction for the UI so that the correct button is highlighted.
+  if (mainAction === "Roll Call Vote on Bill" && (selectedBillType === "Amendment" || selectedBillType === "Reconsider")) {
+    mainAction = "Roll Call Vote on " + selectedBillType;
+  }
+  // --- End added fix ---
+
   console.log("Populating edit UI. Record values:", {
     member: selectedMember,
     mainAction: mainAction,
@@ -549,6 +557,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
