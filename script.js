@@ -1082,6 +1082,8 @@ function setMainAction(button, action) {
   } else if (action === "Roll Call Vote on Amendment" || action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
+    // Hide the bill carrier section in these cases.
+    document.getElementById("bill-carrier-section").classList.add("hidden");
     // Do not show the "As Amended" section for Amendment or Reconsider.
   } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
@@ -1094,9 +1096,6 @@ function setMainAction(button, action) {
   
   updateStatement();
 }
-
-
-
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
