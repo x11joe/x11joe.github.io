@@ -398,9 +398,13 @@ function editTestimonyRecord(index) {
     document.getElementById("testimonyNumber").value = "";
   }
   
+  // NEW: Pre-fill the testimony link field using the stored fileLink.
+  document.getElementById("testimonyLink").value = record.fileLink || "";
+  
   // Open the testimony modal for editing.
   openTestimonyModal();
 }
+
 
 
 function populateEditUI() {
