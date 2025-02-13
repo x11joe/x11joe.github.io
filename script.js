@@ -2407,10 +2407,13 @@ window.addEventListener("message", function (event) {
       document.getElementById("testimonyOrganization").value = testimonyDetails.organization || "";
       document.getElementById("testimonyPosition").value = testimonyDetails.position || "";
       document.getElementById("testimonyNumber").value = testimonyDetails.number || "";
-      // Also change the modal button text from "Add Testimony" to "Save Changes"
-      document.getElementById("submitTestimonyButton").textContent = "Save Changes";
+      
       editingTestimonyIndex = null;  // reset edit flag if needed
       openTestimonyModal();
+
+      // Also change the modal button text from "Add Testimony" to "Save Changes"
+      document.getElementById("submitTestimonyButton").textContent = "Save Changes";
+      
     } else {
       insertHearingStatementDirect(rowText);
       window.scrollTo(0, document.body.scrollHeight);
