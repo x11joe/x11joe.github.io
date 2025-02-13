@@ -8,6 +8,8 @@ let timeModeActivated = false;
 let timeModeTime = null;
 
 let currentEditIndex = null;
+let editingTestimonyIndex = null;
+
 
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
@@ -272,6 +274,14 @@ function groupCommitteeMembers(members) {
 function editHistoryRecord(index) {
   console.log("Editing history record at index:", index);
   let record = historyRecords[index];
+  
+  // If this is a testimony entry, call the testimony edit function.
+  if (record.isTestimony) {
+    editTestimonyRecord(index);
+    return;
+  }
+  
+  // Otherwise, continue with the standard edit flow.
   selectedMember = record.member || "";
   mainAction = record.mainAction || "";
   selectedSubAction = record.selectedSubAction || "";
@@ -293,6 +303,33 @@ function editHistoryRecord(index) {
   
   populateEditUI();
   document.getElementById("log").style.border = "2px dashed #007bff";
+}
+
+function editTestimonyRecord(index) {
+  console.log("Editing testimony record at index:", index);
+  let record = historyRecords[index];
+  // Set the global flag so submitTestimonyModal() knows we're editing.
+  editingTestimonyIndex = index;
+  
+  // Pre-fill the testimony modal fields using the stored testimony details.
+  if (record.testimony) {
+    document.getElementById("testimonyFirstName").value = record.testimony.firstName || "";
+    document.getElementById("testimonyLastName").value = record.testimony.lastName || "";
+    document.getElementById("testimonyRole").value = record.testimony.role || "";
+    document.getElementById("testimonyOrganization").value = record.testimony.organization || "";
+    document.getElementById("testimonyPosition").value = record.testimony.position || "";
+    document.getElementById("testimonyNumber").value = record.testimony.number || "";
+  } else {
+    document.getElementById("testimonyFirstName").value = "";
+    document.getElementById("testimonyLastName").value = "";
+    document.getElementById("testimonyRole").value = "";
+    document.getElementById("testimonyOrganization").value = "";
+    document.getElementById("testimonyPosition").value = "";
+    document.getElementById("testimonyNumber").value = "";
+  }
+  
+  // Open the testimony modal for editing.
+  openTestimonyModal();
 }
 
 
@@ -671,32 +708,36 @@ function insertHearingStatementDirect(statementData) {
   resetTimeMode();
 
   let statementText, fileLink;
-  // Check if we received an object with both text and link.
+  let isTestimony = false;
+  let testimonyDetails = null;
   if (typeof statementData === "object" && statementData !== null) {
     statementText = statementData.text;
-    fileLink = statementData.link;
+    fileLink = statementData.link || "";
+    isTestimony = !!statementData.isTestimony;
+    testimonyDetails = statementData.testimony || null;
   } else {
     statementText = statementData;
     fileLink = "";
   }
 
-  // If there's an in-progress row, finalize it.
   if (inProgressRow !== null) {
     resetAllAndFinalize();
   }
 
-  // Set the constructed statement.
   constructedStatement = statementText;
-
-  // Record the start time using the stored value.
   statementStartTime = startingTime;
-
-  // Create a new row in the history, passing the fileLink along.
   createNewRowInHistory(fileLink);
-
-  // Immediately finalize it.
   finalizeInProgressRow();
+
+  // If it's a testimony entry, store additional properties.
+  if (isTestimony && historyRecords.length > 0) {
+    let newRecord = historyRecords[historyRecords.length - 1];
+    newRecord.isTestimony = true;
+    newRecord.testimony = testimonyDetails;
+    saveHistoryToLocalStorage();
+  }
 }
+
 
 
 
@@ -2015,7 +2056,7 @@ function submitTestimonyModal() {
     return;
   }
   
-  // Build the testimony string using only the fields that have a value.
+  // Build the testimony string.
   const parts = [];
   if (firstName || lastName) {
     parts.push(`${firstName}${firstName && lastName ? ' ' : ''}${lastName}`);
@@ -2023,22 +2064,39 @@ function submitTestimonyModal() {
   if (role || organization) {
     parts.push(`${role}${role && organization ? ' ' : ''}${organization}`);
   }
-  // Always include the testimony position.
   parts.push(testimonyPosition);
-  // Append the testimony number if provided.
   if (testimonyNumber) {
     parts.push(`Testimony#${testimonyNumber}`);
   }
-  
   const testimonyString = parts.join(" - ");
   
-  // Insert the testimony into history (and auto-copy if enabled)
-  insertHearingStatementDirect(testimonyString);
+  // Create a testimony details object.
+  const testimonyDetails = {
+    firstName,
+    lastName,
+    role,
+    organization,
+    position: testimonyPosition,
+    number: testimonyNumber
+  };
   
-  // Close the modal.
+  // If we’re editing an existing testimony, update that record.
+  if (editingTestimonyIndex !== null) {
+    let record = historyRecords[editingTestimonyIndex];
+    record.statement = testimonyString;
+    record.testimony = testimonyDetails;
+    // Also update the global constructedStatement for consistency.
+    constructedStatement = testimonyString;
+    saveHistoryToLocalStorage();
+    loadHistoryFromLocalStorage();
+    editingTestimonyIndex = null;  // reset edit flag
+  } else {
+    // Otherwise, insert a new testimony entry.
+    insertHearingStatementDirect({ text: testimonyString, isTestimony: true, testimony: testimonyDetails });
+  }
+  
+  // Close and clear the modal.
   closeTestimonyModal();
-  
-  // Clear the modal fields.
   document.getElementById("testimonyFirstName").value = "";
   document.getElementById("testimonyLastName").value = "";
   document.getElementById("testimonyRole").value = "";
@@ -2046,6 +2104,7 @@ function submitTestimonyModal() {
   document.getElementById("testimonyPosition").value = "";
   document.getElementById("testimonyNumber").value = "";
 }
+
 
 // Attach click event to the Lookup Members button
 document.getElementById("lookupMembersBtn").addEventListener("click", openLookupMembersModal);
