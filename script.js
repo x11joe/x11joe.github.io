@@ -1011,19 +1011,18 @@ function setMainAction(button, action) {
     }
   }
   
-  // *** Optional Suggestion C ***
-  // For roll call votes, normalize the mainAction text so that the UI button (e.g. "Roll Call Vote on Bill")
-  // will match even if the passed-in action says "Roll Call Vote on SB" (or HB).
+  // Normalize mainAction for roll call votes.
   if (action.startsWith("Roll Call Vote on")) {
-    // We always want to store mainAction as "Roll Call Vote on Bill"
+    // Always store mainAction as "Roll Call Vote on Bill"
     mainAction = "Roll Call Vote on Bill";
-    // And extract the bill type from the original action.
     if (action.includes("SB")) {
       selectedBillType = "SB";
     } else if (action.includes("HB")) {
       selectedBillType = "HB";
     } else if (action.includes("Amendment")) {
       selectedBillType = "Amendment";
+    } else if (action.includes("Reconsider")) {
+      selectedBillType = "Reconsider";
     } else {
       selectedBillType = "";
     }
@@ -1046,7 +1045,6 @@ function setMainAction(button, action) {
   
   // Set remaining globals.
   selectedSubAction = "";
-  // selectedBillType is already set for vote actions.
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
@@ -1077,18 +1075,26 @@ function setMainAction(button, action) {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
     showBillCarrierSection(true);
-    showAsAmendedSection(true);
+    // Only show the "As Amended" section if the bill type is SB (for regular roll call vote on bill)
+    if (selectedBillType === "SB") {
+      showAsAmendedSection(true);
+    }
   } else if (action === "Roll Call Vote on Amendment" || action === "Roll Call Vote on Reconsider") {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
+    // Do not show the "As Amended" section for Amendment or Reconsider.
   } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    showAsAmendedSection(true);
+    // Only show "As Amended" for standard voice vote on SB; hide for Amendment or Reconsider.
+    if (action !== "Voice Vote on Amendment" && action !== "Voice Vote on Reconsider") {
+      showAsAmendedSection(true);
+    }
   }
   
   updateStatement();
 }
+
 
 
 
