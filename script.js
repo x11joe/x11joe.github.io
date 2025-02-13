@@ -69,45 +69,70 @@ function resetTimeMode() {
 }
 
 function parseTestimonyString(str) {
-  // Split the string by " - " into parts.
-  const parts = str.split(" - ");
+  const allowedPositions = ["In Favor", "In Opposition", "Neutral"];
+  // Split the string by " - " and trim each part.
+  const parts = str.split(" - ").map(p => p.trim());
   let testimonyDetails = {};
-  
-  // Assume first part is the full name.
+
+  // Extract full name and split into first and last names.
   if (parts.length >= 1) {
-    testimonyDetails.fullName = parts[0].trim();
-    let nameParts = testimonyDetails.fullName.split(" ");
+    testimonyDetails.fullName = parts[0];
+    let nameParts = parts[0].split(" ");
     if (nameParts.length > 1) {
       testimonyDetails.firstName = nameParts.slice(0, -1).join(" ");
       testimonyDetails.lastName = nameParts[nameParts.length - 1];
     } else {
-      testimonyDetails.firstName = testimonyDetails.fullName;
+      testimonyDetails.firstName = parts[0];
       testimonyDetails.lastName = "";
     }
   }
-  // Second part as role (if present)
-  if (parts.length >= 2) {
-    testimonyDetails.role = parts[1].trim();
-  }
-  // Third part as organization
-  if (parts.length >= 3) {
-    testimonyDetails.organization = parts[2].trim();
-  }
-  // Fourth part as testimony position
-  if (parts.length >= 4) {
-    testimonyDetails.position = parts[3].trim();
-  }
-  // Fifth part as testimony number (remove prefix "Testimony#" if present)
-  if (parts.length >= 5) {
-    let num = parts[4].trim();
-    if (num.startsWith("Testimony#")) {
-      num = num.substring("Testimony#".length);
+
+  if (parts.length === 5) {
+    // Standard format: fullName - role - organization - position - testimony number
+    testimonyDetails.role = parts[1];
+    testimonyDetails.organization = parts[2];
+    testimonyDetails.position = parts[3];
+    testimonyDetails.number = parts[4].startsWith("Testimony#")
+      ? parts[4].substring("Testimony#".length)
+      : parts[4];
+  } else if (parts.length === 4) {
+    // If the third part is one of the allowed positions,
+    // then we assume the role is missing:
+    if (allowedPositions.includes(parts[2])) {
+      testimonyDetails.role = "";
+      testimonyDetails.organization = parts[1];
+      testimonyDetails.position = parts[2];
+      testimonyDetails.number = parts[3].startsWith("Testimony#")
+        ? parts[3].substring("Testimony#".length)
+        : parts[3];
+    } else {
+      // Otherwise, assume organization is missing.
+      testimonyDetails.role = parts[1];
+      testimonyDetails.organization = "";
+      testimonyDetails.position = parts[2];
+      testimonyDetails.number = parts[3].startsWith("Testimony#")
+        ? parts[3].substring("Testimony#".length)
+        : parts[3];
     }
-    testimonyDetails.number = num;
+  } else if (parts.length === 3) {
+    // Fallback for a very short testimony string.
+    testimonyDetails.role = "";
+    testimonyDetails.organization = "";
+    testimonyDetails.position = parts[1];
+    testimonyDetails.number = parts[2].startsWith("Testimony#")
+      ? parts[2].substring("Testimony#".length)
+      : parts[2];
+  } else {
+    // If the string doesn't match any expected format, return an object
+    // with the entire string as the fullName.
+    testimonyDetails.role = "";
+    testimonyDetails.organization = "";
+    testimonyDetails.position = "";
+    testimonyDetails.number = "";
   }
+  
   return testimonyDetails;
 }
-
 
 
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
