@@ -655,36 +655,29 @@ function createNewRowInHistory(fileLink = "") {
     voiceVoteOutcome: voiceVoteOutcome,
     selectedRereferCommittee: selectedRereferCommittee
   };
-  
 
   // Time cell as an editable field:
   const localTimeCell = document.createElement("td");
   localTimeCell.textContent = recordTime;
   localTimeCell.contentEditable = "true";
   localTimeCell.classList.add("clickable");
-  // Prevent Enter key from inserting new lines and blur on Enter.
   localTimeCell.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
       e.preventDefault();
       localTimeCell.blur();
     }
   });
-  // On blur, validate the new time format and update the record.
   localTimeCell.addEventListener("blur", function() {
     let newTime = localTimeCell.textContent.trim();
-    // Regular expression: one or two digits for hour, colon, two digits for minutes, colon, two digits for seconds,
-    // a space, then AM or PM (case-insensitive)
     let timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d:[0-5]\d\s+(AM|PM)$/i;
     if (timeRegex.test(newTime)) {
       newRecord.time = newTime;
       saveHistoryToLocalStorage();
     } else {
       alert("Invalid time format. Please enter time in the format H:mm:ss AM/PM (e.g., 5:15:32 PM).");
-      // Revert to the old value.
       localTimeCell.textContent = newRecord.time;
     }
   });
-  // Also allow a click on the time cell to copy its content.
   localTimeCell.addEventListener("click", function () {
     navigator.clipboard.writeText(localTimeCell.textContent.replace(/,/g, "")).then(() => {
       localTimeCell.classList.add("copied-cell");
@@ -726,7 +719,7 @@ function createNewRowInHistory(fileLink = "") {
         second: '2-digit'
       });
       localTimeCell.textContent = newTimeStr;
-      newRecord.time = newTimeStr; // update the record
+      newRecord.time = newTimeStr;
       saveHistoryToLocalStorage();
       btn.classList.add("copied-cell");
       setTimeout(() => {
@@ -769,6 +762,25 @@ function createNewRowInHistory(fileLink = "") {
   };
   nowDiv.appendChild(nowBtn);
 
+  // *** Added extra button for "Marked" time ***
+  const markedBtn = document.createElement("button");
+  markedBtn.textContent = "Marked";
+  markedBtn.classList.add("copy-row-button");
+  markedBtn.onclick = () => {
+    if (timeModeTime) {
+      localTimeCell.textContent = timeModeTime;
+      newRecord.time = timeModeTime;
+      saveHistoryToLocalStorage();
+      markedBtn.classList.add("copied-cell");
+      setTimeout(() => {
+        markedBtn.classList.remove("copied-cell");
+      }, 800);
+    } else {
+      alert("No marked time set.");
+    }
+  };
+  nowDiv.appendChild(markedBtn);
+
   timeAdjustCell.appendChild(minusDiv);
   timeAdjustCell.appendChild(plusDiv);
   timeAdjustCell.appendChild(nowDiv);
@@ -781,12 +793,10 @@ function createNewRowInHistory(fileLink = "") {
   deleteButton.classList.add("copy-row-button");
   deleteButton.style.backgroundColor = "#dc3545";
   deleteButton.onclick = function() {
-    // For a live row, remove its record from historyRecords.
     if (inProgressRecordIndex !== null) {
       historyRecords.splice(inProgressRecordIndex, 1);
       saveHistoryToLocalStorage();
     }
-    // Remove the row from the DOM.
     const row = this.closest("tr");
     if (row) {
       row.remove();
@@ -800,7 +810,6 @@ function createNewRowInHistory(fileLink = "") {
   // Attach the Control‑click handler to the row.
   addCtrlClickHandler(inProgressRow);
 
-  // Append the row and update history.
   tableBody.appendChild(inProgressRow);
   historyRecords.push(newRecord);
   inProgressRecordIndex = historyRecords.length - 1;
@@ -810,6 +819,7 @@ function createNewRowInHistory(fileLink = "") {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 function finalizeInProgressRow() {
@@ -1630,11 +1640,9 @@ function loadHistoryFromLocalStorage() {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
 
-      // If the record has a member property, set it as a data attribute.
       if (record.member) {
         tr.setAttribute("data-member", record.member);
       }
-      // If the record has a fileLink property, set it in the row's dataset.
       if (record.fileLink) {
         tr.dataset.fileLink = record.fileLink;
       }
@@ -1644,29 +1652,23 @@ function loadHistoryFromLocalStorage() {
       tdTime.textContent = record.time;
       tdTime.contentEditable = "true";
       tdTime.classList.add("clickable");
-      // Prevent Enter key from inserting new lines
       tdTime.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
           tdTime.blur();
         }
       });
-      // When the user finishes editing, validate the new time.
       tdTime.addEventListener("blur", function () {
         let newTime = tdTime.textContent.trim();
-        // Regular expression: one or two digits for hour, colon, two digits for minutes, colon, two digits for seconds, space, then AM or PM.
         let timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d:[0-5]\d\s+(AM|PM)$/i;
         if (timeRegex.test(newTime)) {
-          // Valid – update the record and save to local storage.
           record.time = newTime;
           saveHistoryToLocalStorage();
         } else {
           alert("Invalid time format. Please enter time in the format H:mm:ss AM/PM (e.g., 5:15:32 PM).");
-          // Revert to the old value
           tdTime.textContent = record.time;
         }
       });
-      // Also allow a click on the time cell to copy its content.
       tdTime.addEventListener("click", function () {
         navigator.clipboard.writeText(tdTime.textContent.replace(/,/g, "")).then(() => {
           tdTime.classList.add("copied-cell");
@@ -1691,7 +1693,7 @@ function loadHistoryFromLocalStorage() {
       });
       tr.appendChild(tdStatement);
 
-      // Time Control cell (same as before)
+      // Time Control cell with adjust buttons and now/marked buttons.
       let tdTimeControl = document.createElement("td");
       tdTimeControl.style.whiteSpace = "nowrap";
       function createAdjustButton(label, secondsToAdjust) {
@@ -1707,7 +1709,7 @@ function loadHistoryFromLocalStorage() {
             second: '2-digit'
           });
           tdTime.textContent = newTimeStr;
-          record.time = newTimeStr; // update the record
+          record.time = newTimeStr;
           saveHistoryToLocalStorage();
           btn.classList.add("copied-cell");
           setTimeout(() => {
@@ -1721,11 +1723,13 @@ function loadHistoryFromLocalStorage() {
       minusDiv.appendChild(createAdjustButton("-5s", -5));
       minusDiv.appendChild(createAdjustButton("-3s", -3));
       minusDiv.appendChild(createAdjustButton("-1s", -1));
+
       const plusDiv = document.createElement("div");
       plusDiv.classList.add("time-control-group");
       plusDiv.appendChild(createAdjustButton("+1s", +1));
       plusDiv.appendChild(createAdjustButton("+3s", +3));
       plusDiv.appendChild(createAdjustButton("+5s", +5));
+
       const nowDiv = document.createElement("div");
       nowDiv.classList.add("time-control-group");
       const nowBtn = document.createElement("button");
@@ -1746,6 +1750,26 @@ function loadHistoryFromLocalStorage() {
         }, 800);
       };
       nowDiv.appendChild(nowBtn);
+
+      // *** Added extra button for "Marked" time ***
+      const markedBtn = document.createElement("button");
+      markedBtn.textContent = "Marked";
+      markedBtn.classList.add("copy-row-button");
+      markedBtn.onclick = () => {
+        if (timeModeTime) {
+          tdTime.textContent = timeModeTime;
+          record.time = timeModeTime;
+          saveHistoryToLocalStorage();
+          markedBtn.classList.add("copied-cell");
+          setTimeout(() => {
+            markedBtn.classList.remove("copied-cell");
+          }, 800);
+        } else {
+          alert("No marked time set.");
+        }
+      };
+      nowDiv.appendChild(markedBtn);
+
       tdTimeControl.appendChild(minusDiv);
       tdTimeControl.appendChild(plusDiv);
       tdTimeControl.appendChild(nowDiv);
@@ -1768,22 +1792,21 @@ function loadHistoryFromLocalStorage() {
       // Edit cell with an edit button.
       let tdEdit = document.createElement("td");
       let editButton = document.createElement("button");
-      editButton.textContent = "✏️"; // pencil emoji
+      editButton.textContent = "✏️";
       editButton.classList.add("copy-row-button");
-      editButton.style.backgroundColor = "#ffc107"; // for example, a yellow button
+      editButton.style.backgroundColor = "#ffc107";
       editButton.onclick = function() {
-          editHistoryRecord(i);
+        editHistoryRecord(i);
       };
       tdEdit.appendChild(editButton);
       tr.appendChild(tdEdit);
-      
-      // Attach the Control‑click handler to the row.
-      addCtrlClickHandler(tr);
 
+      addCtrlClickHandler(tr);
       tableBody.appendChild(tr);
     }
   }
 }
+
 
 
 function clearHistory() {
