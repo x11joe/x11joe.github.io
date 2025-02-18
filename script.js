@@ -1955,10 +1955,11 @@ function loadHistoryFromLocalStorage() {
     for (let i = 0; i < historyRecords.length; i++) {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
-
+      
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
         updateRowVoteTooltip(tr, record.votes);
+        console.log("create tool tip~");
         attachTooltipToRow(tr);
       }
       
