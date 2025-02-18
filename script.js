@@ -14,6 +14,9 @@ let editingTestimonyIndex = null;
 let includeBillTypeInRollCall = (localStorage.getItem("includeBillTypeInRollCall") === "true");
 let includeBillTypeInMoved = (localStorage.getItem("includeBillTypeInMoved") === "true");
 
+// Global Variable, if true, always use "Senator" or "Representative" instead of Chair/ Vice titles.
+let forceSenatorTerms = (localStorage.getItem("forceSenatorTerms") === "true");
+
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
 
@@ -158,7 +161,18 @@ function parseTestimonyString(str) {
 function applyUseLastNamesOnly(fullName) {
   if (!useLastNamesOnly) return fullName;
   
-  // List all title prefixes that should use last names only.
+  if (forceSenatorTerms) {
+    // Force the title to be "Senator" or "Representative" based on the committee.
+    let parts = fullName.split(" ");
+    let lastName = parts[parts.length - 1];
+    if (currentCommittee && currentCommittee.toLowerCase().includes("house")) {
+      return "Representative " + lastName;
+    } else {
+      return "Senator " + lastName;
+    }
+  }
+  
+  // Otherwise, use the stored prefix (which may be Chairman, Chairwoman, etc.)
   const prefixes = [
     "Senator",
     "Representative",
@@ -168,12 +182,10 @@ function applyUseLastNamesOnly(fullName) {
     "Vice Chairwoman"
   ];
   
-  // Loop through each prefix; if the full name starts with one of them,
-  // split the name into parts and return the prefix followed by the last part.
   for (let prefix of prefixes) {
     if (fullName.startsWith(prefix + " ")) {
       let parts = fullName.split(" ");
-      // Only proceed if there are at least 3 words (prefix + at least one first name and one last name)
+      // Only proceed if there are at least 3 words (prefix + first name + last name)
       if (parts.length >= 3) {
         return prefix + " " + parts[parts.length - 1];
       }
@@ -181,6 +193,7 @@ function applyUseLastNamesOnly(fullName) {
   }
   return fullName;
 }
+
 
 // Attach a control-click event listener to a row.
 // When the user clicks with the Control key held down,
@@ -2230,8 +2243,11 @@ function openSettingsModal() {
   document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
   document.getElementById("includeBillTypeInRollCallCheckbox").checked = includeBillTypeInRollCall;
   document.getElementById("includeBillTypeInMovedCheckbox").checked = includeBillTypeInMoved;
+  document.getElementById("forceSenatorTermsCheckbox").checked = forceSenatorTerms;
+  
   document.getElementById("settingsModal").classList.remove("hidden");
 }
+
 
 
 
@@ -2252,12 +2268,18 @@ function saveSettings() {
   includeBillTypeInMoved = document.getElementById("includeBillTypeInMovedCheckbox").checked;
   localStorage.setItem("includeBillTypeInMoved", includeBillTypeInMoved);
   
+  // NEW: Save the new forceSenatorTerms setting.
+  forceSenatorTerms = document.getElementById("forceSenatorTermsCheckbox").checked;
+  localStorage.setItem("forceSenatorTerms", forceSenatorTerms);
+  
   closeSettingsModal();
   console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly,
               "meetingActionsWithoutMember =", meetingActionsWithoutMember,
               "includeBillTypeInRollCall =", includeBillTypeInRollCall,
-              "includeBillTypeInMoved =", includeBillTypeInMoved);
+              "includeBillTypeInMoved =", includeBillTypeInMoved,
+              "forceSenatorTerms =", forceSenatorTerms);
 }
+
 
 
 
