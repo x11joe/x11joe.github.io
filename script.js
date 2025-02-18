@@ -10,6 +10,8 @@ let timeModeTime = null;
 let currentEditIndex = null;
 let editingTestimonyIndex = null;
 
+// Global variable for including bill type SB or HB in roll call vote statements:
+let includeBillTypeInRollCall = (localStorage.getItem("includeBillTypeInRollCall") === "true");
 
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
@@ -54,6 +56,22 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+function getPreviousBillType() {
+  // Look backwards through historyRecords for a "Moved" statement that includes "on SB" or "on HB"
+  for (let i = historyRecords.length - 1; i >= 0; i--) {
+    let rec = historyRecords[i];
+    if (rec.statement && rec.statement.includes("Moved")) {
+      if (rec.statement.includes("on SB")) {
+        return "SB";
+      } else if (rec.statement.includes("on HB")) {
+        return "HB";
+      }
+    }
+  }
+  return "";
+}
+
+  
 function getStartingTime() {
   // If time mode is active, use the stored time; otherwise, use the current time.
   return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
@@ -1355,7 +1373,6 @@ function updateInProgressRow() {
   }
 }
 
-
 // Build the statement
 function updateStatement() {
   console.log("updateStatement() – current globals:", {
@@ -1380,7 +1397,6 @@ function updateStatement() {
     "Motion for Do Not Pass failed for lack of a second"
   ];
   
-  // If the main action starts with "Roll Call Vote on", we treat it as not requiring a member.
   if (!selectedMember && !mainAction.startsWith("Roll Call Vote on") && !actionsNotRequiringMember.includes(mainAction)) {
     document.getElementById("log").innerText = "[Click a member and an action]";
     return;
@@ -1407,15 +1423,19 @@ function updateStatement() {
   let parts = [];
   
   if (mainAction.startsWith("Roll Call Vote on")) {
-    let actionText = "Roll Call Vote on ";
-    if (selectedBillType) {
-      actionText += selectedBillType;
-      // Always display the amended state so the user can click to toggle it.
-      if (selectedBillType === "SB") {
-        actionText += asAmended ? " as Amended" : "";
+    // NEW: Build the action text based on the new setting.
+    let actionText = "Roll Call Vote";
+    if (includeBillTypeInRollCall) {
+      let billType = getPreviousBillType();
+      if (!billType && selectedBillType) {
+        billType = selectedBillType;
       }
-    } else {
-      actionText += "Bill";
+      if (billType) {
+        actionText += " on " + billType;
+        if (billType === "SB" && asAmended) {
+          actionText += " as Amended";
+        }
+      }
     }
     parts.push(actionText);
     parts.push(getMotionResultText());
@@ -1455,18 +1475,16 @@ function updateStatement() {
     } else {
       parts.push("Moved");
     }
-    // Append rerefer info if any (do not require selectedSubAction)
     if (selectedRereferCommittee) {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
   }
-  // NEW branch for Seconded and Introduced Bill actions
   else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
     parts.push(mainAction);
   }
-  else if (mainAction === "Withdrew") { //We can't put this up above, because it needs so say 'Withdrew Motion' not just withdrew
+  else if (mainAction === "Withdrew") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
     parts.push("Withdrew Motion");
@@ -1478,6 +1496,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 
 function resetVoteTally() {
@@ -2181,10 +2200,13 @@ function transformMemberLine(line, committeeName, femaleNames) {
 }
 
 function openSettingsModal() {
-  // Set the checkbox to the current setting
+  // Set the checkboxes to the current settings
   document.getElementById("useLastNamesCheckbox").checked = useLastNamesOnly;
+  document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
+  document.getElementById("includeBillTypeInRollCallCheckbox").checked = includeBillTypeInRollCall;
   document.getElementById("settingsModal").classList.remove("hidden");
 }
+
 
 function closeSettingsModal() {
   document.getElementById("settingsModal").classList.add("hidden");
@@ -2197,9 +2219,15 @@ function saveSettings() {
   meetingActionsWithoutMember = document.getElementById("meetingActionsWithoutMemberCheckbox").checked;
   localStorage.setItem("meetingActionsWithoutMember", meetingActionsWithoutMember);
   
+  includeBillTypeInRollCall = document.getElementById("includeBillTypeInRollCallCheckbox").checked;
+  localStorage.setItem("includeBillTypeInRollCall", includeBillTypeInRollCall);
+  
   closeSettingsModal();
-  console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly, "meetingActionsWithoutMember =", meetingActionsWithoutMember);
+  console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly,
+              "meetingActionsWithoutMember =", meetingActionsWithoutMember,
+              "includeBillTypeInRollCall =", includeBillTypeInRollCall);
 }
+
 
 
 // Attach event listener to the settings button.
