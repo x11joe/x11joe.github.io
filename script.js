@@ -66,29 +66,35 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    -------------------------- */
 
    // --- Helper: Update a row’s tooltip based on vote data ---
-   function updateRowVoteTooltip(row, votes) {
-    if (votes && votes.for && votes.against) {
-      row.title = `For: ${votes.for.join(", ")}; Against: ${votes.against.join(", ")}`;
-      console.log("updateRowVoteTooltip: Set row title to:", row.title);
-    } else {
-      row.title = "";
-      console.log("updateRowVoteTooltip: Cleared row title.");
-    }
+function updateRowVoteTooltip(row, votes) {
+  if (votes && votes.for && votes.against) {
+    row.title = `For: ${votes.for.join(", ")}; Against: ${votes.against.join(", ")}`;
+    console.log("updateRowVoteTooltip: Set row title to:", row.title);
+  } else {
+    row.title = "";
+    console.log("updateRowVoteTooltip: Cleared row title.");
   }
+}
 
 // --- Custom tooltip helper for a row ---
 function attachTooltipToRow(row) {
   console.log("attachTooltipToRow: Attaching tooltip for row:", row);
-
-  // Remove any existing tooltip if present.
-  if (row._tooltip) {
-    console.log("attachTooltipToRow: Removing existing tooltip.");
-    row._tooltip.remove();
-    row._tooltip = null;
-  }
   
-  // Mouseenter: Create and attach tooltip.
-  row.addEventListener("mouseenter", function (e) {
+  // Add additional event listeners for debugging
+  row.addEventListener("mouseover", function(e) {
+    console.log("mouseover event fired on row:", row);
+  });
+  
+  row.addEventListener("mousemove", function(e) {
+    console.log("mousemove event fired on row:", row);
+  });
+  
+  row.addEventListener("mouseout", function(e) {
+    console.log("mouseout event fired on row:", row);
+  });
+  
+  // Use mouseenter to create the tooltip.
+  row.addEventListener("mouseenter", function(e) {
     console.log("mouseenter event fired on row:", row);
     const tooltipText = row.title || "";
     console.log("Tooltip text found:", tooltipText);
@@ -102,16 +108,8 @@ function attachTooltipToRow(row) {
     console.log("Tooltip created and positioned:", tooltip);
   });
   
-  // Mousemove: Reposition tooltip.
-  row.addEventListener("mousemove", function (e) {
-    if (row._tooltip) {
-      console.log("mousemove event: repositioning tooltip for row:", row);
-      positionTooltip(e, row._tooltip);
-    }
-  });
-  
-  // Mouseleave: Remove tooltip.
-  row.addEventListener("mouseleave", function () {
+  // Use mouseleave to remove the tooltip.
+  row.addEventListener("mouseleave", function(e) {
     console.log("mouseleave event fired on row:", row);
     if (row._tooltip) {
       console.log("Removing tooltip:", row._tooltip);
@@ -121,13 +119,13 @@ function attachTooltipToRow(row) {
   });
 }
 
-// Helper to position the tooltip near the cursor
+// Helper to position the tooltip near the cursor with logging.
 function positionTooltip(e, tooltip) {
   const offset = 10;
   tooltip.style.position = "absolute";
   tooltip.style.left = (e.pageX + offset) + "px";
   tooltip.style.top = (e.pageY + offset) + "px";
-  // (The rest of the styles are already defined in CSS.)
+  // You can add more inline styles here if needed.
   console.log("positionTooltip: Tooltip positioned at", tooltip.style.left, tooltip.style.top);
 }
 
