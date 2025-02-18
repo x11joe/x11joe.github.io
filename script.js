@@ -498,9 +498,13 @@ function populateEditUI() {
 
     // Show the vote tally section and populate counts.
     showVoteTallySection(true);
-    document.getElementById("forCount").innerText = forVal;
-    document.getElementById("againstCount").innerText = againstVal;
-    document.getElementById("neutralCount").innerText = neutralVal;
+    // Only update the plus–minus elements if they exist (i.e. when not using member buttons)
+    const forCountEl = document.getElementById("forCount");
+    if (forCountEl) {
+      document.getElementById("forCount").innerText = forVal;
+      document.getElementById("againstCount").innerText = againstVal;
+      document.getElementById("neutralCount").innerText = neutralVal;
+    }
 
     // Show and highlight the carrier button if one was saved (only for SB/HB votes).
     if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
@@ -1811,7 +1815,7 @@ function loadHistoryFromLocalStorage() {
     for (let i = 0; i < historyRecords.length; i++) {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
-      
+
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
       }
