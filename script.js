@@ -497,14 +497,24 @@ function populateEditUI() {
     }
 
     // Show the vote tally section and populate counts.
-    showVoteTallySection(true);
-    // Only update the plus–minus elements if they exist (i.e. when not using member buttons)
-    const forCountEl = document.getElementById("forCount");
-    if (forCountEl) {
-      document.getElementById("forCount").innerText = forVal;
-      document.getElementById("againstCount").innerText = againstVal;
-      document.getElementById("neutralCount").innerText = neutralVal;
+    if (rollCallUseMemberNames) {
+      // If editing and the record has vote details, use them.
+      let existingVotes = null;
+      if (currentEditIndex !== null && historyRecords[currentEditIndex].votes) {
+        existingVotes = historyRecords[currentEditIndex].votes;
+      }
+      showRollCallMemberButtons(existingVotes);
+    } else {
+      showVoteTallySection(true);
+      // Update plus–minus elements if they exist.
+      const forCountEl = document.getElementById("forCount");
+      if (forCountEl) {
+        document.getElementById("forCount").innerText = forVal;
+        document.getElementById("againstCount").innerText = againstVal;
+        document.getElementById("neutralCount").innerText = neutralVal;
+      }
     }
+    
 
     // Show and highlight the carrier button if one was saved (only for SB/HB votes).
     if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
@@ -1332,7 +1342,7 @@ function showVoteTallySection(visible) {
   }
 }
 
-function showRollCallMemberButtons() {
+function showRollCallMemberButtons(existingVotes) {
   const tallySec = document.getElementById("vote-tally-section");
   // Clear the vote-tally section completely.
   tallySec.innerHTML = "";
@@ -1344,16 +1354,15 @@ function showRollCallMemberButtons() {
   
   // Get the committee members.
   const members = committees[currentCommittee] || [];
-  // Initialize counts: all start as neutral.
-  neutralVal = members.length;
-  forVal = 0;
-  againstVal = 0;
+  
+  // Initialize counts.
+  let countFor = 0, countAgainst = 0;
   
   members.forEach(member => {
     const btn = document.createElement("button");
-    // Optionally format using applyUseLastNamesOnly.
     btn.innerText = member;
-    btn.dataset.vote = "neutral"; // initial state
+    // Default vote state is neutral.
+    btn.dataset.vote = "neutral";
     btn.style.backgroundColor = "#007bff"; // blue for neutral
     btn.style.color = "#fff";
     btn.style.margin = "2px";
@@ -1361,8 +1370,21 @@ function showRollCallMemberButtons() {
     btn.style.padding = "5px 10px";
     btn.style.cursor = "pointer";
     
+    // If we're editing and have existing vote data, update this button.
+    if (existingVotes) {
+      if (existingVotes.for && existingVotes.for.includes(member)) {
+        btn.dataset.vote = "for";
+        btn.style.backgroundColor = "green";
+        countFor++;
+      } else if (existingVotes.against && existingVotes.against.includes(member)) {
+        btn.dataset.vote = "against";
+        btn.style.backgroundColor = "red";
+        countAgainst++;
+      }
+    }
+    
     btn.addEventListener("click", function() {
-      // Cycle: neutral → for → against → neutral.
+      // Cycle the vote state: neutral → for → against → neutral.
       let currentVote = btn.dataset.vote;
       if (currentVote === "neutral") {
         btn.dataset.vote = "for";
@@ -1376,6 +1398,7 @@ function showRollCallMemberButtons() {
       }
       recalcRollCallVotes();
     });
+    
     container.appendChild(btn);
   });
   
@@ -1388,8 +1411,20 @@ function showRollCallMemberButtons() {
   countsDiv.style.fontWeight = "bold";
   tallySec.appendChild(countsDiv);
   
+  // If editing, calculate counts based on the existing votes.
+  if (existingVotes) {
+    neutralVal = members.length - (countFor + countAgainst);
+    forVal = countFor;
+    againstVal = countAgainst;
+  } else {
+    neutralVal = members.length;
+    forVal = 0;
+    againstVal = 0;
+  }
   updateVoteTallyDisplay();
 }
+
+
 
 function recalcRollCallVotes() {
   const container = document.getElementById("rollCallMembersContainer");
