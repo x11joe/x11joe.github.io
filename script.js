@@ -14,6 +14,12 @@ let editingTestimonyIndex = null;
 let includeBillTypeInRollCall = (localStorage.getItem("includeBillTypeInRollCall") === "true");
 let includeBillTypeInMoved = (localStorage.getItem("includeBillTypeInMoved") === "true");
 
+// if true, roll call votes will use individual member buttons.
+// (When on, the neutral count will default to the total number of members,
+// and clicking a member button toggles that member’s vote.)
+let rollCallUseMemberNames = (localStorage.getItem("rollCallUseMemberNames") === "true");
+
+
 // Global Variable, if true, always use "Senator" or "Representative" instead of Chair/ Vice titles.
 let forceSenatorTerms = (localStorage.getItem("forceSenatorTerms") === "true");
 
@@ -200,57 +206,47 @@ function applyUseLastNamesOnly(fullName) {
 // the row is highlighted yellow and a final string is built and copied.
 function addCtrlClickHandler(row) {
   row.addEventListener("click", function (e) {
-    // If Control key is held, copy full statement.
     if (e.ctrlKey) {
       e.stopPropagation();
       e.preventDefault();
       row.style.backgroundColor = "yellow";
       
-      // Get the time from the first cell; if missing, use a single space.
       let timeStr = (row.cells[0].textContent || "").trim() || " ";
-      
-      // Get the annotation from the second cell.
       let annotation = (row.cells[1].textContent || "").trim() || " ";
-      
-      // Use the member attribute to fetch "comments" from your XML mapping.
       let member = row.getAttribute("data-member") || "";
       let comments = getMemberInfoForMember(member).trim() || " ";
-      
-      // Get the file link from the row's dataset (if stored); otherwise use a blank.
       let link = (row.dataset.fileLink || "").trim() || " ";
       
-      // Debug: log the fileLink value
-      console.log("Row fileLink:", row.dataset.fileLink);
+      // If the row has vote details stored (we set it when finalizing the record), append them.
+      let voteInfo = "";
+      if (row.dataset.votes) {
+        try {
+          const votes = JSON.parse(row.dataset.votes);
+          voteInfo = ` | For: ${votes.for.join(", ")} | Against: ${votes.against.join(", ")}`;
+        } catch(e) {
+          // ignore parsing errors
+        }
+      }
       
-      // Build the final string in the desired four-field format.
-      let finalString = `${timeStr} | ${annotation} | ${comments} | ${link}`;
-      finalString = finalString.replace(/,/g, ""); // remove commas if needed
+      let finalString = `${timeStr} | ${annotation} | ${comments} | ${link}${voteInfo}`;
+      finalString = finalString.replace(/,/g, "");
       
       navigator.clipboard.writeText(finalString).then(() => {
-        setTimeout(() => {
-          row.style.backgroundColor = "";
-        }, 1000);
+        setTimeout(() => { row.style.backgroundColor = ""; }, 1000);
       });
       console.log("Ctrl-click copy:", finalString);
-    } 
-    // If Shift key is held, copy only the link.
-    else if (e.shiftKey) {
+    } else if (e.shiftKey) {
       e.stopPropagation();
       e.preventDefault();
       row.style.backgroundColor = "purple";
       let link = (row.dataset.fileLink || "").trim() || " ";
       navigator.clipboard.writeText(link).then(() => {
-        setTimeout(() => {
-          row.style.backgroundColor = "";
-        }, 1000);
+        setTimeout(() => { row.style.backgroundColor = ""; }, 1000);
       });
       console.log("Shift-click copy (link only):", link);
     }
   }, true);
 }
-
-
-
 
 
 function loadMemberInfoXML() {
@@ -636,6 +632,20 @@ function finalizeEdit() {
   record.neutralVal = neutralVal;
   record.selectedRereferCommittee = selectedRereferCommittee;
   
+  // NEW: If roll call votes are using member names, store the detailed votes.
+  if (mainAction.startsWith("Roll Call Vote on") && rollCallUseMemberNames) {
+    const container = document.getElementById("rollCallMembersContainer");
+    if (container) {
+      let votesFor = [];
+      let votesAgainst = [];
+      container.querySelectorAll("button").forEach(btn => {
+        if (btn.dataset.vote === "for") votesFor.push(btn.innerText);
+        else if (btn.dataset.vote === "against") votesAgainst.push(btn.innerText);
+      });
+      record.votes = { for: votesFor, against: votesAgainst };
+    }
+  }
+  
   // Rebuild and update the constructed statement.
   updateStatement();
   record.statement = constructedStatement;
@@ -654,12 +664,17 @@ function finalizeEdit() {
 
 
 
+
 function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
   const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
 
+  if (rollCallUseMemberNames && newRecord.votes) {
+    inProgressRow.dataset.votes = JSON.stringify(newRecord.votes);
+  }
+  
   // If a member is selected, store it as a data attribute on the row.
   if (selectedMember) {
     inProgressRow.setAttribute("data-member", selectedMember);
@@ -1305,15 +1320,100 @@ function showVoteTallySection(visible) {
   const tallySec = document.getElementById("vote-tally-section");
   if (visible) {
     tallySec.classList.remove("hidden");
-    // Only reset if we're not editing an existing record.
-    if (currentEditIndex === null) {
-      resetVoteTally();
+    // If the new roll call option is enabled, build the member buttons UI.
+    if (rollCallUseMemberNames) {
+      showRollCallMemberButtons();
+    } else {
+      // Otherwise, if not editing, reset the plus–minus vote counts.
+      if (currentEditIndex === null) {
+        resetVoteTally();
+      }
+      // (Assume your existing plus/minus UI remains as is.)
     }
   } else {
     tallySec.classList.add("hidden");
   }
 }
 
+function showRollCallMemberButtons() {
+  const tallySec = document.getElementById("vote-tally-section");
+  // Clear the vote tally section.
+  tallySec.innerHTML = "";
+  
+  // Create a container for the roll call member buttons.
+  const container = document.createElement("div");
+  container.id = "rollCallMembersContainer";
+  container.style.margin = "5px 0";
+  
+  // Get the list of members for the current committee.
+  const members = committees[currentCommittee] || [];
+  // Initialize the counts: by default all members are neutral.
+  neutralVal = members.length;
+  forVal = 0;
+  againstVal = 0;
+  
+  members.forEach(member => {
+    const btn = document.createElement("button");
+    // You may choose to format the name using applyUseLastNamesOnly if desired.
+    btn.innerText = member;
+    btn.dataset.vote = "neutral"; // Possible values: "neutral", "for", "against"
+    // Set initial style for neutral (blue)
+    btn.style.backgroundColor = "#007bff";
+    btn.style.color = "#fff";
+    btn.style.margin = "2px";
+    btn.style.border = "none";
+    btn.style.padding = "5px 10px";
+    btn.style.cursor = "pointer";
+    
+    btn.addEventListener("click", function() {
+      // Cycle the vote state: neutral → for → against → neutral.
+      let currentVote = btn.dataset.vote;
+      if (currentVote === "neutral") {
+        btn.dataset.vote = "for";
+        btn.style.backgroundColor = "green";
+      } else if (currentVote === "for") {
+        btn.dataset.vote = "against";
+        btn.style.backgroundColor = "red";
+      } else {
+        btn.dataset.vote = "neutral";
+        btn.style.backgroundColor = "#007bff";
+      }
+      recalcRollCallVotes();
+    });
+    container.appendChild(btn);
+  });
+  
+  tallySec.appendChild(container);
+  updateVoteTallyDisplay();
+}
+
+function recalcRollCallVotes() {
+  // Recalculate forVal, againstVal, and neutralVal based on the buttons’ dataset values.
+  const container = document.getElementById("rollCallMembersContainer");
+  let countFor = 0;
+  let countAgainst = 0;
+  let countNeutral = 0;
+  
+  container.querySelectorAll("button").forEach(btn => {
+    const vote = btn.dataset.vote;
+    if (vote === "for") countFor++;
+    else if (vote === "against") countAgainst++;
+    else countNeutral++;
+  });
+  
+  forVal = countFor;
+  againstVal = countAgainst;
+  neutralVal = countNeutral;
+  updateVoteTallyDisplay();
+}
+
+function updateVoteTallyDisplay() {
+  // Update your UI elements that display the counts.
+  // (Assuming you have elements with these ids in your vote-tally section.)
+  document.getElementById("forCount").innerText = forVal;
+  document.getElementById("againstCount").innerText = againstVal;
+  document.getElementById("neutralCount").innerText = neutralVal;
+}
 
 // Bill Carrier
 function showBillCarrierSection(visible) {
@@ -1538,6 +1638,7 @@ function updateStatement() {
 
 
 function resetVoteTally() {
+  // For the plus/minus UI, your existing code remains.
   forVal = 0;
   againstVal = 0;
   neutralVal = 0;
@@ -2244,6 +2345,8 @@ function openSettingsModal() {
   document.getElementById("includeBillTypeInRollCallCheckbox").checked = includeBillTypeInRollCall;
   document.getElementById("includeBillTypeInMovedCheckbox").checked = includeBillTypeInMoved;
   document.getElementById("forceSenatorTermsCheckbox").checked = forceSenatorTerms;
+  // NEW: Set the roll call votes option checkbox.
+  document.getElementById("rollCallUseMemberNamesCheckbox").checked = rollCallUseMemberNames;
   
   document.getElementById("settingsModal").classList.remove("hidden");
 }
@@ -2268,20 +2371,20 @@ function saveSettings() {
   includeBillTypeInMoved = document.getElementById("includeBillTypeInMovedCheckbox").checked;
   localStorage.setItem("includeBillTypeInMoved", includeBillTypeInMoved);
   
-  // NEW: Save the new forceSenatorTerms setting.
   forceSenatorTerms = document.getElementById("forceSenatorTermsCheckbox").checked;
   localStorage.setItem("forceSenatorTerms", forceSenatorTerms);
+  
+  rollCallUseMemberNames = document.getElementById("rollCallUseMemberNamesCheckbox").checked;
+  localStorage.setItem("rollCallUseMemberNames", rollCallUseMemberNames);
   
   closeSettingsModal();
   console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly,
               "meetingActionsWithoutMember =", meetingActionsWithoutMember,
               "includeBillTypeInRollCall =", includeBillTypeInRollCall,
               "includeBillTypeInMoved =", includeBillTypeInMoved,
-              "forceSenatorTerms =", forceSenatorTerms);
+              "forceSenatorTerms =", forceSenatorTerms,
+              "rollCallUseMemberNames =", rollCallUseMemberNames);
 }
-
-
-
 
 
 // Attach event listener to the settings button.
