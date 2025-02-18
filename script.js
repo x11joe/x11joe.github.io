@@ -1466,6 +1466,11 @@ function updateStatement() {
     parts.push(formattedMember);
     parts.push(mainAction);
   }
+  else if (mainAction === "Withdrew") { //We can't put this up above, because it needs so say 'Withdrew Motion' not just withdrew
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    parts.push(formattedMember);
+    parts.push("Withdrew Motion");
+  }
   
   constructedStatement = parts.length ? parts.join(" - ") : "[Click a member and an action]";
   document.getElementById("log").innerText = constructedStatement;
