@@ -12,6 +12,7 @@ let editingTestimonyIndex = null;
 
 // Global variable for including bill type SB or HB in roll call vote statements:
 let includeBillTypeInRollCall = (localStorage.getItem("includeBillTypeInRollCall") === "true");
+let includeBillTypeInMoved = (localStorage.getItem("includeBillTypeInMoved") === "true");
 
 // Global variable for XML member info mapping:
 let memberInfoMapping = {};
@@ -1222,9 +1223,16 @@ function showBillTypeSection(visible) {
     billTypeSection.classList.remove("hidden");
     const billTypeContainer = document.getElementById("bill-type-container");
     billTypeContainer.innerHTML = "";
-
-    const types = ["SB", "HB", "Amendment", "Reconsider"];
-
+    
+    // If the current main action is "Moved" and the moved setting is off,
+    // show a generic "Bill" button instead of SB/HB.
+    let types;
+    if (mainAction === "Moved" && !includeBillTypeInMoved) {
+      types = ["Bill", "Amendment", "Reconsider"];
+    } else {
+      types = ["SB", "HB", "Amendment", "Reconsider"];
+    }
+    
     types.forEach((t) => {
       const btn = document.createElement("button");
       btn.innerText = t;
@@ -1235,6 +1243,7 @@ function showBillTypeSection(visible) {
     billTypeSection.classList.add("hidden");
   }
 }
+
 
 function selectBillType(type, btn) {
   selectedBillType = type;
@@ -1460,25 +1469,35 @@ function updateStatement() {
     parts.push(applyUseLastNamesOnly(selectedMember));
     if (selectedBillType === "Reconsider") {
       parts.push("Moved to Reconsider");
-    } else if (selectedBillType) {
-      if (selectedBillType === "Amendment") {
-        parts.push(`Moved ${selectedBillType}`);
-      } else {
-        if (selectedSubAction) {
-          parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+    } else if (includeBillTypeInMoved) {
+      // When the setting is enabled, use the selected bill type as usual.
+      if (selectedBillType) {
+        if (selectedBillType === "Amendment") {
+          parts.push(`Moved ${selectedBillType}`);
         } else {
-          parts.push(`Moved on ${selectedBillType}`);
+          if (selectedSubAction) {
+            parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+          } else {
+            parts.push(`Moved on ${selectedBillType}`);
+          }
         }
+      } else if (selectedSubAction) {
+        parts.push(`Moved ${selectedSubAction}`);
+      } else {
+        parts.push("Moved");
       }
-    } else if (selectedSubAction) {
-      parts.push(`Moved ${selectedSubAction}`);
     } else {
-      parts.push("Moved");
+      // When includeBillTypeInMoved is false, ignore the selected bill type (even if "Bill" is chosen)
+      if (selectedSubAction) {
+        parts.push(`Moved ${selectedSubAction}`);
+      } else {
+        parts.push("Moved");
+      }
     }
     if (selectedRereferCommittee) {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
-  }
+  }  
   else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
@@ -2204,8 +2223,10 @@ function openSettingsModal() {
   document.getElementById("useLastNamesCheckbox").checked = useLastNamesOnly;
   document.getElementById("meetingActionsWithoutMemberCheckbox").checked = meetingActionsWithoutMember;
   document.getElementById("includeBillTypeInRollCallCheckbox").checked = includeBillTypeInRollCall;
+  document.getElementById("includeBillTypeInMovedCheckbox").checked = includeBillTypeInMoved;
   document.getElementById("settingsModal").classList.remove("hidden");
 }
+
 
 
 function closeSettingsModal() {
@@ -2222,11 +2243,16 @@ function saveSettings() {
   includeBillTypeInRollCall = document.getElementById("includeBillTypeInRollCallCheckbox").checked;
   localStorage.setItem("includeBillTypeInRollCall", includeBillTypeInRollCall);
   
+  includeBillTypeInMoved = document.getElementById("includeBillTypeInMovedCheckbox").checked;
+  localStorage.setItem("includeBillTypeInMoved", includeBillTypeInMoved);
+  
   closeSettingsModal();
   console.log("Settings saved. useLastNamesOnly =", useLastNamesOnly,
               "meetingActionsWithoutMember =", meetingActionsWithoutMember,
-              "includeBillTypeInRollCall =", includeBillTypeInRollCall);
+              "includeBillTypeInRollCall =", includeBillTypeInRollCall,
+              "includeBillTypeInMoved =", includeBillTypeInMoved);
 }
+
 
 
 
