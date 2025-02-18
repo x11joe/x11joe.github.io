@@ -1449,17 +1449,37 @@ function showRollCallMemberButtons(existingVotes) {
 function recalcRollCallVotes() {
   const container = document.getElementById("rollCallMembersContainer");
   let countFor = 0, countAgainst = 0, countNeutral = 0;
+  let votesForArr = [];
+  let votesAgainstArr = [];
   container.querySelectorAll("button").forEach(btn => {
     const vote = btn.dataset.vote;
-    if (vote === "for") countFor++;
-    else if (vote === "against") countAgainst++;
-    else countNeutral++;
+    if (vote === "for") {
+      countFor++;
+      votesForArr.push(btn.innerText);
+    } else if (vote === "against") {
+      countAgainst++;
+      votesAgainstArr.push(btn.innerText);
+    } else {
+      countNeutral++;
+    }
   });
   forVal = countFor;
   againstVal = countAgainst;
   neutralVal = countNeutral;
   updateVoteTallyDisplay();
+  
+  // Update the in-progress row's dataset (so that mousing over shows correct vote info)
+  if (inProgressRow) {
+    inProgressRow.dataset.votes = JSON.stringify({
+      for: votesForArr,
+      against: votesAgainstArr
+    });
+  }
+  
+  // Update the constructed statement so the temporary history record is current.
+  updateStatement();
 }
+
 
 function updateVoteTallyDisplay() {
   // First, try updating the roll call counts display (if it exists).
