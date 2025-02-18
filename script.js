@@ -670,10 +670,6 @@ function createNewRowInHistory(fileLink = "") {
   const recordTime = statementStartTime;
   const tableBody = document.getElementById("historyTableBody");
   inProgressRow = document.createElement("tr");
-
-  if (rollCallUseMemberNames && newRecord.votes) {
-    inProgressRow.dataset.votes = JSON.stringify(newRecord.votes);
-  }
   
   // If a member is selected, store it as a data attribute on the row.
   if (selectedMember) {
@@ -702,6 +698,10 @@ function createNewRowInHistory(fileLink = "") {
     voiceVoteOutcome: voiceVoteOutcome,
     selectedRereferCommittee: selectedRereferCommittee
   };
+
+  if (rollCallUseMemberNames && newRecord.votes) {
+    inProgressRow.dataset.votes = JSON.stringify(newRecord.votes);
+  }
 
   // Time cell as an editable field:
   const localTimeCell = document.createElement("td");
