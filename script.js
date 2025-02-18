@@ -1347,7 +1347,7 @@ function showVoteTallySection(visible) {
   }
 }
 
-ffunction showRollCallMemberButtons(existingVotes) {
+function showRollCallMemberButtons(existingVotes) {
   const tallySec = document.getElementById("vote-tally-section");
   tallySec.classList.remove("hidden"); // Ensure the section is visible
   // Clear the vote-tally section completely.
