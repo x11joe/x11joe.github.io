@@ -66,49 +66,78 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    -------------------------- */
 
    // --- Helper: Update a row’s tooltip based on vote data ---
-function updateRowVoteTooltip(row, votes) {
-  if (votes && votes.for && votes.against) {
-    row.title = `For: ${votes.for.join(", ")}; Against: ${votes.against.join(", ")}`;
-    console.log("updateRowVoteTooltip: Set row title to:", row.title);
-  } else {
-    row.title = "";
-    console.log("updateRowVoteTooltip: Cleared row title.");
+   function updateRowVoteTooltip(row, votes) {
+    // Build HTML even if votes is empty so the tooltip always exists.
+    let tooltipHTML = "<div>";
+    
+    // For votes cast "for"
+    if (votes && votes.for && votes.for.length > 0) {
+      tooltipHTML += votes.for
+        .map(member => `<div style="color:green;">✓ ${member}</div>`)
+        .join("");
+    }
+    
+    // For votes cast "against"
+    if (votes && votes.against && votes.against.length > 0) {
+      tooltipHTML += votes.against
+        .map(member => `<div style="color:red;">✗ ${member}</div>`)
+        .join("");
+    }
+    
+    // Optionally, compute neutral votes (members not in for or against).
+    if (rollCallUseMemberNames && currentCommittee && committees[currentCommittee]) {
+      const allMembers = committees[currentCommittee];
+      const neutralMembers = allMembers.filter(member => {
+        return !(votes.for && votes.for.includes(member)) &&
+               !(votes.against && votes.against.includes(member));
+      });
+      if (neutralMembers.length > 0) {
+        tooltipHTML += neutralMembers
+          .map(member => `<div style="color:gray;">⚪ ${member}</div>`)
+          .join("");
+      }
+    }
+    
+    tooltipHTML += "</div>";
+    // Instead of using the standard title attribute, we save our custom HTML in a data attribute.
+    row.dataset.tooltipHtml = tooltipHTML;
+    console.log("updateRowVoteTooltip: Set row tooltip HTML to:", tooltipHTML);
   }
-}
 
 // --- Custom tooltip helper for a row ---
 function attachTooltipToRow(row) {
   console.log("attachTooltipToRow: Attaching tooltip for row:", row);
   
-  // Add additional event listeners for debugging
-  row.addEventListener("mouseover", function(e) {
-    console.log("mouseover event fired on row:", row);
-  });
+  // Remove any existing tooltip if present
+  if (row._tooltip) {
+    row._tooltip.remove();
+    row._tooltip = null;
+  }
   
-  row.addEventListener("mousemove", function(e) {
-    console.log("mousemove event fired on row:", row);
-  });
-  
-  row.addEventListener("mouseout", function(e) {
-    console.log("mouseout event fired on row:", row);
-  });
-  
-  // Use mouseenter to create the tooltip.
+  // When the mouse enters the row, create the tooltip.
   row.addEventListener("mouseenter", function(e) {
     console.log("mouseenter event fired on row:", row);
-    const tooltipText = row.title || "";
-    console.log("Tooltip text found:", tooltipText);
-    if (!tooltipText) return;
+    // Get our custom tooltip HTML if available; fallback to row.title.
+    const tooltipHTML = row.dataset.tooltipHtml || row.title || "";
+    console.log("Tooltip HTML found:", tooltipHTML);
+    if (!tooltipHTML) return;
     let tooltip = document.createElement("div");
     tooltip.className = "row-tooltip";
-    tooltip.innerText = tooltipText;
+    tooltip.innerHTML = tooltipHTML; // use innerHTML for formatting
     document.body.appendChild(tooltip);
     row._tooltip = tooltip;
     positionTooltip(e, tooltip);
     console.log("Tooltip created and positioned:", tooltip);
   });
   
-  // Use mouseleave to remove the tooltip.
+  // As the mouse moves over the row, update the tooltip position.
+  row.addEventListener("mousemove", function(e) {
+    if (row._tooltip) {
+      positionTooltip(e, row._tooltip);
+    }
+  });
+  
+  // When the mouse leaves the row, remove the tooltip.
   row.addEventListener("mouseleave", function(e) {
     console.log("mouseleave event fired on row:", row);
     if (row._tooltip) {
@@ -1955,7 +1984,7 @@ function loadHistoryFromLocalStorage() {
     for (let i = 0; i < historyRecords.length; i++) {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
-      
+
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
         updateRowVoteTooltip(tr, record.votes);
