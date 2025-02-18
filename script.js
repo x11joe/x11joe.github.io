@@ -1411,9 +1411,11 @@ function updateStatement() {
     return;
   }
   
-  if (mainAction === "Motion Failed for lack of a second" ||
-      mainAction === "Motion for Do Pass failed for lack of a second" ||
-      mainAction === "Motion for Do Not Pass failed for lack of a second") {
+  if (
+    mainAction === "Motion Failed for lack of a second" ||
+    mainAction === "Motion for Do Pass failed for lack of a second" ||
+    mainAction === "Motion for Do Not Pass failed for lack of a second"
+  ) {
     constructedStatement = mainAction;
     document.getElementById("log").innerText = constructedStatement;
     updateInProgressRow();
@@ -1432,7 +1434,6 @@ function updateStatement() {
   let parts = [];
   
   if (mainAction.startsWith("Roll Call Vote on")) {
-    // NEW: Build the action text based on the new setting.
     let actionText = "Roll Call Vote";
     if (includeBillTypeInRollCall) {
       let billType = getPreviousBillType();
@@ -1469,17 +1470,20 @@ function updateStatement() {
     parts.push(applyUseLastNamesOnly(selectedMember));
     if (selectedBillType === "Reconsider") {
       parts.push("Moved to Reconsider");
+    } else if (selectedBillType === "Amendment") {
+      // Always include Amendment regardless of the setting.
+      parts.push("Moved Amendment");
     } else if (includeBillTypeInMoved) {
       // When the setting is enabled, use the selected bill type as usual.
       if (selectedBillType) {
-        if (selectedBillType === "Amendment") {
-          parts.push(`Moved ${selectedBillType}`);
-        } else {
+        if (selectedBillType === "SB" || selectedBillType === "HB") {
           if (selectedSubAction) {
             parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
           } else {
             parts.push(`Moved on ${selectedBillType}`);
           }
+        } else {
+          parts.push(`Moved ${selectedBillType}`);
         }
       } else if (selectedSubAction) {
         parts.push(`Moved ${selectedSubAction}`);
@@ -1487,7 +1491,7 @@ function updateStatement() {
         parts.push("Moved");
       }
     } else {
-      // When includeBillTypeInMoved is false, ignore the selected bill type (even if "Bill" is chosen)
+      // When includeBillTypeInMoved is false, ignore the selected bill type (except Amendment, handled above)
       if (selectedSubAction) {
         parts.push(`Moved ${selectedSubAction}`);
       } else {
@@ -1497,7 +1501,7 @@ function updateStatement() {
     if (selectedRereferCommittee) {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
-  }  
+  }
   else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
@@ -1515,6 +1519,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 
 
