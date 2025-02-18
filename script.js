@@ -74,6 +74,55 @@ function updateRowVoteTooltip(row, votes) {
   }
 }
 
+// --- Custom tooltip helper for a row ---
+function attachTooltipToRow(row) {
+  // Remove any existing tooltip
+  if (row._tooltip) {
+    row._tooltip.remove();
+    row._tooltip = null;
+  }
+  // When mouse enters the row, create a tooltip element
+  row.addEventListener("mouseenter", function(e) {
+    const tooltipText = row.title || "";
+    if (!tooltipText) return;
+    let tooltip = document.createElement("div");
+    tooltip.className = "row-tooltip";
+    tooltip.innerText = tooltipText;
+    document.body.appendChild(tooltip);
+    row._tooltip = tooltip;
+    // Position the tooltip near the cursor initially
+    positionTooltip(e, tooltip);
+  });
+  // Update tooltip position as the mouse moves
+  row.addEventListener("mousemove", function(e) {
+    if (row._tooltip) {
+      positionTooltip(e, row._tooltip);
+    }
+  });
+  // Remove the tooltip on mouse leave
+  row.addEventListener("mouseleave", function() {
+    if (row._tooltip) {
+      row._tooltip.remove();
+      row._tooltip = null;
+    }
+  });
+}
+
+// Helper to position the tooltip near the cursor
+function positionTooltip(e, tooltip) {
+  const offset = 10;
+  tooltip.style.position = "absolute";
+  tooltip.style.left = (e.pageX + offset) + "px";
+  tooltip.style.top = (e.pageY + offset) + "px";
+  tooltip.style.padding = "4px 8px";
+  tooltip.style.backgroundColor = "#333";
+  tooltip.style.color = "#fff";
+  tooltip.style.borderRadius = "4px";
+  tooltip.style.fontSize = "12px";
+  tooltip.style.pointerEvents = "none"; // so it doesn't block hover events
+}
+
+
 // Helper to normalize a name (trim and convert to lower case).
 function normalizeName(name) {
   return name.trim().toLowerCase();
@@ -1481,14 +1530,14 @@ function recalcRollCallVotes() {
   if (inProgressRow) {
     const votesObj = { for: votesForArr, against: votesAgainstArr };
     inProgressRow.dataset.votes = JSON.stringify(votesObj);
-    // Also update the title (tooltip)
+    // Also update the title (tooltip) and attach our custom tooltip
     updateRowVoteTooltip(inProgressRow, votesObj);
+    attachTooltipToRow(inProgressRow);
   }
   
   // Update the constructed statement so the temporary record is current.
   updateStatement();
 }
-
 
 function updateVoteTallyDisplay() {
   // First, try updating the roll call counts display (if it exists).
@@ -1903,6 +1952,7 @@ function loadHistoryFromLocalStorage() {
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
         updateRowVoteTooltip(tr, record.votes);
+        attachTooltipToRow(tr);
       }
       
       if (record.member) {

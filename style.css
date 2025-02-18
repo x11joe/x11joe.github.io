@@ -32,6 +32,18 @@ body {
      transition: 0.3s;
 }
 
+.row-tooltip {
+  position: absolute;
+  z-index: 2000;
+  padding: 4px 8px;
+  background-color: #333;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* Optional: Additional styling for Lookup Members Modal */
 #lookupMembersModal {
   position: fixed;
