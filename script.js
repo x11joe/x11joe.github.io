@@ -1254,8 +1254,8 @@ function selectBillType(type, btn) {
   document.querySelectorAll("#bill-type-container button").forEach((b) => b.classList.remove("selected"));
   btn.classList.add("selected");
   
-  // If SB or HB, show sub-actions; if Amendment, hide sub-actions.
-  if (type === "SB" || type === "HB") {
+  // For SB, HB, or Bill, show sub-actions (e.g., "Do Pass" / "Do Not Pass")
+  if (type === "SB" || type === "HB" || type === "Bill") {
     showMovedSubActions();
   } else {
     document.getElementById("sub-actions").classList.add("hidden");
@@ -1263,6 +1263,7 @@ function selectBillType(type, btn) {
     selectedRereferCommittee = "";
   }
 }
+
 
 
 // "As Amended" for Roll Call Vote on SB
