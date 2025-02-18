@@ -65,6 +65,23 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+// Helper to normalize a name (trim and convert to lower case).
+function normalizeName(name) {
+  return name.trim().toLowerCase();
+}
+
+// Helper to compare two names.
+// Returns true if they match exactly after normalization or if their last names match.
+function namesMatch(name1, name2) {
+  let n1 = normalizeName(name1);
+  let n2 = normalizeName(name2);
+  if (n1 === n2) return true;
+  // Otherwise, compare the last words (last names)
+  let parts1 = n1.split(" ");
+  let parts2 = n2.split(" ");
+  return parts1[parts1.length - 1] === parts2[parts2.length - 1];
+}
+
 function getPreviousBillType() {
   // Look backwards through historyRecords for a "Moved" statement that includes "on SB" or "on HB"
   for (let i = historyRecords.length - 1; i >= 0; i--) {
@@ -1350,24 +1367,23 @@ function showVoteTallySection(visible) {
 function showRollCallMemberButtons(existingVotes) {
   const tallySec = document.getElementById("vote-tally-section");
   tallySec.classList.remove("hidden"); // Ensure the section is visible
-  // Clear the vote-tally section completely.
-  tallySec.innerHTML = "";
-  
+  tallySec.innerHTML = ""; // Clear any previous content
+
   // Create a container for roll call member buttons.
   const container = document.createElement("div");
   container.id = "rollCallMembersContainer";
   container.style.margin = "5px 0";
-  
+
   // Get the committee members.
   const members = committees[currentCommittee] || [];
   
-  // Initialize counts.
+  // Initialize vote counts.
   let countFor = 0, countAgainst = 0;
   
   members.forEach(member => {
     const btn = document.createElement("button");
     btn.innerText = member;
-    // Default vote state is neutral.
+    // Default vote state is "neutral"
     btn.dataset.vote = "neutral";
     btn.style.backgroundColor = "#007bff"; // blue for neutral
     btn.style.color = "#fff";
@@ -1376,21 +1392,28 @@ function showRollCallMemberButtons(existingVotes) {
     btn.style.padding = "5px 10px";
     btn.style.cursor = "pointer";
     
-    // If we're editing and have existing vote data, update this button.
+    // If we have existing vote data (from record.votes), use it.
+    // Use namesMatch to compare the stored vote name with the displayed member.
     if (existingVotes) {
-      if (existingVotes.for && existingVotes.for.includes(member)) {
+      if (
+        existingVotes.for &&
+        existingVotes.for.some(vote => namesMatch(vote, member))
+      ) {
         btn.dataset.vote = "for";
         btn.style.backgroundColor = "green";
         countFor++;
-      } else if (existingVotes.against && existingVotes.against.includes(member)) {
+      } else if (
+        existingVotes.against &&
+        existingVotes.against.some(vote => namesMatch(vote, member))
+      ) {
         btn.dataset.vote = "against";
         btn.style.backgroundColor = "red";
         countAgainst++;
       }
     }
     
+    // When the user clicks a button, cycle its state.
     btn.addEventListener("click", function() {
-      // Cycle the vote state: neutral → for → against → neutral.
       let currentVote = btn.dataset.vote;
       if (currentVote === "neutral") {
         btn.dataset.vote = "for";
@@ -1410,23 +1433,17 @@ function showRollCallMemberButtons(existingVotes) {
   
   tallySec.appendChild(container);
   
-  // Create a div to display the counts.
+  // Create a div to display the vote counts.
   const countsDiv = document.createElement("div");
   countsDiv.id = "rollCallCounts";
   countsDiv.style.marginTop = "10px";
   countsDiv.style.fontWeight = "bold";
   tallySec.appendChild(countsDiv);
   
-  // If editing, calculate counts based on the existing votes.
-  if (existingVotes) {
-    neutralVal = members.length - (countFor + countAgainst);
-    forVal = countFor;
-    againstVal = countAgainst;
-  } else {
-    neutralVal = members.length;
-    forVal = 0;
-    againstVal = 0;
-  }
+  // Calculate the remaining neutral votes.
+  neutralVal = members.length - (countFor + countAgainst);
+  forVal = countFor;
+  againstVal = countAgainst;
   updateVoteTallyDisplay();
 }
 
