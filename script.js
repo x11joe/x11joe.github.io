@@ -453,8 +453,6 @@ function editTestimonyRecord(index) {
 
 function populateEditUI() {
   // --- Added fix for edit mode ---
-  // If mainAction is stored as "Roll Call Vote on Bill" but selectedBillType is Amendment or Reconsider,
-  // override mainAction for the UI so that the correct button is highlighted.
   if (mainAction === "Roll Call Vote on Bill" && (selectedBillType === "Amendment" || selectedBillType === "Reconsider")) {
     mainAction = "Roll Call Vote on " + selectedBillType;
   }
@@ -482,7 +480,6 @@ function populateEditUI() {
   // Highlight main action buttons.
   document.querySelectorAll("#mainActionsSection button").forEach(btn => {
     let btnText = btn.innerText.trim();
-    // Only highlight the button if it exactly matches the stored mainAction for roll call votes.
     if (
       (mainAction === "Roll Call Vote on Bill" && btnText === "Roll Call Vote on Bill") ||
       (mainAction === "Roll Call Vote on Amendment" && btnText === "Roll Call Vote on Amendment") ||
@@ -499,7 +496,7 @@ function populateEditUI() {
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
 
-    // For SB or HB votes, show the bill type section ONLY if includeBillTypeInRollCall is true.
+    // For SB or HB votes, show the bill type section ONLY if the setting is enabled.
     if ((selectedBillType === "SB" || selectedBillType === "HB") && includeBillTypeInRollCall) {
       showBillTypeSection(true);
       document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -513,17 +510,28 @@ function populateEditUI() {
       document.getElementById("bill-type-section").classList.add("hidden");
     }
 
-    // Show the vote tally section and populate counts.
+    // For vote tally: if rollCallUseMemberNames is enabled, reconstruct vote data.
     if (rollCallUseMemberNames) {
-      // If editing and the record has vote details, use them.
       let existingVotes = null;
-      if (currentEditIndex !== null && historyRecords[currentEditIndex].votes) {
-        existingVotes = historyRecords[currentEditIndex].votes;
+      let record = historyRecords[currentEditIndex];
+      if (record.votes) {
+        existingVotes = record.votes;
+      } else {
+        // If votes weren't saved, build a dummy votes object from the stored counts.
+        existingVotes = { for: [], against: [] };
+        const members = committees[currentCommittee] || [];
+        // Mark the first record.forVal members as "for", then next record.againstVal as "against"
+        for (let i = 0; i < members.length; i++) {
+          if (i < record.forVal) {
+            existingVotes.for.push(members[i]);
+          } else if (i < record.forVal + record.againstVal) {
+            existingVotes.against.push(members[i]);
+          }
+        }
       }
       showRollCallMemberButtons(existingVotes);
     } else {
       showVoteTallySection(true);
-      // Update plus–minus elements if they exist.
       const forCountEl = document.getElementById("forCount");
       if (forCountEl) {
         document.getElementById("forCount").innerText = forVal;
@@ -532,7 +540,7 @@ function populateEditUI() {
       }
     }
     
-    // Show and highlight the carrier button if one was saved (only for SB/HB votes).
+    // Show and highlight the carrier button if one was saved.
     if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
       showBillCarrierSection(true);
       document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
@@ -543,7 +551,7 @@ function populateEditUI() {
         }
       });
     }
-
+    
     // Show the "As Amended" section only for SB votes.
     if (selectedBillType === "SB") {
       document.getElementById("as-amended-section").classList.remove("hidden");
@@ -555,9 +563,7 @@ function populateEditUI() {
     } else {
       document.getElementById("as-amended-section").classList.add("hidden");
     }
-
   } else if (mainAction === "Moved") {
-    // For "Moved", show the bill type section ONLY if includeBillTypeInMoved is true (for SB/HB votes).
     if ((selectedBillType === "SB" || selectedBillType === "HB") && includeBillTypeInMoved) {
       showBillTypeSection(true);
       document.querySelectorAll("#bill-type-container button").forEach(btn => {
@@ -571,7 +577,6 @@ function populateEditUI() {
       document.getElementById("bill-type-section").classList.add("hidden");
     }
 
-    // Only show sub-actions if the bill type is SB or HB.
     if (selectedBillType === "SB" || selectedBillType === "HB") {
       showMovedSubActions();
       document.querySelectorAll("#sub-actions-container button").forEach(btn => {
@@ -585,7 +590,6 @@ function populateEditUI() {
       document.getElementById("sub-actions").classList.add("hidden");
     }
 
-    // Rebuild the rerefer dropdown.
     let isHouse = currentCommittee.toLowerCase().includes("house");
     let possibleCommittees = [];
     for (let cName in committees) {
@@ -637,11 +641,6 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
-
-
-
-
-
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
@@ -1364,10 +1363,11 @@ function showVoteTallySection(visible) {
   }
 }
 
+// --- Roll Call Vote Button Functions ---
 function showRollCallMemberButtons(existingVotes) {
   const tallySec = document.getElementById("vote-tally-section");
   tallySec.classList.remove("hidden"); // Ensure the section is visible
-  tallySec.innerHTML = ""; // Clear any previous content
+  tallySec.innerHTML = ""; // Clear previous content
 
   // Create a container for roll call member buttons.
   const container = document.createElement("div");
@@ -1383,7 +1383,6 @@ function showRollCallMemberButtons(existingVotes) {
   members.forEach(member => {
     const btn = document.createElement("button");
     btn.innerText = member;
-    // Default vote state is "neutral"
     btn.dataset.vote = "neutral";
     btn.style.backgroundColor = "#007bff"; // blue for neutral
     btn.style.color = "#fff";
@@ -1391,9 +1390,8 @@ function showRollCallMemberButtons(existingVotes) {
     btn.style.border = "none";
     btn.style.padding = "5px 10px";
     btn.style.cursor = "pointer";
-    
-    // If we have existing vote data (from record.votes), use it.
-    // Use namesMatch to compare the stored vote name with the displayed member.
+
+    // If existingVotes data is available, mark the button accordingly.
     if (existingVotes) {
       if (
         existingVotes.for &&
@@ -1412,7 +1410,7 @@ function showRollCallMemberButtons(existingVotes) {
       }
     }
     
-    // When the user clicks a button, cycle its state.
+    // Allow the user to cycle the vote state.
     btn.addEventListener("click", function() {
       let currentVote = btn.dataset.vote;
       if (currentVote === "neutral") {
@@ -1433,15 +1431,16 @@ function showRollCallMemberButtons(existingVotes) {
   
   tallySec.appendChild(container);
   
-  // Create a div to display the vote counts.
+  // Create and add the vote counts display.
   const countsDiv = document.createElement("div");
   countsDiv.id = "rollCallCounts";
   countsDiv.style.marginTop = "10px";
   countsDiv.style.fontWeight = "bold";
   tallySec.appendChild(countsDiv);
   
-  // Calculate the remaining neutral votes.
-  neutralVal = members.length - (countFor + countAgainst);
+  // Calculate remaining neutral votes.
+  const totalMembers = members.length;
+  neutralVal = totalMembers - (countFor + countAgainst);
   forVal = countFor;
   againstVal = countAgainst;
   updateVoteTallyDisplay();
