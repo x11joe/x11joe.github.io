@@ -482,8 +482,8 @@ function populateEditUI() {
   if (mainAction.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
 
-    // For SB or HB votes, show the bill type section; for Amendment/Reconsider, hide it.
-    if (selectedBillType === "SB" || selectedBillType === "HB") {
+    // For SB or HB votes, show the bill type section ONLY if includeBillTypeInRollCall is true.
+    if ((selectedBillType === "SB" || selectedBillType === "HB") && includeBillTypeInRollCall) {
       showBillTypeSection(true);
       document.querySelectorAll("#bill-type-container button").forEach(btn => {
         if (btn.innerText.trim() === selectedBillType) {
@@ -515,7 +515,6 @@ function populateEditUI() {
       }
     }
     
-
     // Show and highlight the carrier button if one was saved (only for SB/HB votes).
     if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
       showBillCarrierSection(true);
@@ -541,14 +540,19 @@ function populateEditUI() {
     }
 
   } else if (mainAction === "Moved") {
-    showBillTypeSection(true);
-    document.querySelectorAll("#bill-type-container button").forEach(btn => {
-      if (btn.innerText.trim() === selectedBillType) {
-        btn.classList.add("selected");
-      } else {
-        btn.classList.remove("selected");
-      }
-    });
+    // For "Moved", show the bill type section ONLY if includeBillTypeInMoved is true (for SB/HB votes).
+    if ((selectedBillType === "SB" || selectedBillType === "HB") && includeBillTypeInMoved) {
+      showBillTypeSection(true);
+      document.querySelectorAll("#bill-type-container button").forEach(btn => {
+        if (btn.innerText.trim() === selectedBillType) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+    } else {
+      document.getElementById("bill-type-section").classList.add("hidden");
+    }
 
     // Only show sub-actions if the bill type is SB or HB.
     if (selectedBillType === "SB" || selectedBillType === "HB") {
@@ -616,6 +620,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 
 
@@ -1342,8 +1347,9 @@ function showVoteTallySection(visible) {
   }
 }
 
-function showRollCallMemberButtons(existingVotes) {
+ffunction showRollCallMemberButtons(existingVotes) {
   const tallySec = document.getElementById("vote-tally-section");
+  tallySec.classList.remove("hidden"); // Ensure the section is visible
   // Clear the vote-tally section completely.
   tallySec.innerHTML = "";
   
@@ -1423,8 +1429,6 @@ function showRollCallMemberButtons(existingVotes) {
   }
   updateVoteTallyDisplay();
 }
-
-
 
 function recalcRollCallVotes() {
   const container = document.getElementById("rollCallMembersContainer");
