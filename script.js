@@ -116,10 +116,10 @@ function attachTooltipToRow(row) {
   
   // When the mouse enters the row, create the tooltip.
   row.addEventListener("mouseenter", function(e) {
-    console.log("mouseenter event fired on row:", row);
+    //console.log("mouseenter event fired on row:", row);
     // Get our custom tooltip HTML if available; fallback to row.title.
     const tooltipHTML = row.dataset.tooltipHtml || row.title || "";
-    console.log("Tooltip HTML found:", tooltipHTML);
+    //console.log("Tooltip HTML found:", tooltipHTML);
     if (!tooltipHTML) return;
     let tooltip = document.createElement("div");
     tooltip.className = "row-tooltip";
@@ -127,7 +127,7 @@ function attachTooltipToRow(row) {
     document.body.appendChild(tooltip);
     row._tooltip = tooltip;
     positionTooltip(e, tooltip);
-    console.log("Tooltip created and positioned:", tooltip);
+    //console.log("Tooltip created and positioned:", tooltip);
   });
   
   // As the mouse moves over the row, update the tooltip position.
@@ -139,9 +139,9 @@ function attachTooltipToRow(row) {
   
   // When the mouse leaves the row, remove the tooltip.
   row.addEventListener("mouseleave", function(e) {
-    console.log("mouseleave event fired on row:", row);
+    //console.log("mouseleave event fired on row:", row);
     if (row._tooltip) {
-      console.log("Removing tooltip:", row._tooltip);
+      //console.log("Removing tooltip:", row._tooltip);
       row._tooltip.remove();
       row._tooltip = null;
     }
@@ -153,10 +153,11 @@ function positionTooltip(e, tooltip) {
   const offset = 10;
   tooltip.style.position = "absolute";
   tooltip.style.left = (e.pageX + offset) + "px";
-  tooltip.style.top = (e.pageY + offset) + "px";
-  // You can add more inline styles here if needed.
-  console.log("positionTooltip: Tooltip positioned at", tooltip.style.left, tooltip.style.top);
+  // Subtract the tooltip's height so it appears above the mouse:
+  tooltip.style.top = (e.pageY - tooltip.offsetHeight - offset) + "px";
+  //console.log("positionTooltip: Tooltip positioned at", tooltip.style.left, tooltip.style.top);
 }
+
 
 
 // Helper to normalize a name (trim and convert to lower case).
