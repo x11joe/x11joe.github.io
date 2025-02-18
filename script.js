@@ -65,6 +65,15 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
+   // --- Helper: Update a row’s tooltip based on vote data ---
+function updateRowVoteTooltip(row, votes) {
+  if (votes && votes.for && votes.against) {
+    row.title = `For: ${votes.for.join(", ")}; Against: ${votes.against.join(", ")}`;
+  } else {
+    row.title = "";
+  }
+}
+
 // Helper to normalize a name (trim and convert to lower case).
 function normalizeName(name) {
   return name.trim().toLowerCase();
@@ -1468,15 +1477,15 @@ function recalcRollCallVotes() {
   neutralVal = countNeutral;
   updateVoteTallyDisplay();
   
-  // Update the in-progress row's dataset (so that mousing over shows correct vote info)
+  // Update the in-progress row's dataset (so that Ctrl‑click uses it)
   if (inProgressRow) {
-    inProgressRow.dataset.votes = JSON.stringify({
-      for: votesForArr,
-      against: votesAgainstArr
-    });
+    const votesObj = { for: votesForArr, against: votesAgainstArr };
+    inProgressRow.dataset.votes = JSON.stringify(votesObj);
+    // Also update the title (tooltip)
+    updateRowVoteTooltip(inProgressRow, votesObj);
   }
   
-  // Update the constructed statement so the temporary history record is current.
+  // Update the constructed statement so the temporary record is current.
   updateStatement();
 }
 
@@ -1893,6 +1902,7 @@ function loadHistoryFromLocalStorage() {
 
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
+        updateRowVoteTooltip(tr, record.votes);
       }
       
       if (record.member) {
