@@ -19,7 +19,6 @@ let includeBillTypeInMoved = (localStorage.getItem("includeBillTypeInMoved") ===
 // and clicking a member button toggles that member’s vote.)
 let rollCallUseMemberNames = (localStorage.getItem("rollCallUseMemberNames") === "true");
 
-
 // Global Variable, if true, always use "Senator" or "Representative" instead of Chair/ Vice titles.
 let forceSenatorTerms = (localStorage.getItem("forceSenatorTerms") === "true");
 
@@ -612,7 +611,6 @@ function populateEditUI() {
 function finalizeEdit() {
   console.log("Finalizing edit for record index:", currentEditIndex);
   
-  // Abort if vote tally is 0-0-0 for roll call votes.
   if (mainAction.startsWith("Roll Call Vote on") && forVal === 0 && againstVal === 0 && neutralVal === 0) {
     alert("Roll call vote cannot have a 0-0-0 tally.");
     console.log("Edit finalization aborted due to vote tally being 0-0-0.");
@@ -646,7 +644,6 @@ function finalizeEdit() {
     }
   }
   
-  // Rebuild and update the constructed statement.
   updateStatement();
   record.statement = constructedStatement;
   
@@ -661,9 +658,6 @@ function finalizeEdit() {
   resetSelections();
   console.log("Edit finalization completed.");
 }
-
-
-
 
 function createNewRowInHistory(fileLink = "") {
   // Capture the current timestamp.
@@ -1320,15 +1314,14 @@ function showVoteTallySection(visible) {
   const tallySec = document.getElementById("vote-tally-section");
   if (visible) {
     tallySec.classList.remove("hidden");
-    // If the new roll call option is enabled, build the member buttons UI.
     if (rollCallUseMemberNames) {
       showRollCallMemberButtons();
     } else {
-      // Otherwise, if not editing, reset the plus–minus vote counts.
+      // In non–member button mode, if not editing, reset the plus/minus counts.
       if (currentEditIndex === null) {
         resetVoteTally();
       }
-      // (Assume your existing plus/minus UI remains as is.)
+      // (Assume your existing plus–minus controls remain in the HTML.)
     }
   } else {
     tallySec.classList.add("hidden");
@@ -1337,28 +1330,27 @@ function showVoteTallySection(visible) {
 
 function showRollCallMemberButtons() {
   const tallySec = document.getElementById("vote-tally-section");
-  // Clear the vote tally section.
+  // Clear the vote-tally section completely.
   tallySec.innerHTML = "";
   
-  // Create a container for the roll call member buttons.
+  // Create a container for roll call member buttons.
   const container = document.createElement("div");
   container.id = "rollCallMembersContainer";
   container.style.margin = "5px 0";
   
-  // Get the list of members for the current committee.
+  // Get the committee members.
   const members = committees[currentCommittee] || [];
-  // Initialize the counts: by default all members are neutral.
+  // Initialize counts: all start as neutral.
   neutralVal = members.length;
   forVal = 0;
   againstVal = 0;
   
   members.forEach(member => {
     const btn = document.createElement("button");
-    // You may choose to format the name using applyUseLastNamesOnly if desired.
+    // Optionally format using applyUseLastNamesOnly.
     btn.innerText = member;
-    btn.dataset.vote = "neutral"; // Possible values: "neutral", "for", "against"
-    // Set initial style for neutral (blue)
-    btn.style.backgroundColor = "#007bff";
+    btn.dataset.vote = "neutral"; // initial state
+    btn.style.backgroundColor = "#007bff"; // blue for neutral
     btn.style.color = "#fff";
     btn.style.margin = "2px";
     btn.style.border = "none";
@@ -1366,7 +1358,7 @@ function showRollCallMemberButtons() {
     btn.style.cursor = "pointer";
     
     btn.addEventListener("click", function() {
-      // Cycle the vote state: neutral → for → against → neutral.
+      // Cycle: neutral → for → against → neutral.
       let currentVote = btn.dataset.vote;
       if (currentVote === "neutral") {
         btn.dataset.vote = "for";
@@ -1384,23 +1376,26 @@ function showRollCallMemberButtons() {
   });
   
   tallySec.appendChild(container);
+  
+  // Create a div to display the counts.
+  const countsDiv = document.createElement("div");
+  countsDiv.id = "rollCallCounts";
+  countsDiv.style.marginTop = "10px";
+  countsDiv.style.fontWeight = "bold";
+  tallySec.appendChild(countsDiv);
+  
   updateVoteTallyDisplay();
 }
 
 function recalcRollCallVotes() {
-  // Recalculate forVal, againstVal, and neutralVal based on the buttons’ dataset values.
   const container = document.getElementById("rollCallMembersContainer");
-  let countFor = 0;
-  let countAgainst = 0;
-  let countNeutral = 0;
-  
+  let countFor = 0, countAgainst = 0, countNeutral = 0;
   container.querySelectorAll("button").forEach(btn => {
     const vote = btn.dataset.vote;
     if (vote === "for") countFor++;
     else if (vote === "against") countAgainst++;
     else countNeutral++;
   });
-  
   forVal = countFor;
   againstVal = countAgainst;
   neutralVal = countNeutral;
@@ -1408,11 +1403,21 @@ function recalcRollCallVotes() {
 }
 
 function updateVoteTallyDisplay() {
-  // Update your UI elements that display the counts.
-  // (Assuming you have elements with these ids in your vote-tally section.)
-  document.getElementById("forCount").innerText = forVal;
-  document.getElementById("againstCount").innerText = againstVal;
-  document.getElementById("neutralCount").innerText = neutralVal;
+  // First, try updating the roll call counts display (if it exists).
+  const countsDiv = document.getElementById("rollCallCounts");
+  if (countsDiv) {
+    countsDiv.innerText = `For: ${forVal}   Against: ${againstVal}   Neutral: ${neutralVal}`;
+  } else {
+    // Fallback to existing elements (for plus–minus UI)
+    let forCountEl = document.getElementById("forCount");
+    let againstCountEl = document.getElementById("againstCount");
+    let neutralCountEl = document.getElementById("neutralCount");
+    if (forCountEl && againstCountEl && neutralCountEl) {
+         forCountEl.innerText = forVal;
+         againstCountEl.innerText = againstVal;
+         neutralCountEl.innerText = neutralVal;
+    }
+  }
 }
 
 // Bill Carrier
@@ -1636,15 +1641,19 @@ function updateStatement() {
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
 
-
 function resetVoteTally() {
-  // For the plus/minus UI, your existing code remains.
+  // For the plus–minus UI mode.
   forVal = 0;
   againstVal = 0;
   neutralVal = 0;
-  document.getElementById("forCount").innerText = 0;
-  document.getElementById("againstCount").innerText = 0;
-  document.getElementById("neutralCount").innerText = 0;
+  let forCountEl = document.getElementById("forCount");
+  let againstCountEl = document.getElementById("againstCount");
+  let neutralCountEl = document.getElementById("neutralCount");
+  if (forCountEl && againstCountEl && neutralCountEl) {
+    forCountEl.innerText = 0;
+    againstCountEl.innerText = 0;
+    neutralCountEl.innerText = 0;
+  }
 }
 
 // Meeting actions
@@ -1802,7 +1811,11 @@ function loadHistoryFromLocalStorage() {
     for (let i = 0; i < historyRecords.length; i++) {
       let record = historyRecords[i];
       let tr = document.createElement("tr");
-
+      
+      if (record.votes) {
+        tr.dataset.votes = JSON.stringify(record.votes);
+      }
+      
       if (record.member) {
         tr.setAttribute("data-member", record.member);
       }
@@ -2350,8 +2363,6 @@ function openSettingsModal() {
   
   document.getElementById("settingsModal").classList.remove("hidden");
 }
-
-
 
 
 function closeSettingsModal() {
