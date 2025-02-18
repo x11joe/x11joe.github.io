@@ -1451,8 +1451,10 @@ function updateStatement() {
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
+    // Here we apply the useLastNamesOnly setting for the bill carrier.
     if (selectedBillType === "SB" && selectedCarrier) {
-      parts.push(`${selectedCarrier} Carried the Bill`);
+      let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
+      parts.push(`${carrierName} Carried the Bill`);
     }
   }
   else if (mainAction.startsWith("Voice Vote on")) {
@@ -1520,8 +1522,6 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
-
-
 
 
 function resetVoteTally() {
