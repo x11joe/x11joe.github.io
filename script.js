@@ -66,8 +66,7 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    -------------------------- */
 
    // --- Helper: Update a row’s tooltip based on vote data ---
-   function updateRowVoteTooltip(row, votes) {
-    // Build HTML even if votes is empty so the tooltip always exists.
+   function updateRowVoteTooltip(el, votes) {
     let tooltipHTML = "<div>";
     
     // For votes cast "for"
@@ -84,7 +83,7 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
         .join("");
     }
     
-    // Optionally, compute neutral votes (members not in for or against).
+    // Compute neutral votes (optional)
     if (rollCallUseMemberNames && currentCommittee && committees[currentCommittee]) {
       const allMembers = committees[currentCommittee];
       const neutralMembers = allMembers.filter(member => {
@@ -99,10 +98,11 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
     }
     
     tooltipHTML += "</div>";
-    // Instead of using the standard title attribute, we save our custom HTML in a data attribute.
-    row.dataset.tooltipHtml = tooltipHTML;
-    console.log("updateRowVoteTooltip: Set row tooltip HTML to:", tooltipHTML);
+    // Save our custom HTML to the element's data attribute
+    el.dataset.tooltipHtml = tooltipHTML;
+    console.log("updateRowVoteTooltip: Set tooltip HTML to:", tooltipHTML);
   }
+  
 
 // --- Custom tooltip helper for a row ---
 function attachTooltipToRow(row) {
@@ -148,14 +148,45 @@ function attachTooltipToRow(row) {
   });
 }
 
+function attachTooltipToElement(el) {
+  // Remove any existing tooltip if present
+  if (el._tooltip) {
+    el._tooltip.remove();
+    el._tooltip = null;
+  }
+  el.addEventListener("mouseenter", function(e) {
+    const tooltipHTML = el.dataset.tooltipHtml || "";
+    if (!tooltipHTML) return;
+    let tooltip = document.createElement("div");
+    tooltip.className = "row-tooltip";
+    tooltip.innerHTML = tooltipHTML; // allow custom formatting via innerHTML
+    document.body.appendChild(tooltip);
+    el._tooltip = tooltip;
+    positionTooltip(e, tooltip);
+  });
+  el.addEventListener("mousemove", function(e) {
+    if (el._tooltip) {
+      positionTooltip(e, el._tooltip);
+    }
+  });
+  el.addEventListener("mouseleave", function(e) {
+    if (el._tooltip) {
+      el._tooltip.remove();
+      el._tooltip = null;
+    }
+  });
+}
+
+
 // Helper to position the tooltip near the cursor with logging.
+// --- Modified positionTooltip so the tooltip appears above the mouse ---
 function positionTooltip(e, tooltip) {
   const offset = 10;
   tooltip.style.position = "absolute";
   tooltip.style.left = (e.pageX + offset) + "px";
-  // Subtract the tooltip's height so it appears above the mouse:
+  // Place the tooltip above the mouse by subtracting its height:
   tooltip.style.top = (e.pageY - tooltip.offsetHeight - offset) + "px";
-  //console.log("positionTooltip: Tooltip positioned at", tooltip.style.left, tooltip.style.top);
+  //console.log("positionTooltip: Positioned tooltip at", tooltip.style.left, tooltip.style.top);
 }
 
 
@@ -859,7 +890,7 @@ function createNewRowInHistory(fileLink = "") {
   });
   inProgressRow.appendChild(localTimeCell);
 
-  // Statement cell
+  // Statement cell (only here we attach the tooltip)
   const localStatementCell = document.createElement("td");
   localStatementCell.textContent = constructedStatement;
   localStatementCell.classList.add("clickable");
@@ -873,6 +904,12 @@ function createNewRowInHistory(fileLink = "") {
   });
   inProgressRow.appendChild(localStatementCell);
 
+  // If newRecord already has votes, update tooltip on the statement cell
+  if (newRecord.votes) {
+    updateRowVoteTooltip(localStatementCell, newRecord.votes);
+    attachTooltipToElement(localStatementCell);
+  }
+  
   // Create a cell for the +/- time adjustment buttons.
   const timeAdjustCell = document.createElement("td");
   timeAdjustCell.style.whiteSpace = "nowrap";
@@ -990,6 +1027,7 @@ function createNewRowInHistory(fileLink = "") {
   timeCell = localTimeCell;
   statementCell = localStatementCell;
 }
+
 
 
 
@@ -1563,18 +1601,17 @@ function recalcRollCallVotes() {
   neutralVal = countNeutral;
   updateVoteTallyDisplay();
   
-  // Update the in-progress row's dataset (so that Ctrl‑click uses it)
-  if (inProgressRow) {
+  // Update the in-progress row's vote data and update tooltip on the statement cell.
+  if (inProgressRow && statementCell) {
     const votesObj = { for: votesForArr, against: votesAgainstArr };
     inProgressRow.dataset.votes = JSON.stringify(votesObj);
-    // Also update the title (tooltip) and attach our custom tooltip
-    updateRowVoteTooltip(inProgressRow, votesObj);
-    attachTooltipToRow(inProgressRow);
+    updateRowVoteTooltip(statementCell, votesObj);
+    attachTooltipToElement(statementCell);
   }
   
-  // Update the constructed statement so the temporary record is current.
   updateStatement();
 }
+
 
 function updateVoteTallyDisplay() {
   // First, try updating the roll call counts display (if it exists).
@@ -1988,9 +2025,8 @@ function loadHistoryFromLocalStorage() {
 
       if (record.votes) {
         tr.dataset.votes = JSON.stringify(record.votes);
-        updateRowVoteTooltip(tr, record.votes);
+        // Instead of updating the entire row, we will update the tooltip on the statement cell later.
         console.log("create tool tip~");
-        attachTooltipToRow(tr);
       }
       
       if (record.member) {
@@ -2032,7 +2068,7 @@ function loadHistoryFromLocalStorage() {
       });
       tr.appendChild(tdTime);
 
-      // Statement cell
+      // Statement cell – attach tooltip only here.
       let tdStatement = document.createElement("td");
       tdStatement.textContent = record.statement;
       tdStatement.classList.add("clickable");
@@ -2044,6 +2080,11 @@ function loadHistoryFromLocalStorage() {
           }, 800);
         });
       });
+      // If this record has vote data, update and attach the tooltip to tdStatement.
+      if (record.votes) {
+        updateRowVoteTooltip(tdStatement, record.votes);
+        attachTooltipToElement(tdStatement);
+      }
       tr.appendChild(tdStatement);
 
       // Time Control cell with adjust buttons and now/marked buttons.
@@ -2159,6 +2200,7 @@ function loadHistoryFromLocalStorage() {
     }
   }
 }
+
 
 
 
