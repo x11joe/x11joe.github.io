@@ -666,16 +666,22 @@ function populateEditUI() {
       }
     }
     
-    // Show and highlight the carrier button if one was saved.
-    if ((selectedBillType === "SB" || selectedBillType === "HB") && selectedCarrier) {
+    // Always show the bill carrier section for roll call votes on a bill (SB/HB)
+    // (Do not show it for amendments or reconsiders.)
+    if (mainAction.startsWith("Roll Call Vote on") && (selectedBillType === "SB" || selectedBillType === "HB")) {
       showBillCarrierSection(true);
-      document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
-        if (btn.innerText.trim() === selectedCarrier) {
-          btn.classList.add("selected");
-        } else {
-          btn.classList.remove("selected");
-        }
-      });
+      // If a carrier was already selected, highlight it.
+      if (selectedCarrier) {
+        document.querySelectorAll("#bill-carrier-container button").forEach(btn => {
+          if (btn.innerText.trim() === selectedCarrier) {
+            btn.classList.add("selected");
+          } else {
+            btn.classList.remove("selected");
+          }
+        });
+      }
+    } else {
+      document.getElementById("bill-carrier-section").classList.add("hidden");
     }
     
     // Show the "As Amended" section only for SB votes.
@@ -767,6 +773,7 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
+
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
@@ -1323,12 +1330,13 @@ function setMainAction(button, action) {
   // Show sections based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
-  } else if (mainAction.startsWith("Roll Call Vote on")) {
+  } else if (action.startsWith("Roll Call Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     showVoteTallySection(true);
-    // Only show bill carrier and "As Amended" if the bill type is SB or HB.
+    // Always show bill carrier if the selected bill type is SB or HB.
     if (selectedBillType === "SB" || selectedBillType === "HB") {
       showBillCarrierSection(true);
+      // Also show "As Amended" section if SB.
       if (selectedBillType === "SB") {
         showAsAmendedSection(true);
       }
@@ -1345,6 +1353,7 @@ function setMainAction(button, action) {
   
   updateStatement();
 }
+
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
