@@ -1823,8 +1823,9 @@ function updateStatement() {
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-    // Only include carrier text for SB votes when the bill type is displayed.
-    if (selectedBillType === "SB" && selectedCarrier && includeBillTypeInRollCall) {
+    // Append bill carrier text for SB votes if a carrier is selected,
+    // regardless of the includeBillTypeInRollCall setting.
+    if (selectedBillType === "SB" && selectedCarrier) {
       let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
       parts.push(`${carrierName} Carried the Bill`);
     }
