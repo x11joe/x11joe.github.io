@@ -1774,7 +1774,12 @@ function updateStatement() {
   
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
-    if (includeBillTypeInRollCall) {
+    // If the selected bill type is Amendment or Reconsider, use it directly.
+    if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+      actionText += " on " + selectedBillType;
+    }
+    // Otherwise, if the include setting is on, try to get the bill type.
+    else if (includeBillTypeInRollCall) {
       let billType = getPreviousBillType();
       if (!billType && selectedBillType) {
         billType = selectedBillType;
@@ -1789,7 +1794,7 @@ function updateStatement() {
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-    // Here we apply the useLastNamesOnly setting for the bill carrier.
+    // Include carrier text only for SB votes.
     if (selectedBillType === "SB" && selectedCarrier) {
       let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
       parts.push(`${carrierName} Carried the Bill`);
@@ -1812,10 +1817,8 @@ function updateStatement() {
     if (selectedBillType === "Reconsider") {
       parts.push("Moved to Reconsider");
     } else if (selectedBillType === "Amendment") {
-      // Always include Amendment regardless of the setting.
       parts.push("Moved Amendment");
     } else if (includeBillTypeInMoved) {
-      // When the setting is enabled, use the selected bill type as usual.
       if (selectedBillType) {
         if (selectedBillType === "SB" || selectedBillType === "HB") {
           if (selectedSubAction) {
@@ -1832,7 +1835,6 @@ function updateStatement() {
         parts.push("Moved");
       }
     } else {
-      // When includeBillTypeInMoved is false, ignore the selected bill type (except Amendment, handled above)
       if (selectedSubAction) {
         parts.push(`Moved ${selectedSubAction}`);
       } else {
@@ -1860,6 +1862,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 function resetVoteTally() {
   // For the plus–minus UI mode.
