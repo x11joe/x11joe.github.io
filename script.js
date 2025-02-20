@@ -1812,7 +1812,40 @@ function updateStatement() {
       parts.push("[Pick Passed/Failed]");
     }
   }
-  // NEW branch: for actions that simply prefix the member with the action.
+  else if (mainAction === "Moved") {
+    parts.push(applyUseLastNamesOnly(selectedMember));
+    if (selectedBillType === "Reconsider") {
+      parts.push("Moved to Reconsider");
+    } else if (selectedBillType === "Amendment") {
+      parts.push("Moved Amendment");
+    } else if (includeBillTypeInMoved) {
+      if (selectedBillType) {
+        if (selectedBillType === "SB" || selectedBillType === "HB") {
+          if (selectedSubAction) {
+            parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
+          } else {
+            parts.push(`Moved on ${selectedBillType}`);
+          }
+        } else {
+          parts.push(`Moved ${selectedBillType}`);
+        }
+      } else if (selectedSubAction) {
+        parts.push(`Moved ${selectedSubAction}`);
+      } else {
+        parts.push("Moved");
+      }
+    } else {
+      if (selectedSubAction) {
+        parts.push(`Moved ${selectedSubAction}`);
+      } else {
+        parts.push("Moved");
+      }
+    }
+    if (selectedRereferCommittee) {
+      parts.push(`and rereferred to ${selectedRereferCommittee}`);
+    }
+  }
+  // NEW branch for Proposed Amendment and Proposed Verbal Amendment
   else if (
     mainAction === "Seconded" ||
     mainAction === "Introduced Bill" ||
@@ -1835,6 +1868,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 
 
