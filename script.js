@@ -1284,6 +1284,11 @@ function setMainAction(button, action) {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "";
     }
+    // Reset the "As Amended" button highlight each time a roll call vote is selected.
+    let asAmendedBtn = document.getElementById("asAmendedBtn");
+    if (asAmendedBtn) {
+      asAmendedBtn.classList.remove("selected");
+    }
   } else {
     mainAction = action;
   }
@@ -1322,7 +1327,7 @@ function setMainAction(button, action) {
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
   document.getElementById("bill-carrier-section").classList.add("hidden");
-  // NEW: Always hide the As Amended section for voice votes.
+  // Always hide the As Amended section for voice votes.
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
@@ -1347,12 +1352,13 @@ function setMainAction(button, action) {
   } else if (action.startsWith("Voice Vote on")) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
-    // Always hide the "As Amended" section for voice votes.
+    // Always hide the As Amended section for voice votes.
     document.getElementById("as-amended-section").classList.add("hidden");
   }
   
   updateStatement();
 }
+
 
 
 
