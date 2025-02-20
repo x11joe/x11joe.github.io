@@ -1869,9 +1869,6 @@ function updateStatement() {
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
 
-
-
-
 function resetVoteTally() {
   // For the plus–minus UI mode.
   forVal = 0;
