@@ -1727,6 +1727,20 @@ function updateInProgressRow() {
   }
 }
 
+// NEW helper: Returns the previous motion outcome ("Do Pass" or "Do Not Pass")
+// from the most recent "Moved" record that had one of those sub-actions.
+function getPreviousMotionOutcome() {
+  for (let i = historyRecords.length - 1; i >= 0; i--) {
+    let rec = historyRecords[i];
+    if (rec.mainAction === "Moved" && rec.selectedSubAction && 
+        (rec.selectedSubAction === "Do Pass" || rec.selectedSubAction === "Do Not Pass")) {
+      return rec.selectedSubAction;
+    }
+  }
+  // Default value if none is found.
+  return "Do Pass";
+}
+
 // Build the statement
 function updateStatement() {
   console.log("updateStatement() – current globals:", {
@@ -1780,28 +1794,37 @@ function updateStatement() {
   
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
-    // If the selected bill type is Amendment or Reconsider, use it directly.
-    if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
-      actionText += " on " + selectedBillType;
-    }
-    // Otherwise, if the include setting is on, try to get the bill type.
-    else if (includeBillTypeInRollCall) {
-      let billType = getPreviousBillType();
-      if (!billType && selectedBillType) {
-        billType = selectedBillType;
-      }
-      if (billType) {
-        actionText += " on " + billType;
-        if (billType === "SB" && asAmended) {
-          actionText += " as Amended";
+    // If the include bill type setting is ON, use your normal logic:
+    if (includeBillTypeInRollCall) {
+      if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+        actionText += " on " + selectedBillType;
+      } else {
+        let billType = getPreviousBillType();
+        if (!billType && selectedBillType) {
+          billType = selectedBillType;
         }
+        if (billType) {
+          actionText += " on " + billType;
+          if (billType === "SB" && asAmended) {
+            actionText += " as Amended";
+          }
+        }
+      }
+    }
+    // Else, if the include bill type setting is OFF,
+    // use the previous motion outcome (from a "Moved" record) instead.
+    else {
+      let prevMotion = getPreviousMotionOutcome();
+      actionText += " on " + prevMotion;
+      if (asAmended) {
+        actionText += " as Amended";
       }
     }
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
-    // Include carrier text only for SB votes.
-    if (selectedBillType === "SB" && selectedCarrier) {
+    // Only include carrier text for SB votes when the bill type is displayed.
+    if (selectedBillType === "SB" && selectedCarrier && includeBillTypeInRollCall) {
       let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
       parts.push(`${carrierName} Carried the Bill`);
     }
