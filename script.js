@@ -1812,40 +1812,13 @@ function updateStatement() {
       parts.push("[Pick Passed/Failed]");
     }
   }
-  else if (mainAction === "Moved") {
-    parts.push(applyUseLastNamesOnly(selectedMember));
-    if (selectedBillType === "Reconsider") {
-      parts.push("Moved to Reconsider");
-    } else if (selectedBillType === "Amendment") {
-      parts.push("Moved Amendment");
-    } else if (includeBillTypeInMoved) {
-      if (selectedBillType) {
-        if (selectedBillType === "SB" || selectedBillType === "HB") {
-          if (selectedSubAction) {
-            parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`);
-          } else {
-            parts.push(`Moved on ${selectedBillType}`);
-          }
-        } else {
-          parts.push(`Moved ${selectedBillType}`);
-        }
-      } else if (selectedSubAction) {
-        parts.push(`Moved ${selectedSubAction}`);
-      } else {
-        parts.push("Moved");
-      }
-    } else {
-      if (selectedSubAction) {
-        parts.push(`Moved ${selectedSubAction}`);
-      } else {
-        parts.push("Moved");
-      }
-    }
-    if (selectedRereferCommittee) {
-      parts.push(`and rereferred to ${selectedRereferCommittee}`);
-    }
-  }
-  else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
+  // NEW branch: for actions that simply prefix the member with the action.
+  else if (
+    mainAction === "Seconded" ||
+    mainAction === "Introduced Bill" ||
+    mainAction === "Proposed Amendment" ||
+    mainAction === "Proposed Verbal Amendment"
+  ) {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
     parts.push(mainAction);
@@ -1862,6 +1835,7 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
+
 
 
 function resetVoteTally() {

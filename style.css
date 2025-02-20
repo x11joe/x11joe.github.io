@@ -44,6 +44,11 @@ body {
   white-space: nowrap;
 }
 
+/* For main actions, force the row not to wrap */
+.main-actions-row {
+  flex-wrap: nowrap;
+}
+
 /* Optional: Additional styling for Lookup Members Modal */
 #lookupMembersModal {
   position: fixed;
