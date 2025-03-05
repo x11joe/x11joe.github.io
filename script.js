@@ -1247,9 +1247,56 @@ function selectMember(member, btn) {
   btn.classList.add("selected");
 }
 
+// --- (New) Function: Update suggestions for the Provided by field ---
+function updatePaProvidedBySuggestions() {
+  const input = document.getElementById("paProvidedBy");
+  const suggestionsDiv = document.getElementById("paProvidedBySuggestions");
+  const query = input.value.trim().toLowerCase();
+  suggestionsDiv.innerHTML = "";
+  if (!query) return;
+  // Use the keys in memberInfoMapping as candidate names.
+  const matches = Object.keys(memberInfoMapping).filter(name => {
+    // Remove common prefixes for a friendlier search.
+    const normalized = name.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "");
+    return normalized.toLowerCase().includes(query);
+  });
+  matches.forEach(match => {
+    const suggestion = document.createElement("div");
+    suggestion.className = "suggestion-item";
+    suggestion.textContent = match;
+    suggestion.addEventListener("click", () => {
+      input.value = match;
+      suggestionsDiv.innerHTML = "";
+      updateStatement();
+    });
+    suggestionsDiv.appendChild(suggestion);
+  });
+}
+
+// --- (New) Add event listeners to Proposed Amendment option fields ---
+function addProposedAmendmentFieldListeners() {
+  const paProvidedBy = document.getElementById("paProvidedBy");
+  const paLCNumber = document.getElementById("paLCNumber");
+  const paTestimonyNumber = document.getElementById("paTestimonyNumber");
+
+  if (paProvidedBy) {
+    paProvidedBy.addEventListener("input", () => {
+      updatePaProvidedBySuggestions();
+      updateStatement();
+    });
+  }
+  if (paLCNumber) {
+    paLCNumber.addEventListener("input", updateStatement);
+  }
+  if (paTestimonyNumber) {
+    paTestimonyNumber.addEventListener("input", updateStatement);
+  }
+}
+
+// --- Modified: setMainAction() ---
+// (This version now hides/shows the proposed amendment options section.)
 function setMainAction(button, action) {
   console.log("setMainAction() called with action:", action);
-  // For actions that do NOT require a member:
   if (action !== "Moved" && action !== "Seconded" && action !== "Introduced Bill") {
     let startingTime = getStartingTime();
     resetTimeMode();
@@ -1258,7 +1305,6 @@ function setMainAction(button, action) {
       createNewRowInHistory();
     }
   } else {
-    // For member-based actions, ensure a member is selected.
     if ((action === "Moved" || action === "Seconded" || action === "Introduced Bill") && !selectedMember) {
       alert("Please select a member first for '" + action + "'!");
       return;
@@ -1271,7 +1317,6 @@ function setMainAction(button, action) {
     }
   }
   
-  // Normalize mainAction for roll call votes.
   if (action.startsWith("Roll Call Vote on")) {
     if (action.includes("Amendment")) {
       mainAction = "Roll Call Vote on Amendment";
@@ -1289,57 +1334,37 @@ function setMainAction(button, action) {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "";
     }
-    // Reset the "As Amended" button highlight each time a roll call vote is selected.
     let asAmendedBtn = document.getElementById("asAmendedBtn");
-    if (asAmendedBtn) {
-      asAmendedBtn.classList.remove("selected");
-    }
+    if (asAmendedBtn) { asAmendedBtn.classList.remove("selected"); }
   } else {
     mainAction = action;
   }
   
-  // Clear and mark buttons.
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
     b.classList.remove("inactive");
   });
   button.classList.add("selected");
-  allMainActionButtons.forEach((b) => {
-    if (b !== button) {
-      b.classList.add("inactive");
-    }
-  });
+  allMainActionButtons.forEach((b) => { if (b !== button) { b.classList.add("inactive"); } });
   
-  // Set remaining globals.
   selectedSubAction = "";
   selectedCarrier = "";
   asAmended = false;
   voiceVoteOutcome = "";
   
-  console.log("After setMainAction, globals:", {
-    mainAction,
-    selectedSubAction,
-    selectedBillType,
-    selectedCarrier,
-    asAmended,
-    voiceVoteOutcome
-  });
-  
-  // Hide all optional sections.
+  // Hide optional sections by default.
   document.getElementById("meetingActionsSection").classList.add("hidden");
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
   document.getElementById("vote-tally-section").classList.add("hidden");
   document.getElementById("bill-carrier-section").classList.add("hidden");
-  // Always hide the As Amended section for voice votes.
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   // NEW: Hide Proposed Amendment options by default.
   document.getElementById("proposed-amendment-options-section").classList.add("hidden");
   document.getElementById("members-container").classList.remove("hidden");
   
-  // Show sections based on action.
   if (action === "Moved") {
     showBillTypeSection(true);
   } else if (action.startsWith("Roll Call Vote on")) {
@@ -1347,9 +1372,7 @@ function setMainAction(button, action) {
     showVoteTallySection(true);
     if (selectedBillType === "SB" || selectedBillType === "HB") {
       showBillCarrierSection(true);
-      if (selectedBillType === "SB") {
-        showAsAmendedSection(true);
-      }
+      if (selectedBillType === "SB") { showAsAmendedSection(true); }
     } else {
       document.getElementById("bill-carrier-section").classList.add("hidden");
       document.getElementById("as-amended-section").classList.add("hidden");
@@ -1359,13 +1382,154 @@ function setMainAction(button, action) {
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     document.getElementById("as-amended-section").classList.add("hidden");
   }
-  // NEW: If action is Proposed Amendment or Proposed Verbal Amendment, show the extra options.
+  // NEW: Show Proposed Amendment options when that action is selected.
   else if (action === "Proposed Amendment" || action === "Proposed Verbal Amendment") {
     document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
+    // Attach event listeners for immediate updates and suggestions.
+    addProposedAmendmentFieldListeners();
   }
   
   updateStatement();
 }
+
+
+// --- Modified: updateStatement() ---
+// This branch now uses the values from the Proposed Amendment options fields.
+function updateStatement() {
+  console.log("updateStatement() – current globals:", {
+    selectedMember,
+    mainAction,
+    selectedSubAction,
+    selectedBillType,
+    selectedCarrier,
+    asAmended,
+    voiceVoteOutcome,
+    selectedRereferCommittee
+  });
+  
+  const actionsNotRequiringMember = [
+    "Roll Call Vote on Amendment",
+    "Roll Call Vote on Reconsider",
+    "Voice Vote on SB",
+    "Voice Vote on Amendment",
+    "Voice Vote on Reconsider",
+    "Motion Failed for lack of a second",
+    "Motion for Do Pass failed for lack of a second",
+    "Motion for Do Not Pass failed for lack of a second"
+  ];
+  
+  if (!selectedMember && !mainAction.startsWith("Roll Call Vote on") && !actionsNotRequiringMember.includes(mainAction)) {
+    document.getElementById("log").innerText = "[Click a member and an action]";
+    return;
+  }
+  
+  if (
+    mainAction === "Motion Failed for lack of a second" ||
+    mainAction === "Motion for Do Pass failed for lack of a second" ||
+    mainAction === "Motion for Do Not Pass failed for lack of a second"
+  ) {
+    constructedStatement = mainAction;
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+    return;
+  }
+  
+  if (selectedMember && !mainAction) {
+    constructedStatement = applyUseLastNamesOnly(selectedMember);
+    document.getElementById("log").innerText = constructedStatement;
+    updateInProgressRow();
+    autoCopyIfEnabled();
+    return;
+  }
+  
+  let parts = [];
+  
+  if (mainAction.startsWith("Roll Call Vote on")) {
+    let actionText = "Roll Call Vote";
+    if (includeBillTypeInRollCall) {
+      if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+        actionText += " on " + selectedBillType;
+      } else {
+        let billType = getPreviousBillType();
+        if (!billType && selectedBillType) { billType = selectedBillType; }
+        if (billType) {
+          actionText += " on " + billType;
+          if (billType === "SB" && asAmended) { actionText += " as Amended"; }
+        }
+      }
+    } else {
+      let prevMotion = getPreviousMotionOutcome();
+      actionText += " on " + prevMotion;
+      if (asAmended) { actionText += " as Amended"; }
+    }
+    parts.push(actionText);
+    parts.push(getMotionResultText());
+    parts.push(`${forVal}-${againstVal}-${neutralVal}`);
+    if (selectedBillType === "SB" && selectedCarrier) {
+      let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
+      parts.push(`${carrierName} Carried the Bill`);
+    }
+  }
+  else if (mainAction.startsWith("Voice Vote on")) {
+    let actionText = mainAction;
+    if (mainAction === "Voice Vote on SB" && asAmended) { actionText = "Voice Vote on SB as Amended"; }
+    parts.push(actionText);
+    if (voiceVoteOutcome) { parts.push(`Motion ${voiceVoteOutcome}`); }
+    else { parts.push("[Pick Passed/Failed]"); }
+  }
+  else if (mainAction === "Moved") {
+    parts.push(applyUseLastNamesOnly(selectedMember));
+    if (selectedBillType === "Reconsider") { parts.push("Moved to Reconsider"); }
+    else if (selectedBillType === "Amendment") { parts.push("Moved Amendment"); }
+    else if (includeBillTypeInMoved) {
+      if (selectedBillType) {
+        if (selectedBillType === "SB" || selectedBillType === "HB") {
+          if (selectedSubAction) { parts.push(`Moved ${selectedSubAction} on ${selectedBillType}`); }
+          else { parts.push(`Moved on ${selectedBillType}`); }
+        } else { parts.push(`Moved ${selectedBillType}`); }
+      } else if (selectedSubAction) { parts.push(`Moved ${selectedSubAction}`); }
+      else { parts.push("Moved"); }
+    } else {
+      if (selectedSubAction) { parts.push(`Moved ${selectedSubAction}`); }
+      else { parts.push("Moved"); }
+    }
+    if (selectedRereferCommittee) { parts.push(`and rereferred to ${selectedRereferCommittee}`); }
+  }
+  // --- NEW branch for Proposed Amendment ---
+  else if (mainAction === "Proposed Amendment" || mainAction === "Proposed Verbal Amendment") {
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    // Read values from the Proposed Amendment option inputs:
+    proposedAmendmentProvidedBy = document.getElementById("paProvidedBy") ? document.getElementById("paProvidedBy").value.trim() : "";
+    proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
+    proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
+    
+    let statementText = formattedMember + " proposed " + (mainAction === "Proposed Amendment" ? "Amendment" : "Verbal Amendment");
+    if (proposedAmendmentProvidedBy) {
+      statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
+    }
+    statementText += " - LC# " + proposedAmendmentLCNumber;
+    statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
+    parts.push(statementText);
+  }
+  else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    parts.push(formattedMember);
+    parts.push(mainAction);
+  }
+  else if (mainAction === "Withdrew") {
+    let formattedMember = applyUseLastNamesOnly(selectedMember);
+    parts.push(formattedMember);
+    parts.push("Withdrew Motion");
+  }
+  
+  constructedStatement = parts.length ? parts.join(" - ") : "[Click a member and an action]";
+  document.getElementById("log").innerText = constructedStatement;
+  updateInProgressRow();
+  autoCopyIfEnabled();
+  console.log("updateStatement() – constructedStatement:", constructedStatement);
+}
+
 
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */

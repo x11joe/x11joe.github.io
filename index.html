@@ -218,13 +218,17 @@
     <div class="section hidden" id="proposed-amendment-options-section">
       <h3>Proposed Amendment Options</h3>
       <div class="buttons-container">
-        <input type="text" id="paProvidedBy" placeholder="Provided by (e.g., Senator Y)" />
-        <input type="text" id="paLCNumber" placeholder="LC# (e.g., .00000)" value=".00000" />
-        <input type="text" id="paTestimonyNumber" placeholder="Testimony Number" />
+        <label for="paProvidedBy"><b>Provided by:</b></label>
+        <input type="text" id="paProvidedBy" placeholder="e.g., Senator Y" />
+        <!-- Suggestions will appear here -->
+        <div id="paProvidedBySuggestions" class="suggestions"></div>
+        <label for="paLCNumber"><b>LC#:</b></label>
+        <input type="text" id="paLCNumber" placeholder="e.g., .00000" value=".00000" />
+        <label for="paTestimonyNumber"><b>Testimony Number:</b></label>
+        <input type="text" id="paTestimonyNumber" placeholder="Enter number (optional)" />
       </div>
     </div>
 
-    
     <!-- Rerefer Section: hidden by default -->
     <div class="section hidden" id="rerefer-section">
       <h3>Rerefer to Another Committee?</h3>
