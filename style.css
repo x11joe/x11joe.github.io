@@ -7,6 +7,10 @@ body {
   text-align: center;
 }
 
+.suggestions:empty {
+  display: none;
+}
+
 /* Container for the Provided by input */
 .pa-input-container {
   position: relative;

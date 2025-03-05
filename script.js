@@ -2183,11 +2183,10 @@ function resetAllAndFinalize() {
 
 // The main reset
 function resetSelections(finalize = true) {
-  if (
-    finalize &&
-    constructedStatement &&
-    constructedStatement !== "[Click a member and an action]" &&
-    constructedStatement.trim() !== ""
+  if (finalize &&
+      constructedStatement &&
+      constructedStatement !== "[Click a member and an action]" &&
+      constructedStatement.trim() !== ""
   ) {
     updateInProgressRow();
   }
@@ -2212,8 +2211,28 @@ function resetSelections(finalize = true) {
   document.getElementById("bill-carrier-section").classList.add("hidden");
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("rerefer-section").classList.add("hidden");
-  selectedRereferCommittee = "";
-
+  // NEW: Hide Proposed Amendment Options
+  document.getElementById("proposed-amendment-options-section").classList.add("hidden");
+  
+  // Clear Proposed Amendment input values (if they exist)
+  let paProvidedBy = document.getElementById("paProvidedBy");
+  if (paProvidedBy) {
+    paProvidedBy.value = "";
+  }
+  let paProvidedBySuggestions = document.getElementById("paProvidedBySuggestions");
+  if (paProvidedBySuggestions) {
+    paProvidedBySuggestions.innerHTML = "";
+  }
+  // (Optionally, clear other amendment fields if needed)
+  let paLCNumber = document.getElementById("paLCNumber");
+  if (paLCNumber) {
+    paLCNumber.value = ".00000";
+  }
+  let paTestimonyNumber = document.getElementById("paTestimonyNumber");
+  if (paTestimonyNumber) {
+    paTestimonyNumber.value = "";
+  }
+  
   // Remove .selected and .inactive from all main-action buttons
   document.querySelectorAll("#mainActionsSection button").forEach((b) => {
     b.classList.remove("selected");
@@ -2227,6 +2246,7 @@ function resetSelections(finalize = true) {
 
   inProgressRecordIndex = null;
 }
+
 
 
 function saveHistoryToLocalStorage() {
