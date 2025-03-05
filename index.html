@@ -218,10 +218,12 @@
     <div class="section hidden" id="proposed-amendment-options-section">
       <h3>Proposed Amendment Options</h3>
       <div class="buttons-container">
-        <label for="paProvidedBy"><b>Provided by:</b></label>
-        <input type="text" id="paProvidedBy" placeholder="e.g., Senator Y" />
-        <!-- Suggestions will appear here -->
-        <div id="paProvidedBySuggestions" class="suggestions"></div>
+        <div class="pa-input-container">
+          <label for="paProvidedBy"><b>Provided by:</b></label>
+          <input type="text" id="paProvidedBy" placeholder="e.g., Senator Y" />
+          <!-- Suggestions will appear in this div -->
+          <div id="paProvidedBySuggestions" class="suggestions"></div>
+        </div>
         <label for="paLCNumber"><b>LC#:</b></label>
         <input type="text" id="paLCNumber" placeholder="e.g., .00000" value=".00000" />
         <label for="paTestimonyNumber"><b>Testimony Number:</b></label>
