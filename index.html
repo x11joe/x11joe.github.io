@@ -221,15 +221,18 @@
         <div class="pa-input-container">
           <label for="paProvidedBy"><b>Provided by:</b></label>
           <input type="text" id="paProvidedBy" placeholder="e.g., Senator Y" />
-          <!-- Suggestions will appear in this div -->
           <div id="paProvidedBySuggestions" class="suggestions"></div>
         </div>
-        <label for="paLCNumber"><b>LC#:</b></label>
-        <input type="text" id="paLCNumber" placeholder="e.g., .00000" value=".00000" />
-        <label for="paTestimonyNumber"><b>Testimony Number:</b></label>
-        <input type="text" id="paTestimonyNumber" placeholder="Enter number (optional)" />
+        <!-- This container will be hidden for verbal amendments -->
+        <div id="pa-nonverbal-options">
+          <label for="paLCNumber"><b>LC#:</b></label>
+          <input type="text" id="paLCNumber" placeholder="e.g., .00000" value=".00000" />
+          <label for="paTestimonyNumber"><b>Testimony Number:</b></label>
+          <input type="text" id="paTestimonyNumber" placeholder="Enter number (optional)" />
+        </div>
       </div>
     </div>
+
 
     <!-- Rerefer Section: hidden by default -->
     <div class="section hidden" id="rerefer-section">

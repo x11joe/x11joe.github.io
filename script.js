@@ -1293,8 +1293,7 @@ function addProposedAmendmentFieldListeners() {
   }
 }
 
-// --- Modified: setMainAction() ---
-// (This version now hides/shows the proposed amendment options section.)
+//setMainAction
 function setMainAction(button, action) {
   console.log("setMainAction() called with action:", action);
   if (action !== "Moved" && action !== "Seconded" && action !== "Introduced Bill") {
@@ -1334,24 +1333,11 @@ function setMainAction(button, action) {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "";
     }
-    let asAmendedBtn = document.getElementById("asAmendedBtn");
-    if (asAmendedBtn) { asAmendedBtn.classList.remove("selected"); }
+    // Hide any Proposed Amendment options if they are showing
+    document.getElementById("proposed-amendment-options-section").classList.add("hidden");
   } else {
     mainAction = action;
   }
-  
-  const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
-  allMainActionButtons.forEach((b) => {
-    b.classList.remove("selected");
-    b.classList.remove("inactive");
-  });
-  button.classList.add("selected");
-  allMainActionButtons.forEach((b) => { if (b !== button) { b.classList.add("inactive"); } });
-  
-  selectedSubAction = "";
-  selectedCarrier = "";
-  asAmended = false;
-  voiceVoteOutcome = "";
   
   // Hide optional sections by default.
   document.getElementById("meetingActionsSection").classList.add("hidden");
@@ -1361,8 +1347,21 @@ function setMainAction(button, action) {
   document.getElementById("bill-carrier-section").classList.add("hidden");
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
-  // NEW: Hide Proposed Amendment options by default.
-  document.getElementById("proposed-amendment-options-section").classList.add("hidden");
+  
+  // NEW: Show Proposed Amendment Options only when needed.
+  if (action === "Proposed Amendment") {
+    document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
+    // For written amendments, show LC#/Testimony# fields.
+    document.getElementById("pa-nonverbal-options").style.display = "block";
+  } else if (action === "Proposed Verbal Amendment") {
+    document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
+    // For verbal amendments, hide LC#/Testimony# fields.
+    document.getElementById("pa-nonverbal-options").style.display = "none";
+  } else {
+    // For all other actions, ensure the proposed options are hidden.
+    document.getElementById("proposed-amendment-options-section").classList.add("hidden");
+  }
+  
   document.getElementById("members-container").classList.remove("hidden");
   
   if (action === "Moved") {
@@ -1381,12 +1380,6 @@ function setMainAction(button, action) {
     document.getElementById("members-container").classList.add("hidden");
     document.getElementById("voice-vote-outcome-section").classList.remove("hidden");
     document.getElementById("as-amended-section").classList.add("hidden");
-  }
-  // NEW: Show Proposed Amendment options when that action is selected.
-  else if (action === "Proposed Amendment" || action === "Proposed Verbal Amendment") {
-    document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
-    // Attach event listeners for immediate updates and suggestions.
-    addProposedAmendmentFieldListeners();
   }
   
   updateStatement();
@@ -1496,20 +1489,27 @@ function updateStatement() {
     }
     if (selectedRereferCommittee) { parts.push(`and rereferred to ${selectedRereferCommittee}`); }
   }
-  // --- NEW branch for Proposed Amendment ---
+  // NEW branch for Proposed Amendment and Proposed Verbal Amendment:
   else if (mainAction === "Proposed Amendment" || mainAction === "Proposed Verbal Amendment") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
-    // Read values from the Proposed Amendment option inputs:
     proposedAmendmentProvidedBy = document.getElementById("paProvidedBy") ? document.getElementById("paProvidedBy").value.trim() : "";
-    proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
-    proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
-    
-    let statementText = formattedMember + " proposed " + (mainAction === "Proposed Amendment" ? "Amendment" : "Verbal Amendment");
-    if (proposedAmendmentProvidedBy) {
-      statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
+    if (mainAction === "Proposed Amendment") {
+      // Written amendment: include LC# and Testimony#
+      proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
+      proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
+      var statementText = formattedMember + " proposed Amendment";
+      if (proposedAmendmentProvidedBy) {
+        statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
+      }
+      statementText += " - LC# " + proposedAmendmentLCNumber;
+      statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
+    } else {
+      // Proposed Verbal Amendment: do not include LC# and Testimony#
+      var statementText = formattedMember + " proposed Verbal Amendment";
+      if (proposedAmendmentProvidedBy) {
+        statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
+      }
     }
-    statementText += " - LC# " + proposedAmendmentLCNumber;
-    statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
     parts.push(statementText);
   }
   else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
@@ -1529,8 +1529,6 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
-
-
 
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
@@ -2223,7 +2221,6 @@ function resetSelections(finalize = true) {
   if (paProvidedBySuggestions) {
     paProvidedBySuggestions.innerHTML = "";
   }
-  // (Optionally, clear other amendment fields if needed)
   let paLCNumber = document.getElementById("paLCNumber");
   if (paLCNumber) {
     paLCNumber.value = ".00000";
@@ -2239,15 +2236,13 @@ function resetSelections(finalize = true) {
     b.classList.remove("inactive");
   });
 
-  // Reset log text
+  // Reset log text and show relevant containers
   document.getElementById("log").innerText = "[Click a member and an action]";
   document.getElementById("members-container").classList.remove("hidden");
   document.getElementById("meetingActionsSection").classList.remove("hidden");
 
   inProgressRecordIndex = null;
 }
-
-
 
 function saveHistoryToLocalStorage() {
   localStorage.setItem("historyRecords", JSON.stringify(historyRecords));
