@@ -1355,16 +1355,18 @@ function setMainAction(button, action) {
     // Written Amendment: show the "Provided by" field plus LC#/Testimony# container.
     document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
     document.getElementById("pa-nonverbal-options").style.display = "block";
+    addProposedAmendmentFieldListeners();
   } else if (action === "Proposed Verbal Amendment") {
     // Verbal Amendment: show the "Provided by" field only.
     document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
     document.getElementById("pa-nonverbal-options").style.display = "none";
+    addProposedAmendmentFieldListeners();
   } else {
-    // For all other actions, hide the Proposed Amendment options.
+    // For all other actions, ensure the proposed options are hidden.
     document.getElementById("proposed-amendment-options-section").classList.add("hidden");
   }
   
-  // Show members container by default (some actions later hide it)
+  // Show members container by default.
   document.getElementById("members-container").classList.remove("hidden");
   
   // Show additional sections based on action.
@@ -1403,8 +1405,6 @@ function setMainAction(button, action) {
   
   updateStatement();
 }
-
-
 
 // --- Modified: updateStatement() ---
 // This branch now uses the values from the Proposed Amendment options fields.
