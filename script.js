@@ -2697,9 +2697,6 @@ function editMember(committeeName, index) {
   refreshCommitteeListUI();
 }
 
-
-
-
 function deleteMember(committeeName, index) {
   committees[committeeName].splice(index, 1);
   // If removing the last member from a committee, you may want to remove the committee entirely
@@ -2829,7 +2826,6 @@ function openSettingsModal() {
   document.getElementById("settingsModal").classList.remove("hidden");
 }
 
-
 function closeSettingsModal() {
   document.getElementById("settingsModal").classList.add("hidden");
 }
@@ -2862,10 +2858,8 @@ function saveSettings() {
               "rollCallUseMemberNames =", rollCallUseMemberNames);
 }
 
-
 // Attach event listener to the settings button.
 document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
-
 
 // --- Lookup Members Modal Functions ---
 
@@ -2898,7 +2892,6 @@ function closeTestimonyModal() {
   document.getElementById("submitTestimonyButton").textContent = "Add Testimony";
   document.getElementById("testimonyModal").classList.add("hidden");
 }
-
 
 // Called when the user clicks the "Add Testimony" button in the modal.
 function submitTestimonyModal() {
@@ -2972,8 +2965,6 @@ function submitTestimonyModal() {
   document.getElementById("testimonyNumber").value = "";
   document.getElementById("testimonyLink").value = "";
 }
-
-
 
 // Attach click event to the Lookup Members button
 document.getElementById("lookupMembersBtn").addEventListener("click", openLookupMembersModal);
@@ -3077,7 +3068,6 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
 
 });
 
-
 // --- KEYDOWN HANDLER ---
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey && event.key === "Enter") {
@@ -3101,7 +3091,6 @@ document.addEventListener("keydown", function (event) {
     cancelCurrentAction();
   }
 });
-
 
 document.addEventListener("DOMContentLoaded", () => {
   // Initialization
@@ -3143,7 +3132,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
 // Listen for the backtick key (`) to toggle time mode.
 document.addEventListener("keydown", (e) => {
   if (e.key === "`") {
@@ -3173,7 +3161,6 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
-
 
 // This runs in the main page environment (the same environment as your "script.js" functions).
 window.addEventListener("message", function (event) {
