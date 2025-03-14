@@ -1460,34 +1460,36 @@ function updateStatement() {
   
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
-    if (includeBillTypeInRollCall) {
-      if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+    if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+        // Always append "on Amendment" or "on Reconsider" for these types
         actionText += " on " + selectedBillType;
-      } else {
-        let billType = getPreviousBillType();
-        if (!billType && selectedBillType) {
-          billType = selectedBillType;
-        }
-        if (billType) {
-          actionText += " on " + billType;
-          if (billType === "SB" && asAmended) {
-            actionText += " as Amended";
-          }
-        }
-      }
     } else {
-      let prevMotion = getPreviousMotionOutcome();
-      actionText += " on " + prevMotion;
-      if (asAmended) {
-        actionText += " as Amended";
-      }
+        // For bills (SB, HB), follow the includeBillTypeInRollCall setting
+        if (includeBillTypeInRollCall) {
+            let billType = getPreviousBillType();
+            if (!billType && selectedBillType) {
+                billType = selectedBillType;
+            }
+            if (billType) {
+                actionText += " on " + billType;
+                if (billType === "SB" && asAmended) {
+                    actionText += " as Amended";
+                }
+            }
+        } else {
+            let prevMotion = getPreviousMotionOutcome();
+            actionText += " on " + prevMotion;
+            if (asAmended) {
+                actionText += " as Amended";
+            }
+        }
     }
     parts.push(actionText);
     parts.push(getMotionResultText());
     parts.push(`${forVal}-${againstVal}-${neutralVal}`);
     if (selectedBillType === "SB" && selectedCarrier) {
-      let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
-      parts.push(`${carrierName} Carried the Bill`);
+        let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
+        parts.push(`${carrierName} Carried the Bill`);
     }
   }
   else if (mainAction.startsWith("Voice Vote on")) {
@@ -1535,27 +1537,18 @@ function updateStatement() {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
   }
-  // NEW branch for Proposed Amendment / Proposed Verbal Amendment:
   else if (mainAction === "Proposed Amendment" || mainAction === "Proposed Verbal Amendment") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     proposedAmendmentProvidedBy = document.getElementById("paProvidedBy") ? document.getElementById("paProvidedBy").value.trim() : "";
-    if (mainAction === "Proposed Amendment") {
-      // Written amendment: include LC# and Testimony#
-      proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
-      proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
-      var statementText = formattedMember + " proposed Amendment";
-      if (proposedAmendmentProvidedBy) {
-        statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
-      }
-      statementText += " - LC# " + proposedAmendmentLCNumber;
-      statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
-    } else {
-      // Verbal amendment: do not include LC#/Testimony#
-      var statementText = formattedMember + " proposed Verbal Amendment";
-      if (proposedAmendmentProvidedBy) {
-        statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
-      }
+    proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
+    proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
+    
+    let statementText = formattedMember + " proposed " + (mainAction === "Proposed Amendment" ? "Amendment" : "Verbal Amendment");
+    if (proposedAmendmentProvidedBy) {
+      statementText += " provided by " + applyUseLastNamesOnly(proposedAmendmentProvidedBy);
     }
+    statementText += " - LC# " + proposedAmendmentLCNumber;
+    statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
     parts.push(statementText);
   }
   else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
@@ -2158,8 +2151,6 @@ function appendMeetingAction(action) {
   autoCopyIfEnabled();
 }
 
-
-
 function setVoiceVoteOutcome(outcome) {
   voiceVoteOutcome = outcome; // "Passed" or "Failed"
   // Highlight whichever button was clicked:
@@ -2180,7 +2171,6 @@ function setVoiceVoteOutcome(outcome) {
   autoCopyIfEnabled();
 }
 
-
 /* -------------
    Copy to Clipboard
    ------------- */
@@ -2200,7 +2190,6 @@ function copyToClipboard(highlight = true) {
     }
   });
 }
-
 
 /* -------------
    Reset Logic
@@ -2224,7 +2213,6 @@ function resetAllAndFinalize() {
   // Clear the in-progress record index now that we've finalized
   inProgressRecordIndex = null;
 }
-
 
 // The main reset
 function resetSelections(finalize = true) {
@@ -2291,7 +2279,6 @@ function resetSelections(finalize = true) {
 
   inProgressRecordIndex = null;
 }
-
 
 function saveHistoryToLocalStorage() {
   localStorage.setItem("historyRecords", JSON.stringify(historyRecords));
@@ -2487,9 +2474,6 @@ function loadHistoryFromLocalStorage() {
   }
 }
 
-
-
-
 function clearHistory() {
   localStorage.removeItem("historyRecords");
   historyRecords = [];
@@ -2535,8 +2519,6 @@ function cancelCurrentAction() {
   // Ensure that after canceling, the members container is re-enabled.
   updateMembers();
 }
-
-
 
 function loadCommitteesFromLocalStorage() {
   let stored = localStorage.getItem("allCommittees");
@@ -2622,7 +2604,6 @@ function refreshCommitteeListUI() {
     container.appendChild(ul);
   }
 }
-
 
 function addOrUpdateMember() {
   // Convert to lowercase
