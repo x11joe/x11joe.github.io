@@ -1296,52 +1296,34 @@ function addProposedAmendmentFieldListeners() {
 function setMainAction(button, action) {
   console.log("setMainAction() called with action:", action);
   
-  // Create or prepare a new in‑progress row if needed.
-  if (action !== "Moved" && action !== "Seconded" && action !== "Introduced Bill") {
-    let startingTime = getStartingTime();
-    resetTimeMode();
-    if (!inProgressRow) {
-      statementStartTime = startingTime;
-      createNewRowInHistory();
-    }
-  } else {
-    if ((action === "Moved" || action === "Seconded" || action === "Introduced Bill") && !selectedMember) {
-      alert("Please select a member first for '" + action + "'!");
-      return;
-    }
-    let startingTime = getStartingTime();
-    resetTimeMode();
-    if (!inProgressRow) {
-      statementStartTime = startingTime;
-      createNewRowInHistory();
-    }
-  }
+  // Normalize the action string: trim and convert to lowercase
+  const normalizedAction = action.trim().toLowerCase();
   
-  // Set mainAction and bill type for roll call votes.
-  if (action.startsWith("Roll Call Vote on")) {
-    if (action.includes("Amendment")) {
+  if (normalizedAction.startsWith("roll call vote on")) {
+    if (normalizedAction.includes("amendment")) {
       mainAction = "Roll Call Vote on Amendment";
       selectedBillType = "Amendment";
-    } else if (action.includes("Reconsider")) {
+    } else if (normalizedAction.includes("reconsider")) {
       mainAction = "Roll Call Vote on Reconsider";
       selectedBillType = "Reconsider";
-    } else if (action.includes("SB")) {
+    } else if (normalizedAction.includes("sb")) {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "SB";
-    } else if (action.includes("HB")) {
+    } else if (normalizedAction.includes("hb")) {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "HB";
     } else {
       mainAction = "Roll Call Vote on Bill";
       selectedBillType = "";
     }
-    // For roll call votes, hide any Proposed Amendment options.
-    document.getElementById("proposed-amendment-options-section").classList.add("hidden");
+    console.log("mainAction set to:", mainAction);
+    console.log("selectedBillType set to:", selectedBillType);
   } else {
     mainAction = action;
+    console.log("mainAction set to:", mainAction);
   }
   
-  // Hide all optional sections by default.
+  // Hide all optional sections by default
   document.getElementById("meetingActionsSection").classList.add("hidden");
   document.getElementById("sub-actions").classList.add("hidden");
   document.getElementById("bill-type-section").classList.add("hidden");
@@ -1350,26 +1332,23 @@ function setMainAction(button, action) {
   document.getElementById("as-amended-section").classList.add("hidden");
   document.getElementById("voice-vote-outcome-section").classList.add("hidden");
   
-  // Handle Proposed Amendment options:
+  // Handle Proposed Amendment options
   if (action === "Proposed Amendment") {
-    // Written Amendment: show the "Provided by" field plus LC#/Testimony# container.
     document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
     document.getElementById("pa-nonverbal-options").style.display = "block";
     addProposedAmendmentFieldListeners();
   } else if (action === "Proposed Verbal Amendment") {
-    // Verbal Amendment: show the "Provided by" field only.
     document.getElementById("proposed-amendment-options-section").classList.remove("hidden");
     document.getElementById("pa-nonverbal-options").style.display = "none";
     addProposedAmendmentFieldListeners();
   } else {
-    // For all other actions, ensure the proposed options are hidden.
     document.getElementById("proposed-amendment-options-section").classList.add("hidden");
   }
   
-  // Show members container by default.
+  // Show members container by default
   document.getElementById("members-container").classList.remove("hidden");
   
-  // Show additional sections based on action.
+  // Show additional sections based on action
   if (action === "Moved") {
     showBillTypeSection(true);
   } else if (action.startsWith("Roll Call Vote on")) {
@@ -1390,7 +1369,7 @@ function setMainAction(button, action) {
     document.getElementById("as-amended-section").classList.add("hidden");
   }
   
-  // --- Highlight the clicked main action button ---
+  // Highlight the clicked main action button
   const allMainActionButtons = document.querySelectorAll("#mainActionsSection button");
   allMainActionButtons.forEach((b) => {
     b.classList.remove("selected");
