@@ -1981,10 +1981,12 @@ function updateStatement() {
   
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
-    if (includeBillTypeInRollCall) {
-      if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
-        actionText += " on " + selectedBillType;
-      } else {
+    // Always use "on Amendment" or "on Reconsider" when applicable, regardless of settings
+    if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+      actionText += " on " + selectedBillType;
+    } else {
+      // For other bill types (e.g., SB, HB), respect the includeBillTypeInRollCall setting
+      if (includeBillTypeInRollCall) {
         let billType = getPreviousBillType();
         if (!billType && selectedBillType) {
           billType = selectedBillType;
@@ -1995,12 +1997,12 @@ function updateStatement() {
             actionText += " as Amended";
           }
         }
-      }
-    } else {
-      let prevMotion = getPreviousMotionOutcome();
-      actionText += " on " + prevMotion;
-      if (asAmended) {
-        actionText += " as Amended";
+      } else {
+        let prevMotion = getPreviousMotionOutcome();
+        actionText += " on " + prevMotion;
+        if (asAmended) {
+          actionText += " as Amended";
+        }
       }
     }
     parts.push(actionText);
@@ -2010,8 +2012,7 @@ function updateStatement() {
       let carrierName = useLastNamesOnly ? applyUseLastNamesOnly(selectedCarrier) : selectedCarrier;
       parts.push(`${carrierName} Carried the Bill`);
     }
-  }
-  else if (mainAction.startsWith("Voice Vote on")) {
+  } else if (mainAction.startsWith("Voice Vote on")) {
     let actionText = mainAction;
     if (mainAction === "Voice Vote on SB" && asAmended) {
       actionText = "Voice Vote on SB as Amended";
@@ -2022,8 +2023,7 @@ function updateStatement() {
     } else {
       parts.push("[Pick Passed/Failed]");
     }
-  }
-  else if (mainAction === "Moved") {
+  } else if (mainAction === "Moved") {
     parts.push(applyUseLastNamesOnly(selectedMember));
     if (selectedBillType === "Reconsider") {
       parts.push("Moved to Reconsider");
@@ -2055,11 +2055,8 @@ function updateStatement() {
     if (selectedRereferCommittee) {
       parts.push(`and rereferred to ${selectedRereferCommittee}`);
     }
-  }
-  // NEW branch for Proposed Amendment and Proposed Verbal Amendment:
-  else if (mainAction === "Proposed Amendment" || mainAction === "Proposed Verbal Amendment") {
+  } else if (mainAction === "Proposed Amendment" || mainAction === "Proposed Verbal Amendment") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
-    // Read the values from the extra interface section
     proposedAmendmentProvidedBy = document.getElementById("paProvidedBy") ? document.getElementById("paProvidedBy").value.trim() : "";
     proposedAmendmentLCNumber = document.getElementById("paLCNumber") ? document.getElementById("paLCNumber").value.trim() || ".00000" : ".00000";
     proposedAmendmentTestimonyNumber = document.getElementById("paTestimonyNumber") ? document.getElementById("paTestimonyNumber").value.trim() : "";
@@ -2071,13 +2068,11 @@ function updateStatement() {
     statementText += " - LC# " + proposedAmendmentLCNumber;
     statementText += " - Testimony#" + proposedAmendmentTestimonyNumber;
     parts.push(statementText);
-  }
-  else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
+  } else if (mainAction === "Seconded" || mainAction === "Introduced Bill") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
     parts.push(mainAction);
-  }
-  else if (mainAction === "Withdrew") {
+  } else if (mainAction === "Withdrew") {
     let formattedMember = applyUseLastNamesOnly(selectedMember);
     parts.push(formattedMember);
     parts.push("Withdrew Motion");
