@@ -70,45 +70,44 @@ let selectedRereferCommittee = ""; // e.g. "Senate Appropriations" or "
    Utility Functions
    -------------------------- */
 
-   // --- Helper: Update a row’s tooltip based on vote data ---
-   function updateRowVoteTooltip(el, votes) {
-    let tooltipHTML = "<div>";
-    
-    // For votes cast "for"
-    if (votes && votes.for && votes.for.length > 0) {
-      tooltipHTML += votes.for
-        .map(member => `<div style="color:green;">✓ ${member}</div>`)
-        .join("");
-    }
-    
-    // For votes cast "against"
-    if (votes && votes.against && votes.against.length > 0) {
-      tooltipHTML += votes.against
-        .map(member => `<div style="color:red;">✗ ${member}</div>`)
-        .join("");
-    }
-    
-    // Compute neutral votes (optional)
-    if (rollCallUseMemberNames && currentCommittee && committees[currentCommittee]) {
-      const allMembers = committees[currentCommittee];
-      const neutralMembers = allMembers.filter(member => {
-        return !(votes.for && votes.for.includes(member)) &&
-               !(votes.against && votes.against.includes(member));
-      });
-      if (neutralMembers.length > 0) {
-        tooltipHTML += neutralMembers
-          .map(member => `<div style="color:gray;">⚪ ${member}</div>`)
-          .join("");
-      }
-    }
-    
-    tooltipHTML += "</div>";
-    // Save our custom HTML to the element's data attribute
-    el.dataset.tooltipHtml = tooltipHTML;
-    console.log("updateRowVoteTooltip: Set tooltip HTML to:", tooltipHTML);
-  }
-  
+// --- Helper: Update a row’s tooltip based on vote data ---
+function updateRowVoteTooltip(el, votes) {
+  let tooltipHTML = "<div>";
 
+  // For votes cast "for"
+  if (votes && votes.for && votes.for.length > 0) {
+    tooltipHTML += votes.for
+      .map(member => `<div style="color:green;">✓ ${member}</div>`)
+      .join("");
+  }
+
+  // For votes cast "against"
+  if (votes && votes.against && votes.against.length > 0) {
+    tooltipHTML += votes.against
+      .map(member => `<div style="color:red;">✗ ${member}</div>`)
+      .join("");
+  }
+
+  // Compute neutral votes (optional)
+  if (rollCallUseMemberNames && currentCommittee && committees[currentCommittee]) {
+    const allMembers = committees[currentCommittee];
+    const neutralMembers = allMembers.filter(member => {
+      return !(votes.for && votes.for.includes(member)) &&
+              !(votes.against && votes.against.includes(member));
+    });
+    if (neutralMembers.length > 0) {
+      tooltipHTML += neutralMembers
+        .map(member => `<div style="color:gray;">⚪ ${member}</div>`)
+        .join("");
+    }
+  }
+
+  tooltipHTML += "</div>";
+  // Save our custom HTML to the element's data attribute
+  el.dataset.tooltipHtml = tooltipHTML;
+  console.log("updateRowVoteTooltip: Set tooltip HTML to:", tooltipHTML);
+}
+  
 // --- Custom tooltip helper for a row ---
 function attachTooltipToRow(row) {
   console.log("attachTooltipToRow: Attaching tooltip for row:", row);
@@ -182,7 +181,6 @@ function attachTooltipToElement(el) {
   });
 }
 
-
 // Helper to position the tooltip near the cursor with logging.
 // --- Modified positionTooltip so the tooltip appears above the mouse ---
 function positionTooltip(e, tooltip) {
@@ -193,8 +191,6 @@ function positionTooltip(e, tooltip) {
   tooltip.style.top = (e.pageY - tooltip.offsetHeight - offset) + "px";
   //console.log("positionTooltip: Positioned tooltip at", tooltip.style.left, tooltip.style.top);
 }
-
-
 
 // Helper to normalize a name (trim and convert to lower case).
 function normalizeName(name) {
@@ -227,8 +223,7 @@ function getPreviousBillType() {
   }
   return "";
 }
-
-  
+ 
 function getStartingTime() {
   // If time mode is active, use the stored time; otherwise, use the current time.
   return (timeModeActivated && timeModeTime) ? timeModeTime : getCurrentTimestamp();
@@ -309,7 +304,6 @@ function parseTestimonyString(str) {
   return testimonyDetails;
 }
 
-
 // Returns a modified full name if useLastNamesOnly is enabled and the name starts with "Senator"
 function applyUseLastNamesOnly(fullName) {
   if (!useLastNamesOnly) return fullName;
@@ -346,7 +340,6 @@ function applyUseLastNamesOnly(fullName) {
   }
   return fullName;
 }
-
 
 // Attach a control-click event listener to a row.
 // When the user clicks with the Control key held down,
@@ -395,7 +388,6 @@ function addCtrlClickHandler(row) {
   }, true);
 }
 
-
 function loadMemberInfoXML() {
   fetch('allMember.xml')
     .then(response => response.text())
@@ -441,8 +433,6 @@ function loadMemberInfoXML() {
     });
 }
 
-
-
 // Helper function to get member info for a given member name.
 // It first tries an exact match and then falls back to matching by the last name.
 function getMemberInfoForMember(member) {
@@ -473,7 +463,6 @@ function getMemberInfoForMember(member) {
   }
   return "";
 }
-
 
 function getCurrentTimestamp() {
   // Example: "3:05:07 PM" (12-hour format)
@@ -579,8 +568,6 @@ function editTestimonyRecord(index) {
   // Open the testimony modal for editing.
   openTestimonyModal();
 }
-
-
 
 function populateEditUI() {
   // --- Added fix for edit mode ---
@@ -778,7 +765,6 @@ function populateEditUI() {
   document.getElementById("log").innerText = constructedStatement;
   console.log("Constructed statement in edit UI:", constructedStatement);
 }
-
 
 // When Enter is pressed and we’re in edit mode, call finalizeEdit() rather than creating a new row.
 function finalizeEdit() {
@@ -1040,9 +1026,6 @@ function createNewRowInHistory(fileLink = "") {
   statementCell = localStatementCell;
 }
 
-
-
-
 function finalizeInProgressRow() {
   inProgressRow = null;
   timeCell = null;
@@ -1090,11 +1073,6 @@ function insertHearingStatementDirect(statementData) {
   }
 }
 
-
-
-
-
-
 /* --------------------------
    Auto Copy
    -------------------------- */
@@ -1110,8 +1088,6 @@ function onAutoCopyChanged() {
     copyToClipboard();
   }
 }
-
-
 
 function autoCopyIfEnabled() {
   if (autoCopyEnabled) {
@@ -1548,7 +1524,6 @@ function updateStatement() {
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
 
-
 /* "Moved" => sub-actions => "Do Pass" / "Do Not Pass" */
 function showMovedSubActions() {
   const subActionsContainer = document.getElementById("sub-actions-container");
@@ -1607,7 +1582,6 @@ function handleMovedSubAction(button, subAction) {
   };
 }
 
-
 // Bill Type => "SB", "HB", or "Amendment"
 function showBillTypeSection(visible) {
   const billTypeSection = document.getElementById("bill-type-section");
@@ -1636,7 +1610,6 @@ function showBillTypeSection(visible) {
   }
 }
 
-
 function selectBillType(type, btn) {
   selectedBillType = type;
   console.log("selectBillType() – selectedBillType set to:", selectedBillType);
@@ -1655,8 +1628,6 @@ function selectBillType(type, btn) {
     selectedRereferCommittee = "";
   }
 }
-
-
 
 // "As Amended" for Roll Call Vote on SB
 function showAsAmendedSection(visible) {
@@ -1813,7 +1784,6 @@ function recalcRollCallVotes() {
   
   updateStatement();
 }
-
 
 function updateVoteTallyDisplay() {
   // First, try updating the roll call counts display (if it exists).
@@ -1984,10 +1954,8 @@ function updateStatement() {
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
     if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
-      // Always append "on Amendment" or "on Reconsider" for these types
       actionText += " on " + selectedBillType;
     } else {
-      // For bills (SB, HB), follow the includeBillTypeInRollCall setting
       if (includeBillTypeInRollCall) {
         let billType = getPreviousBillType();
         if (!billType && selectedBillType) {
@@ -2002,13 +1970,13 @@ function updateStatement() {
       } else {
         let prevMotion = getPreviousMotionDetails();
         let motionText = prevMotion.outcome;
+        if (selectedBillType === "SB" && asAmended) {
+          motionText += " as Amended";
+        }
         if (prevMotion.hasRereferral) {
           motionText += " and Rereferred";
         }
         actionText += " on " + motionText;
-        if (prevMotion.billType === "SB" && asAmended) {
-          actionText += " as Amended";
-        }
       }
     }
     parts.push(actionText);
