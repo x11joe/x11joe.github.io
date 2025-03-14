@@ -1914,18 +1914,20 @@ function updateInProgressRow() {
   }
 }
 
-// NEW helper: Returns the previous motion outcome ("Do Pass" or "Do Not Pass")
-// from the most recent "Moved" record that had one of those sub-actions.
-function getPreviousMotionOutcome() {
+function getPreviousMotionDetails() {
   for (let i = historyRecords.length - 1; i >= 0; i--) {
     let rec = historyRecords[i];
     if (rec.mainAction === "Moved" && rec.selectedSubAction && 
         (rec.selectedSubAction === "Do Pass" || rec.selectedSubAction === "Do Not Pass")) {
-      return rec.selectedSubAction;
+      return {
+        outcome: rec.selectedSubAction,
+        hasRereferral: !!rec.selectedRereferCommittee,
+        billType: rec.selectedBillType
+      };
     }
   }
-  // Default value if none is found.
-  return "Do Pass";
+  // Default value if no previous "Moved" action is found
+  return { outcome: "Do Pass", hasRereferral: false, billType: "" };
 }
 
 // Build the statement
@@ -1981,11 +1983,11 @@ function updateStatement() {
   
   if (mainAction.startsWith("Roll Call Vote on")) {
     let actionText = "Roll Call Vote";
-    // Always use "on Amendment" or "on Reconsider" when applicable, regardless of settings
     if (selectedBillType === "Amendment" || selectedBillType === "Reconsider") {
+      // Always append "on Amendment" or "on Reconsider" for these types
       actionText += " on " + selectedBillType;
     } else {
-      // For other bill types (e.g., SB, HB), respect the includeBillTypeInRollCall setting
+      // For bills (SB, HB), follow the includeBillTypeInRollCall setting
       if (includeBillTypeInRollCall) {
         let billType = getPreviousBillType();
         if (!billType && selectedBillType) {
@@ -1998,9 +2000,13 @@ function updateStatement() {
           }
         }
       } else {
-        let prevMotion = getPreviousMotionOutcome();
-        actionText += " on " + prevMotion;
-        if (asAmended) {
+        let prevMotion = getPreviousMotionDetails();
+        let motionText = prevMotion.outcome;
+        if (prevMotion.hasRereferral) {
+          motionText += " and Rereferred";
+        }
+        actionText += " on " + motionText;
+        if (prevMotion.billType === "SB" && asAmended) {
           actionText += " as Amended";
         }
       }
@@ -2084,7 +2090,6 @@ function updateStatement() {
   autoCopyIfEnabled();
   console.log("updateStatement() – constructedStatement:", constructedStatement);
 }
-
 
 function resetVoteTally() {
   // For the plus–minus UI mode.
