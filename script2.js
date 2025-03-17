@@ -1,21 +1,8 @@
 // Wait for the DOM to load
 document.addEventListener('DOMContentLoaded', () => {
-    // Default committee data (replace with your actual data if available)
-    const committees = {
-        "Senate Appropriations Committee": [
-            "Senator Smith",
-            "Senator Johnson",
-            "Senator Lee"
-        ],
-        "House Judiciary Committee": [
-            "Representative Brown",
-            "Representative Davis",
-            "Representative Wilson"
-        ]
-    };
-
-    // Default current committee (adjust based on your needs)
-    let currentCommittee = "Senate Appropriations Committee";
+    // Import committee data from defaultCommittees.js
+    const committees = window.DEFAULT_COMMITTEES || {};
+    let currentCommittee = "Senate Judiciary Committee"; // Default to Senate Judiciary
 
     // JSON structure for the predictive system
     const jsonStructure = {
@@ -296,12 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Position modal below input
+    // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
-        modal.style.top = `${rect.bottom + window.scrollY}px`;
         modal.style.left = `${rect.left + window.scrollX}px`;
         modal.style.width = `${rect.width}px`;
+        modal.style.top = `${rect.top - modal.offsetHeight - 10 + window.scrollY}px`; // 10px above input
     }
 
     // Remove last tag on backspace

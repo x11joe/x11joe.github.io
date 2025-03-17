@@ -13,6 +13,16 @@ body {
     width: 600px;
 }
 
+.input {
+    border: 1px solid #ccc;
+    padding: 10px;
+    min-height: 50px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    white-space: pre-wrap;
+}
+
 .modal {
     position: absolute;
     background: white;
@@ -34,25 +44,6 @@ body {
 
 .option:hover {
     background-color: #f0f0f0;
-}
-
-.statement {
-    min-height: 50px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: white;
-    border-radius: 5px;
-}
-
-.input {
-    border: 1px solid #ccc;
-    padding: 10px;
-    min-height: 50px;
-    width: 100%;
-    box-sizing: border-box;
-    outline: none;
-    white-space: pre-wrap; /* Preserve spaces and line breaks */
 }
 
 .token {
