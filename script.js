@@ -3007,7 +3007,7 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
       // Time input for Introduced Bill
       const timeInput = document.createElement("input");
       timeInput.type = "text";
-      timeInput.placeholder = "Time (e.g., 5:15:32 PM)";
+      timeInput.placeholder = "9:01:00 AM";
       timeInput.style.marginLeft = "10px";
       timeInput.style.width = "120px";
       itemDiv.appendChild(timeInput);
