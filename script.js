@@ -1038,38 +1038,42 @@ function finalizeInProgressRow() {
  * using the current local time and the given statement text.
  */
 function insertHearingStatementDirect(statementData) {
-  // Capture the starting time from time mode (if active), then disable time mode.
-  let startingTime = getStartingTime();
+  let startingTime;
+  if (typeof statementData === "object" && statementData.time) {
+      startingTime = statementData.time;
+  } else {
+      startingTime = getStartingTime();
+  }
   resetTimeMode();
 
   let statementText, fileLink;
   let isTestimony = false;
   let testimonyDetails = null;
   if (typeof statementData === "object" && statementData !== null) {
-    statementText = statementData.text;
-    fileLink = statementData.link || "";
-    isTestimony = !!statementData.isTestimony;
-    testimonyDetails = statementData.testimony || null;
+      statementText = statementData.text;
+      fileLink = statementData.link || "";
+      isTestimony = !!statementData.isTestimony;
+      testimonyDetails = statementData.testimony || null;
   } else {
-    statementText = statementData;
-    fileLink = "";
+      statementText = statementData;
+      fileLink = "";
   }
 
   if (inProgressRow !== null) {
-    resetAllAndFinalize();
+      resetAllAndFinalize();
   }
 
   constructedStatement = statementText;
   statementStartTime = startingTime;
   createNewRowInHistory(fileLink);
+  document.getElementById("log").innerText = statementText; // Update the log explicitly
   finalizeInProgressRow();
 
-  // If it's a testimony entry, store additional properties.
   if (isTestimony && historyRecords.length > 0) {
-    let newRecord = historyRecords[historyRecords.length - 1];
-    newRecord.isTestimony = true;
-    newRecord.testimony = testimonyDetails;
-    saveHistoryToLocalStorage();
+      let newRecord = historyRecords[historyRecords.length - 1];
+      newRecord.isTestimony = true;
+      newRecord.testimony = testimonyDetails;
+      saveHistoryToLocalStorage();
   }
 }
 
@@ -2943,97 +2947,113 @@ document.getElementById("lookupInput").addEventListener("keyup", function() {
   const resultsDiv = document.getElementById("lookupResults");
   resultsDiv.innerHTML = ""; // Clear previous results
 
-  // If the query is empty, do nothing further.
   if (!query) return;
 
-  // Loop through the keys in memberInfoMapping.
-  // (Assuming memberInfoMapping is already loaded via loadMemberInfoXML().)
   const matchingMembers = Object.keys(memberInfoMapping).filter(memberName => {
-    // Remove common prefixes for a friendlier search.
-    let normalized = memberName.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "");
-    return normalized.toLowerCase().includes(query);
+      let normalized = memberName.replace(/^(Senator|Representative|Chairman|Chairwoman|Vice Chairman|Vice Chairwoman)\s+/i, "");
+      return normalized.toLowerCase().includes(query);
   });
 
   if (matchingMembers.length === 0) {
-    resultsDiv.innerHTML = "<p>No matching members found.</p>";
-    return;
+      resultsDiv.innerHTML = "<p>No matching members found.</p>";
+      return;
   }
 
-  // Create a list of matching results.
   matchingMembers.forEach(memberName => {
-     // Create a container for this result
-     const itemDiv = document.createElement("div");
-     itemDiv.style.display = "flex";
-     itemDiv.style.justifyContent = "space-between";
-     itemDiv.style.alignItems = "center";
-     itemDiv.style.padding = "5px 0";
-     itemDiv.style.borderBottom = "1px solid #eee";
-   
-     // Create a span to hold the member's name.
-     const nameSpan = document.createElement("span");
-     nameSpan.textContent = memberName;
-     
-     // *** NEW: Clicking the name copies the member name to the clipboard.
-     nameSpan.addEventListener("click", () => {
-       navigator.clipboard.writeText(memberName).then(() => {
-         // Temporarily change the background to a light green to indicate success.
-         nameSpan.style.backgroundColor = "#d4edda";
-         setTimeout(() => {
-           nameSpan.style.backgroundColor = "";
-         }, 1000);
-       }).catch(err => {
-         console.error("Failed to copy member name:", err);
-       });
-     });
-     
-     itemDiv.appendChild(nameSpan);
-   
-     // Create a "Copy" button (if you still want to keep this button)
-     const copyBtn = document.createElement("button");
-     copyBtn.textContent = "Copy Member Info";
-     copyBtn.style.marginLeft = "10px";
-     copyBtn.style.padding = "5px 8px";
-     copyBtn.style.fontSize = "12px";
-     copyBtn.addEventListener("click", (e) => {
-       // Prevent the event from bubbling up to the nameSpan click.
-       e.stopPropagation();
-       let info = memberInfoMapping[memberName];
-       if (!info) info = memberName; // fallback if info missing
-       navigator.clipboard.writeText(info).then(() => {
-         copyBtn.textContent = "Copied!";
-         setTimeout(() => {
-           copyBtn.textContent = "Copy Member Info";
-         }, 1000);
-       }).catch(err => {
-         console.error("Failed to copy member info:", err);
-       });
-     });
-     itemDiv.appendChild(copyBtn);
-   
-     // Create an "Introduced Bill" shortcut button.
-     const introBtn = document.createElement("button");
-     introBtn.textContent = "Introduced Bill";
-     introBtn.style.marginLeft = "5px";
-     introBtn.style.padding = "5px 8px";
-     introBtn.style.fontSize = "12px";
-     introBtn.addEventListener("click", (e) => {
-         // Prevent the event from bubbling up so that the name click is not triggered.
-         e.stopPropagation();
-         selectedMember = memberName;
-         let fullName = applyUseLastNamesOnly(memberName);
-         let message = `${fullName} - Introduced Bill`;
-         insertHearingStatementDirect(message);
-         console.log("Introduced Bill entry added:", message);
-         introBtn.textContent = "Added!";
-         setTimeout(() => {
-           introBtn.textContent = "Introduced Bill";
-         }, 1000);
-      });
-     itemDiv.appendChild(introBtn);
-   
-     resultsDiv.appendChild(itemDiv);
-   });
+      // Create a container for this result
+      const itemDiv = document.createElement("div");
+      itemDiv.style.display = "flex";
+      itemDiv.style.justifyContent = "space-between";
+      itemDiv.style.alignItems = "center";
+      itemDiv.style.padding = "5px 0";
+      itemDiv.style.borderBottom = "1px solid #eee";
 
+      // Member name span
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = memberName;
+      nameSpan.addEventListener("click", () => {
+          navigator.clipboard.writeText(memberName).then(() => {
+              nameSpan.style.backgroundColor = "#d4edda";
+              setTimeout(() => {
+                  nameSpan.style.backgroundColor = "";
+              }, 1000);
+          }).catch(err => {
+              console.error("Failed to copy member name:", err);
+          });
+      });
+      itemDiv.appendChild(nameSpan);
+
+      // Copy Member Info button
+      const copyBtn = document.createElement("button");
+      copyBtn.textContent = "Copy Member Info";
+      copyBtn.style.marginLeft = "10px";
+      copyBtn.style.padding = "5px 8px";
+      copyBtn.style.fontSize = "12px";
+      copyBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let info = memberInfoMapping[memberName];
+          if (!info) info = memberName;
+          navigator.clipboard.writeText(info).then(() => {
+              copyBtn.textContent = "Copied!";
+              setTimeout(() => {
+                  copyBtn.textContent = "Copy Member Info";
+              }, 1000);
+          }).catch(err => {
+              console.error("Failed to copy member info:", err);
+          });
+      });
+      itemDiv.appendChild(copyBtn);
+
+      // Time input for Introduced Bill
+      const timeInput = document.createElement("input");
+      timeInput.type = "text";
+      timeInput.placeholder = "Time (e.g., 5:15:32 PM)";
+      timeInput.style.marginLeft = "10px";
+      timeInput.style.width = "120px";
+      itemDiv.appendChild(timeInput);
+
+      // Introduced Bill button
+      const introBtn = document.createElement("button");
+      introBtn.textContent = "Introduced Bill";
+      introBtn.style.marginLeft = "5px";
+      introBtn.style.padding = "5px 8px";
+      introBtn.style.fontSize = "12px";
+      introBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let customTime = timeInput.value.trim();
+          let useTime = "";
+          if (customTime) {
+              let timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d:[0-5]\d\s+(AM|PM)$/i;
+              if (timeRegex.test(customTime)) {
+                  useTime = customTime;
+              } else {
+                  alert("Invalid time format. Please use H:mm:ss AM/PM.");
+                  return;
+              }
+          } else {
+              useTime = getStartingTime();
+          }
+          selectedMember = memberName;
+          let fullName = applyUseLastNamesOnly(memberName);
+          let message = `${fullName} - Introduced Bill`;
+          insertHearingStatementDirect({ text: message, time: useTime });
+          if (autoCopyEnabled) {
+              navigator.clipboard.writeText(message.replace(/,/g, "")).then(() => {
+                  console.log("Introduced Bill statement copied to clipboard.");
+              }).catch(err => {
+                  console.error("Failed to copy Introduced Bill statement:", err);
+              });
+          }
+          console.log("Introduced Bill entry added at time:", useTime);
+          introBtn.textContent = "Added!";
+          setTimeout(() => {
+              introBtn.textContent = "Introduced Bill";
+          }, 1000);
+      });
+      itemDiv.appendChild(introBtn);
+
+      resultsDiv.appendChild(itemDiv);
+  });
 });
 
 // --- KEYDOWN HANDLER ---
