@@ -1,49 +1,18 @@
 // Wait for the DOM to load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Import committee data from defaultCommittees.js
     const committees = window.DEFAULT_COMMITTEES || {};
     let currentCommittee = "Senate Judiciary Committee"; // Default to Senate Judiciary
 
-    // JSON structure for the predictive system
-    const jsonStructure = {
-        "startingPoints": [
-            { "type": "member", "options": "committeeMembers", "flow": "committeeMemberFlow" },
-            { "type": "meetingAction", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "flow": "meetingActionFlow" },
-            { "type": "voteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" }
-        ],
-        "flows": {
-            "committeeMemberFlow": {
-                "steps": [
-                    { "step": "member", "type": "select", "options": "committeeMembers", "next": "action" },
-                    { "step": "action", "type": "select", "options": ["Moved", "Seconded", "Withdrew", "Proposed Amendment", "Introduced Bill"], "next": { "Moved": "movedDetail", "Proposed Amendment": "amendmentModule", "default": null } },
-                    { "step": "movedDetail", "type": "select", "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "rereferOptional", "Do Not Pass": "rereferOptional", "default": null } },
-                    { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "optional": true, "next": null }
-                ]
-            },
-            "meetingActionFlow": {
-                "steps": [
-                    { "step": "action", "type": "select", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "next": "memberOptional" },
-                    { "step": "memberOptional", "type": "select", "options": "committeeMembers", "optional": true, "next": null }
-                ]
-            },
-            "voteActionFlow": {
-                "steps": [
-                    { "step": "voteType", "type": "select", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "next": { "Roll Call Vote": "rollCallMotionType", "Voice Vote": "voiceVoteOn", "Motion Failed": "motionFailedReason" } },
-                    { "step": "rollCallMotionType", "type": "select", "options": "suggestMotionType", "next": "asAmendedOptional" },
-                    { "step": "asAmendedOptional", "type": "select", "options": ["as Amended"], "optional": true, "next": "voteModule" },
-                    { "step": "voteModule", "type": "module", "fields": [
-                        { "name": "for", "type": "number" },
-                        { "name": "against", "type": "number" },
-                        { "name": "outcome", "type": "select", "options": ["Passed", "Failed"] }
-                    ], "next": { "outcome": { "Passed": "billCarrier", "Failed": null } } },
-                    { "step": "billCarrier", "type": "select", "options": "committeeMembers", "next": null },
-                    { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
-                    { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },
-                    { "step": "motionFailedReason", "type": "select", "options": "suggestFailedReason", "next": null }
-                ]
-            }
-        }
-    };
+    // Load flows.json using async/await
+    let jsonStructure;
+    try {
+        const response = await fetch('flows.json');
+        jsonStructure = await response.json();
+    } catch (error) {
+        console.error('Error loading flows.json:', error);
+        return; // Exit if fetch fails
+    }
 
     // Dynamic option functions
     const suggestMotionType = () => ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
@@ -103,16 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Get the current untagged text at the end
     function getCurrentText() {
-        let lastText = '';
+        let text = '';
         for (let i = inputDiv.childNodes.length - 1; i >= 0; i--) {
             const node = inputDiv.childNodes[i];
             if (node.nodeType === Node.TEXT_NODE) {
-                lastText = node.textContent + lastText;
-            } else {
-                break;
+                text = node.textContent + text;
+            } else if (node.classList && node.classList.contains('token')) {
+                break; // Stop at the last token
             }
         }
-        return lastText.trim();
+        return text.trim();
     }
 
     // Create a tag element
@@ -269,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 div.className = 'option';
                 div.textContent = `${index + 1}. ${opt}`;
                 div.onclick = () => {
-                    inputDiv.lastChild.textContent = ' ';
+                    inputDiv.lastChild.textContent = ' '; // Clear text
                     const tag = createTag(opt, currentStep || 'startingPoint');
                     inputDiv.insertBefore(tag, inputDiv.lastChild);
                     selectOption(opt);
@@ -277,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modal.appendChild(div);
             });
             modal.classList.add('active');
-            positionModal();
+            positionModal(); // Call after content is added
         } else {
             modal.classList.remove('active');
         }
@@ -286,9 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
+        const modalHeight = modal.offsetHeight || 200; // Fallback height if not rendered
         modal.style.left = `${rect.left + window.scrollX}px`;
         modal.style.width = `${rect.width}px`;
-        modal.style.top = `${rect.top - modal.offsetHeight - 10 + window.scrollY}px`; // 10px above input
+        modal.style.top = `${rect.top - modalHeight - 10 + window.scrollY}px`; // 10px above input
     }
 
     // Remove last tag on backspace
@@ -317,15 +287,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
-        if (text.endsWith(' ')) {
-            tryToTag();
-        } else {
-            showSuggestions(text);
-        }
+        showSuggestions(text);
     });
 
+    // Handle Enter to lock in selection
     inputDiv.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace') {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent newline
+            const text = getCurrentText();
+            const options = getCurrentOptions();
+            const match = options.find(opt => opt.toLowerCase() === text.toLowerCase());
+            if (match) {
+                inputDiv.lastChild.textContent = ' '; // Clear text
+                const tag = createTag(match, currentStep || 'startingPoint');
+                inputDiv.insertBefore(tag, inputDiv.lastChild);
+                selectOption(match);
+            }
+        } else if (e.key === 'Backspace') {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);

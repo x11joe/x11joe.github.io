@@ -1,0 +1,39 @@
+{
+    "startingPoints": [
+        { "type": "member", "options": "committeeMembers", "flow": "committeeMemberFlow" },
+        { "type": "meetingAction", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "flow": "meetingActionFlow" },
+        { "type": "voteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" }
+    ],
+    "flows": {
+        "committeeMemberFlow": {
+            "steps": [
+                { "step": "member", "type": "select", "options": "committeeMembers", "next": "action" },
+                { "step": "action", "type": "select", "options": ["Moved", "Seconded", "Withdrew", "Proposed Amendment", "Introduced Bill"], "next": { "Moved": "movedDetail", "Proposed Amendment": "amendmentModule", "default": null } },
+                { "step": "movedDetail", "type": "select", "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "rereferOptional", "Do Not Pass": "rereferOptional", "default": null } },
+                { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "optional": true, "next": null }
+            ]
+        },
+        "meetingActionFlow": {
+            "steps": [
+                { "step": "action", "type": "select", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "next": "memberOptional" },
+                { "step": "memberOptional", "type": "select", "options": "committeeMembers", "optional": true, "next": null }
+            ]
+        },
+        "voteActionFlow": {
+            "steps": [
+                { "step": "voteType", "type": "select", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "next": { "Roll Call Vote": "rollCallMotionType", "Voice Vote": "voiceVoteOn", "Motion Failed": "motionFailedReason" } },
+                { "step": "rollCallMotionType", "type": "select", "options": "suggestMotionType", "next": "asAmendedOptional" },
+                { "step": "asAmendedOptional", "type": "select", "options": ["as Amended"], "optional": true, "next": "voteModule" },
+                { "step": "voteModule", "type": "module", "fields": [
+                    { "name": "for", "type": "number" },
+                    { "name": "against", "type": "number" },
+                    { "name": "outcome", "type": "select", "options": ["Passed", "Failed"] }
+                ], "next": { "outcome": { "Passed": "billCarrier", "Failed": null } } },
+                { "step": "billCarrier", "type": "select", "options": "committeeMembers", "next": null },
+                { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
+                { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },
+                { "step": "motionFailedReason", "type": "select", "options": "suggestFailedReason", "next": null }
+            ]
+        }
+    }
+}

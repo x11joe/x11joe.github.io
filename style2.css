@@ -9,7 +9,7 @@ body {
 }
 
 .container {
-    position: relative;
+    position: relative; /* Modal positions relative to this */
     width: 600px;
 }
 
