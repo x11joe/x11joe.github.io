@@ -1,3 +1,4 @@
+// script2.js
 // Wait for the DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
     // Import committee data from defaultCommittees.js
