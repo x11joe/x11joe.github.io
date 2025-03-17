@@ -1,4 +1,4 @@
-// JSON structure defining flows and options
+// JSON structure (already provided)
 const jsonStructure = {
     "startingPoints": [
         { "type": "member", "options": "committeeMembers", "flow": "committeeMemberFlow" },
@@ -39,94 +39,135 @@ const jsonStructure = {
     }
 };
 
-// Mock data for dynamic options
-const committeeMembers = ["Chairwoman Diane Larson", "Vice Chairman Bob Paulson", "Senator Ryan Braunberger"];
-const otherCommittees = ["Senate Appropriations", "Senate Finance"];
+// Dynamic option functions
 const suggestMotionType = () => ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
 const suggestFailedReason = () => ["for lack of a second"];
 
-// State management
+// State variables
+let path = []; // Array of {step, value}
 let currentFlow = null;
 let currentStep = null;
-let statementParts = [];
-let moduleData = {};
 
 // DOM elements
-const input = document.getElementById('input');
+const inputDiv = document.getElementById('input');
 const modal = document.getElementById('modal');
-const statementDiv = document.getElementById('statement');
 
-// Handle user input
-input.addEventListener('input', () => {
-    const value = input.value.trim().toLowerCase();
+// Get committee members from currentCommittee
+function getCommitteeMembers() {
+    return committees[currentCommittee] || [];
+}
+
+// Get other committees based on chamber
+function getOtherCommittees() {
+    const isHouse = currentCommittee.toLowerCase().includes("house");
+    return Object.keys(committees).filter(c => 
+        isHouse ? c.toLowerCase().includes("house") : c.toLowerCase().includes("senate")
+    ).filter(c => c !== currentCommittee);
+}
+
+// Get options for the current step
+function getCurrentOptions() {
     if (!currentFlow) {
-        // Suggest starting points
-        const suggestions = jsonStructure.startingPoints.filter(sp => 
-            sp.type.toLowerCase().includes(value) || 
-            (typeof sp.options === 'string' && sp.options.toLowerCase().includes(value)) ||
-            (Array.isArray(sp.options) && sp.options.some(opt => opt.toLowerCase().includes(value)))
-        );
-        displaySuggestions(suggestions, 'startingPoint');
-    } else {
-        // Suggest options for current step
-        const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-        if (stepConfig) {
-            let options = getOptions(stepConfig.options);
-            if (stepConfig.type === 'module') {
-                handleModule(stepConfig);
-                return;
+        let allOptions = [];
+        jsonStructure.startingPoints.forEach(sp => {
+            if (sp.options === "committeeMembers") {
+                allOptions = allOptions.concat(getCommitteeMembers());
+            } else if (Array.isArray(sp.options)) {
+                allOptions = allOptions.concat(sp.options);
             }
-            if (value) {
-                options = options.filter(opt => opt.toLowerCase().includes(value));
-            }
-            displaySuggestions(options, stepConfig.step);
-        }
-    }
-});
-
-// Get options based on configuration
-function getOptions(optionConfig) {
-    if (typeof optionConfig === 'string') {
-        switch (optionConfig) {
-            case 'committeeMembers': return committeeMembers;
-            case 'otherCommittees': return otherCommittees;
-            case 'suggestMotionType': return suggestMotionType();
-            case 'suggestFailedReason': return suggestFailedReason();
-            default: return [];
-        }
-    } else if (Array.isArray(optionConfig)) {
-        return optionConfig;
-    }
-    return [];
-}
-
-// Display suggestions in modal
-function displaySuggestions(suggestions, stepType) {
-    modal.innerHTML = '';
-    if (suggestions.length > 0) {
-        suggestions.forEach((suggestion, index) => {
-            const div = document.createElement('div');
-            div.className = 'option';
-            div.textContent = `${index + 1}. ${typeof suggestion === 'object' ? suggestion.type : suggestion}`;
-            div.addEventListener('click', () => selectOption(suggestion, stepType));
-            modal.appendChild(div);
         });
-        modal.classList.add('active');
+        return allOptions;
     } else {
-        modal.classList.remove('active');
+        const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+        if (!stepConfig) return [];
+        if (stepConfig.options === "committeeMembers") {
+            return getCommitteeMembers();
+        } else if (stepConfig.options === "otherCommittees") {
+            return getOtherCommittees();
+        } else if (stepConfig.options === "suggestMotionType") {
+            return suggestMotionType();
+        } else if (stepConfig.options === "suggestFailedReason") {
+            return suggestFailedReason();
+        } else if (Array.isArray(stepConfig.options)) {
+            return stepConfig.options;
+        }
+        return [];
     }
 }
 
-// Handle option selection
-function selectOption(option, stepType) {
-    if (stepType === 'startingPoint') {
-        const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === option.type);
-        currentFlow = jsonStructure.flows[startingPoint.flow];
-        currentStep = currentFlow.steps[0].step;
-        statementParts.push(option.type);
+// Get the current untagged text at the end
+function getCurrentText() {
+    let lastText = '';
+    for (let i = inputDiv.childNodes.length - 1; i >= 0; i--) {
+        const node = inputDiv.childNodes[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+            lastText = node.textContent + lastText;
+        } else {
+            break;
+        }
+    }
+    return lastText.trim();
+}
+
+// Create a tag element
+function createTag(text, type) {
+    const span = document.createElement('span');
+    span.className = 'token';
+    span.textContent = text;
+    span.setAttribute('data-type', type);
+    span.contentEditable = false;
+    return span;
+}
+
+// Try to convert the last word into a tag
+function tryToTag() {
+    let lastTextNode = null;
+    for (let i = inputDiv.childNodes.length - 1; i >= 0; i--) {
+        if (inputDiv.childNodes[i].nodeType === Node.TEXT_NODE) {
+            lastTextNode = inputDiv.childNodes[i];
+            break;
+        }
+    }
+    if (lastTextNode) {
+        const text = lastTextNode.textContent.trim();
+        const words = text.split(/\s+/);
+        if (words.length > 0) {
+            const lastWord = words[words.length - 1];
+            const options = getCurrentOptions();
+            const match = options.find(opt => opt.toLowerCase() === lastWord.toLowerCase());
+            if (match) {
+                const tag = createTag(match, currentStep || 'startingPoint');
+                lastTextNode.textContent = text.slice(0, -lastWord.length).trim() + ' ';
+                inputDiv.insertBefore(tag, lastTextNode);
+                selectOption(match);
+            }
+        }
+    }
+}
+
+// Select an option and update state
+function selectOption(option) {
+    if (!currentFlow) {
+        const startingPoint = jsonStructure.startingPoints.find(sp => {
+            if (sp.options === "committeeMembers") {
+                return getCommitteeMembers().includes(option);
+            } else if (Array.isArray(sp.options)) {
+                return sp.options.includes(option);
+            }
+            return false;
+        });
+        if (startingPoint) {
+            currentFlow = jsonStructure.flows[startingPoint.flow];
+            currentStep = currentFlow.steps[0].step;
+            path.push({ step: startingPoint.type, value: option });
+        }
     } else {
-        statementParts.push(option);
         const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+        if (stepConfig.type === "module") {
+            handleModule(stepConfig, option);
+            return;
+        }
+        path.push({ step: currentStep, value: option });
         if (stepConfig.next) {
             if (typeof stepConfig.next === 'string') {
                 currentStep = stepConfig.next;
@@ -137,66 +178,165 @@ function selectOption(option, stepType) {
             currentStep = null;
         }
     }
-    updateStatement();
-    input.value = '';
-    modal.classList.remove('active');
+    updateInput();
+    showSuggestions('');
 }
 
-// Update statement display
-function updateStatement() {
-    statementDiv.innerHTML = '';
-    statementParts.forEach(part => {
-        const token = document.createElement('span');
-        token.className = 'token';
-        token.textContent = part;
-        statementDiv.appendChild(token);
-    });
-    if (!currentStep) {
-        const checkmark = document.createElement('span');
-        checkmark.textContent = ' ✓';
-        checkmark.style.color = 'green';
-        statementDiv.appendChild(checkmark);
-    }
-}
-
-// Basic module handling (for voteModule as an example)
-function handleModule(stepConfig) {
+// Handle module input (simplified for voteModule)
+function handleModule(stepConfig, triggerOption) {
     modal.innerHTML = '';
-    modal.classList.add('active');
+    const form = document.createElement('div');
     stepConfig.fields.forEach(field => {
         const label = document.createElement('label');
         label.textContent = `${field.name}: `;
-        const inputField = document.createElement('input');
-        inputField.type = field.type === 'number' ? 'number' : 'text';
-        if (field.options) {
-            inputField.remove();
-            const select = document.createElement('select');
+        let input;
+        if (field.type === 'select') {
+            input = document.createElement('select');
             field.options.forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt;
                 option.textContent = opt;
-                select.appendChild(option);
+                input.appendChild(option);
             });
-            label.appendChild(select);
         } else {
-            label.appendChild(inputField);
+            input = document.createElement('input');
+            input.type = field.type;
         }
-        modal.appendChild(label);
-        modal.appendChild(document.createElement('br'));
+        input.id = `module-${field.name}`;
+        label.appendChild(input);
+        form.appendChild(label);
+        form.appendChild(document.createElement('br'));
     });
     const submit = document.createElement('button');
     submit.textContent = 'Submit';
-    submit.addEventListener('click', () => {
-        const inputs = modal.querySelectorAll('input, select');
-        let moduleResult = {};
-        inputs.forEach((inp, idx) => {
-            moduleResult[stepConfig.fields[idx].name] = inp.value;
+    submit.onclick = () => {
+        const moduleResult = {};
+        stepConfig.fields.forEach(field => {
+            const input = document.getElementById(`module-${field.name}`);
+            moduleResult[field.name] = field.type === 'number' ? parseInt(input.value) || 0 : input.value;
         });
-        statementParts.push(JSON.stringify(moduleResult));
-        currentStep = stepConfig.next ? (stepConfig.next.outcome ? stepConfig.next.outcome[moduleResult.outcome] : stepConfig.next) : null;
-        updateStatement();
+        const resultStr = JSON.stringify(moduleResult);
+        path.push({ step: currentStep, value: resultStr });
+        currentStep = stepConfig.next.outcome ? stepConfig.next.outcome[moduleResult.outcome] : stepConfig.next;
+        updateInput();
         modal.classList.remove('active');
-        input.value = '';
-    });
-    modal.appendChild(submit);
+    };
+    form.appendChild(submit);
+    modal.appendChild(form);
+    modal.classList.add('active');
+    positionModal();
 }
+
+// Update the input display
+function updateInput() {
+    inputDiv.innerHTML = '';
+    path.forEach(part => {
+        const tag = createTag(part.value, part.step);
+        inputDiv.appendChild(tag);
+    });
+    inputDiv.appendChild(document.createTextNode(' '));
+    if (!currentStep) {
+        const statementText = path.map(p => p.value).join(" - ");
+        insertHearingStatementDirect(statementText);
+        path = [];
+        currentFlow = null;
+        currentStep = null;
+        inputDiv.innerHTML = '';
+    }
+    inputDiv.focus();
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(inputDiv);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+// Show suggestions based on current text
+function showSuggestions(text) {
+    const options = getCurrentOptions();
+    const filtered = text ? options.filter(opt => opt.toLowerCase().startsWith(text.toLowerCase())) : options;
+    modal.innerHTML = '';
+    if (filtered.length > 0) {
+        filtered.forEach((opt, index) => {
+            const div = document.createElement('div');
+            div.className = 'option';
+            div.textContent = `${index + 1}. ${opt}`;
+            div.onclick = () => {
+                inputDiv.lastChild.textContent = ' ';
+                const tag = createTag(opt, currentStep || 'startingPoint');
+                inputDiv.insertBefore(tag, inputDiv.lastChild);
+                selectOption(opt);
+            };
+            modal.appendChild(div);
+        });
+        modal.classList.add('active');
+        positionModal();
+    } else {
+        modal.classList.remove('active');
+    }
+}
+
+// Position modal below input
+function positionModal() {
+    const rect = inputDiv.getBoundingClientRect();
+    modal.style.top = `${rect.bottom + window.scrollY}px`;
+    modal.style.left = `${rect.left + window.scrollX}px`;
+    modal.style.width = `${rect.width}px`;
+}
+
+// Remove last tag on backspace
+function removeLastTag() {
+    if (path.length > 0) {
+        path.pop();
+        if (path.length > 0) {
+            const lastPart = path[path.length - 1];
+            currentFlow = Object.values(jsonStructure.flows).find(flow => 
+                flow.steps.some(step => step.step === lastPart.step)
+            );
+            const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
+            currentStep = stepConfig.next;
+            if (typeof currentStep === 'object') {
+                currentStep = currentStep[lastPart.value] || currentStep.default;
+            }
+        } else {
+            currentFlow = null;
+            currentStep = null;
+        }
+        updateInput();
+        showSuggestions('');
+    }
+}
+
+// Event listeners
+inputDiv.addEventListener('input', () => {
+    const text = getCurrentText();
+    if (text.endsWith(' ')) {
+        tryToTag();
+    } else {
+        showSuggestions(text);
+    }
+});
+
+inputDiv.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace') {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (range.collapsed && inputDiv.childNodes.length > 1 && range.startOffset === 0 && inputDiv.lastChild.nodeType === Node.TEXT_NODE) {
+                e.preventDefault();
+                removeLastTag();
+            }
+        }
+    } else if (e.key >= '1' && e.key <= '9') {
+        const index = parseInt(e.key) - 1;
+        const suggestions = modal.querySelectorAll('.option');
+        if (index < suggestions.length) {
+            e.preventDefault();
+            suggestions[index].click();
+        }
+    }
+});
+
+// Initialize
+inputDiv.focus();
