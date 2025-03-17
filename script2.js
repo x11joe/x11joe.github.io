@@ -139,10 +139,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-            if (stepConfig.type === "module") {
-                handleModule(stepConfig, option);
-                return;
-            }
             path.push({ step: currentStep, value: option });
             if (stepConfig.next) {
                 if (typeof stepConfig.next === 'string') {
@@ -155,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         updateInput();
-        showSuggestions('');
+        showSuggestions(''); // Show next options immediately
     }
 
     // Handle module input (simplified for voteModule)
@@ -231,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show suggestions based on current text
     function showSuggestions(text) {
         const options = getCurrentOptions();
-        const filtered = text ? options.filter(opt => opt.toLowerCase().startsWith(text.toLowerCase())) : options;
+        const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
         if (filtered.length > 0) {
             filtered.forEach((opt, index) => {
@@ -256,10 +252,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
-        const modalHeight = modal.offsetHeight || 200; // Fallback height if not rendered
-        modal.style.left = `${rect.left + window.scrollX}px`;
-        modal.style.width = `${rect.width}px`;
-        modal.style.top = `${rect.top - modalHeight - 10 + window.scrollY}px`; // 10px above input
+        const modalHeight = modal.scrollHeight || 200; // Use scrollHeight for dynamic content, fallback to 200px
+        modal.style.left = `${rect.left + window.scrollX}px`; // Align with input’s left edge
+        modal.style.top = `${rect.top - modalHeight - 10 + window.scrollY}px`; // Place above input
+        modal.style.width = `${rect.width}px`; // Match input width
     }
 
     // Remove last tag on backspace
@@ -289,6 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
         showSuggestions(text);
+        tryToTag(); // Attempt to convert text to tag as you type
     });
 
     // Handle Enter to lock in selection
