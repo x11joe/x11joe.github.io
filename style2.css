@@ -1,10 +1,9 @@
 body {
     font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    display: flex;              /* Enable Flexbox */
+    flex-direction: column;     /* Stack children vertically */
+    align-items: center;        /* Center children horizontally */
+    height: 100vh;             /* Full viewport height */
     margin: 0;
     background-color: #f5f5f5;
 }
@@ -12,6 +11,7 @@ body {
 .container {
     position: relative;
     width: 600px;
+    margin-bottom: 10px;        /* Space between input and history */
 }
 
 .input {
@@ -78,13 +78,15 @@ body {
 }
 
 #history {
-    margin-top: 20px;
     width: 600px;
+    flex-grow: 1;               /* Allow history to take remaining space */
+    display: flex;              /* Nested Flexbox for internal layout */
+    flex-direction: column;     /* Stack history header and table vertically */
 }
 
 #historyWrapper {
-    max-height: 300px;
-    overflow-y: auto;
+    flex-grow: 1;               /* Allow wrapper to expand within #history */
+    overflow-y: auto;           /* Enable scrolling if table overflows */
     border: 1px solid #ccc;
 }
 
@@ -129,7 +131,6 @@ body {
     background-color: #e0e0e0;
 }
 
-/* New styles for committee select */
 label {
     margin-right: 10px;
 }
@@ -137,7 +138,7 @@ label {
 #committeeSelect {
     padding: 5px;
     width: 600px;
-    margin-bottom: 10px;
+    margin-bottom: 10px;        /* Space below committee select */
 }
 
 .legend {
