@@ -661,19 +661,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = ''; // Clear existing list
         const members = getCommitteeMembers();
-        members.forEach(member => {
-            const { name, title } = parseMember(member);
-            const displayName = title ? `${title} ${name}` : name;
+        
+        // Parse all members
+        const parsedMembers = members.map(member => ({
+            original: member,
+            parsed: parseMember(member)
+        }));
+        
+        // Find chairperson: first member with title "Chairwoman" or "Chairman"
+        const chairperson = parsedMembers.find(m => m.parsed.title === "Chairwoman" || m.parsed.title === "Chairman");
+        
+        // Find vice chairperson: first member with title "Vice Chairwoman" or "Vice Chairman"
+        const viceChairperson = parsedMembers.find(m => m.parsed.title === "Vice Chairwoman" || m.parsed.title === "Vice Chairman");
+        
+        // Get other members
+        const otherMembers = parsedMembers.filter(m => m !== chairperson && m !== viceChairperson);
+        
+        // Function to create list item
+        const createLi = (member) => {
             const li = document.createElement('li');
+            const displayName = member.parsed.title ? `${member.parsed.title} ${member.parsed.name}` : member.parsed.name;
             li.textContent = displayName;
             li.onclick = () => {
                 if (path.length === 0) {
-                    selectOption(member); // Use original member string
+                    selectOption(member.original); // Use original member string
                 } else {
                     console.log('Cannot select member while editing existing path');
                 }
             };
-            memberList.appendChild(li);
+            return li;
+        };
+        
+        // Add chairperson
+        if (chairperson) {
+            memberList.appendChild(createLi(chairperson));
+            memberList.appendChild(document.createElement('hr'));
+        }
+        
+        // Add vice chairperson
+        if (viceChairperson) {
+            memberList.appendChild(createLi(viceChairperson));
+            memberList.appendChild(document.createElement('hr'));
+        }
+        
+        // Add other members
+        otherMembers.forEach(member => {
+            memberList.appendChild(createLi(member));
         });
     }
 
