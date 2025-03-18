@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const response = await fetch('flows.json');
         jsonStructure = await response.json();
+        console.log('flows.json loaded:', jsonStructure);
     } catch (error) {
         console.error('Error loading flows.json:', error);
         return; // Exit if fetch fails
@@ -52,7 +53,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
         localStorage.setItem('selectedCommittee', currentCommittee);
-        updateLegend(); // Update legend when committee changes
+        updateLegend();
+        console.log('Committee changed to:', currentCommittee);
     });
 
     // Functions to serialize and deserialize history for local storage
@@ -78,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedHistory) {
         history = deserializeHistory(savedHistory);
         updateHistoryTable();
+        console.log('History loaded from local storage:', history);
     }
 
     // Get committee members from currentCommittee
@@ -95,6 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Get options for the current step
     function getCurrentOptions() {
+        console.log('getCurrentOptions called - currentFlow:', currentFlow, 'currentStep:', currentStep);
         if (!currentFlow) {
             let allOptions = [];
             jsonStructure.startingPoints.forEach(sp => {
@@ -104,22 +108,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     allOptions = allOptions.concat(sp.options);
                 }
             });
+            console.log('No current flow, returning starting options:', allOptions);
             return allOptions;
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-            if (!stepConfig) return [];
-            if (stepConfig.options === "committeeMembers") {
-                return getCommitteeMembers();
-            } else if (stepConfig.options === "otherCommittees") {
-                return getOtherCommittees();
-            } else if (stepConfig.options === "suggestMotionType") {
-                return suggestMotionType();
-            } else if (stepConfig.options === "suggestFailedReason") {
-                return suggestFailedReason();
-            } else if (Array.isArray(stepConfig.options)) {
-                return stepConfig.options;
+            if (!stepConfig) {
+                console.log('No step config found for currentStep, returning empty array');
+                return [];
             }
-            return [];
+            let options = [];
+            if (stepConfig.options === "committeeMembers") {
+                options = getCommitteeMembers();
+            } else if (stepConfig.options === "otherCommittees") {
+                options = getOtherCommittees();
+            } else if (stepConfig.options === "suggestMotionType") {
+                options = suggestMotionType();
+            } else if (stepConfig.options === "suggestFailedReason") {
+                options = suggestFailedReason();
+            } else if (Array.isArray(stepConfig.options)) {
+                options = stepConfig.options;
+            }
+            console.log('Options for current step:', options);
+            return options;
         }
     }
 
@@ -131,13 +141,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (node.nodeType === Node.TEXT_NODE) {
                 text = node.textContent + text;
             } else if (node.classList && node.classList.contains('token')) {
-                break; // Stop at the last token
+                break;
             }
         }
         return text.trim();
     }
 
     function showTagOptions(tagElement, stepType, pathIndex) {
+        console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
         const flow = pathIndex === 0 && !currentFlow ? null : currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
         let options = [];
         
@@ -153,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                       stepConfig.options || [];
         }
         
+        console.log('Tag options:', options);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         dropdown.style.position = 'absolute';
@@ -168,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.onclick = (e) => {
                 e.stopPropagation();
                 path[pathIndex].value = opt;
+                console.log('Tag updated at index', pathIndex, 'to:', opt);
                 updateInput();
                 modal.classList.remove('active');
                 inputDiv.removeChild(dropdown);
@@ -190,12 +203,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Adjust currentStep after tag change
     function adjustCurrentStep(changedIndex) {
+        console.log('adjustCurrentStep - changedIndex:', changedIndex);
         if (changedIndex === path.length - 1) {
             const stepConfig = currentFlow.steps.find(step => step.step === path[changedIndex].step);
             if (stepConfig.next) {
                 currentStep = typeof stepConfig.next === 'string' ? stepConfig.next : stepConfig.next[path[changedIndex].value] || stepConfig.next.default;
+                console.log('currentStep adjusted to:', currentStep);
             } else {
                 currentStep = null;
+                console.log('No next step, currentStep set to null');
             }
         }
         showSuggestions('');
@@ -236,7 +252,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const options = getCurrentOptions();
                 const match = options.find(opt => opt.toLowerCase() === lastWord.toLowerCase());
                 if (match) {
-                    const tag = createTag(match, currentStep || 'startingPoint');
+                    console.log('tryToTag - Matched:', match);
+                    const tag = createTag(match, currentStep || 'startingPoint', path.length);
                     lastTextNode.textContent = text.slice(0, -lastWord.length).trim() + ' ';
                     inputDiv.insertBefore(tag, lastTextNode);
                     selectOption(match);
@@ -247,6 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Select an option and update state
     function selectOption(option) {
+        console.log('selectOption - option:', option);
         if (!currentFlow) {
             const startingPoint = jsonStructure.startingPoints.find(sp => {
                 if (sp.options === "committeeMembers") {
@@ -258,6 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (startingPoint) {
                 currentFlow = jsonStructure.flows[startingPoint.flow];
+                console.log('Flow set to:', startingPoint.flow);
                 const firstStep = currentFlow.steps[0];
                 let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
                 if (stepOptions.includes(option)) {
@@ -267,6 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     path.push({ step: startingPoint.type, value: option });
                     currentStep = firstStep.step;
                 }
+                console.log('Initial path:', path, 'currentStep:', currentStep);
             }
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
@@ -277,8 +297,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else if (typeof stepConfig.next === 'object') {
                     currentStep = stepConfig.next[option] || stepConfig.next.default;
                 }
+                console.log('Next currentStep:', currentStep);
             } else {
                 currentStep = null;
+                console.log('No next step, currentStep set to null');
             }
         }
         if (path.length === 1) statementStartTime = new Date();
@@ -288,6 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle module input (simplified for voteModule)
     function handleModule(stepConfig, triggerOption) {
+        console.log('handleModule - stepConfig:', stepConfig);
         modal.innerHTML = '';
         const form = document.createElement('div');
         stepConfig.fields.forEach(field => {
@@ -322,6 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const resultStr = JSON.stringify(moduleResult);
             path.push({ step: currentStep, value: resultStr });
             currentStep = stepConfig.next.outcome ? stepConfig.next.outcome[moduleResult.outcome] : stepConfig.next;
+            console.log('Module submitted - path:', path, 'currentStep:', currentStep);
             updateInput();
             modal.classList.remove('active');
         };
@@ -333,6 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update the input display with transformed tags
     function updateInput() {
+        console.log('updateInput - path:', path);
         inputDiv.innerHTML = '';
         path.forEach((part, index) => {
             const displayText = getTagText(part.step, part.value);
@@ -355,8 +380,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show suggestions based on current text
     function showSuggestions(text) {
+        console.log('showSuggestions - text:', text, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
         if (!text && !currentStep) {
             modal.classList.remove('active');
+            console.log('Modal hidden: no text and no current step');
             return;
         }
         const options = getCurrentOptions();
@@ -377,8 +404,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             modal.classList.add('active');
             positionModal();
+            console.log('Modal shown with options:', filtered);
         } else {
             modal.classList.remove('active');
+            console.log('Modal hidden: no filtered options');
         }
     }
 
@@ -392,13 +421,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     function removeLastTag() {
         if (path.length > 0) {
             path.pop();
+            console.log('removeLastTag - After pop, path:', path);
             if (path.length > 0) {
                 const firstStep = path[0].step;
                 const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
                 if (startingPoint) {
                     currentFlow = jsonStructure.flows[startingPoint.flow];
+                    console.log('currentFlow set to:', startingPoint.flow);
                     if (path.length === 1) {
-                        currentStep = currentFlow.steps[0].step;
+                        const firstStepConfig = currentFlow.steps[0];
+                        currentStep = firstStepConfig.next; // Set to next step after the first tag
+                        console.log('Path has one tag, currentStep set to:', currentStep);
                     } else {
                         const lastPart = path[path.length - 1];
                         const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
@@ -408,17 +441,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                             } else if (typeof stepConfig.next === 'object') {
                                 currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
                             }
+                            console.log('Path has multiple tags, currentStep set to:', currentStep);
                         } else {
                             currentStep = null;
+                            console.log('No next step found, currentStep set to null');
                         }
                     }
                 } else {
                     currentFlow = null;
                     currentStep = null;
+                    console.log('No starting point found, currentFlow and currentStep set to null');
                 }
             } else {
                 currentFlow = null;
                 currentStep = null;
+                console.log('Path is empty, currentFlow and currentStep set to null');
             }
             updateInput();
             const text = getCurrentText();
@@ -435,6 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (editingIndex !== null) {
             history[editingIndex] = { time: startTime, path: [...path], text: statementText };
+            console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
             updateHistoryTable();
         } else {
             history.push({ time: startTime, path: [...path], text: statementText });
@@ -443,7 +481,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => {
                 const historyWrapper = document.getElementById('historyWrapper');
                 historyWrapper.scrollTop = 0;
+                console.log('Scrolled to top after adding new entry');
             }, 0);
+            console.log('Added new history entry:', history[history.length - 1]);
         }
         
         localStorage.setItem('historyStatements', serializeHistory(history));
@@ -469,13 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const action = path.find(p => p.step === 'action')?.value || '';
             const detail = path.find(p => p.step === 'movedDetail')?.value || '';
             const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
-            let memberText;
-            if (title) {
-                memberText = `${title} ${lastName}`;
-            } else {
-                const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
-                memberText = `${chamberPrefix} ${lastName}`;
-            }
+            let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
             let text = `${memberText} - ${action}`;
             if (detail) text += ` ${detail}`;
             if (rerefer) text += ` and Rerefer to ${getShortCommitteeName(rerefer)}`;
@@ -486,13 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let text = action;
             if (memberString) {
                 const { lastName, title } = parseMember(memberString);
-                let memberText;
-                if (title) {
-                    memberText = `${title} ${lastName}`;
-                } else {
-                    const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
-                    memberText = `${chamberPrefix} ${lastName}`;
-                }
+                let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
                 text += ` by ${memberText}`;
             }
             return text;
@@ -512,19 +540,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 if (outcome === 'Passed' && billCarrierString) {
                     const { lastName, title } = parseMember(billCarrierString);
-                    let memberText;
-                    if (title) {
-                        memberText = `${title} ${lastName}`;
-                    } else {
-                        const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
-                        memberText = `${chamberPrefix} ${lastName}`;
-                    }
+                    let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
                     text += ` - Bill Carrier: ${memberText}`;
                 }
                 return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
-                const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
+                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
                 return `Voice Vote on ${onWhat} - ${outcome}`;
             } else if (voteType === 'Motion Failed') {
                 const reason = path.find(p => p.step === 'motionFailedReason')?.value || '';
@@ -539,19 +561,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return match ? match[1] : fullName;
     }
 
-    // Parse member string into name, lastName, and title, adjusting for gender
+    // Parse member string into name, lastName, and title
     function parseMember(memberString) {
         const parts = memberString.split(' - ');
         if (parts.length === 2) {
-            const name = parts[0]; // e.g., "Diane Larson"
-            let baseTitle = parts[1]; // e.g., "Chairman"
+            const name = parts[0];
+            let baseTitle = parts[1];
             const isFemaleMember = isFemale(name);
-            if (baseTitle === 'Chairman') {
-                baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
-            } else if (baseTitle === 'Vice Chairman') {
-                baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
-            }
-            const lastName = name.split(' ').pop(); // e.g., "Larson"
+            if (baseTitle === 'Chairman') baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
+            else if (baseTitle === 'Vice Chairman') baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
+            const lastName = name.split(' ').pop();
             return { name, lastName, title: baseTitle };
         } else {
             const name = memberString;
@@ -560,27 +579,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Get display text for tags based on step and value
+    // Get display text for tags
     function getTagText(step, value) {
         if (step === 'member' || step === 'memberOptional' || step === 'billCarrier') {
             const { name, title } = parseMember(value);
-            if (title) {
-                return `${title} ${name}`;
-            } else {
-                return name;
-            }
-        } else {
-            return value;
+            return title ? `${title} ${name}` : name;
         }
+        return value;
     }
 
-    // Create history row with transformed tags
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
-        const tagsHtml = path.map(p => {
-            const tagText = getTagText(p.step, p.value);
-            return `<span class="token">${tagText}</span>`;
-        }).join(' ');
+        const tagsHtml = path.map(p => `<span class="token">${getTagText(p.step, p.value)}</span>`).join(' ');
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div><div>${statementText}</div></td>
@@ -607,6 +617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         history.splice(index, 1);
         localStorage.setItem('historyStatements', serializeHistory(history));
         updateHistoryTable();
+        console.log('Deleted history entry at index:', index);
     }
 
     function editHistoryEntry(index) {
@@ -625,25 +636,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentFlow = jsonStructure.flows[startingPoint.flow];
                     const firstStep = currentFlow.steps[0];
                     if (firstStep.step === part.step) {
-                        currentStep = firstStep.next;
+                        currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
                     } else {
                         currentStep = firstStep.step;
                     }
+                    console.log('editHistoryEntry - Initial flow:', startingPoint.flow, 'currentStep:', currentStep);
                 }
             } else {
-                const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+                const stepConfig = currentFlow.steps.find(step => step.step === part.step);
                 if (stepConfig && stepConfig.next) {
                     if (typeof stepConfig.next === 'string') {
                         currentStep = stepConfig.next;
                     } else if (typeof stepConfig.next === 'object') {
                         currentStep = stepConfig.next[part.value] || stepConfig.next.default;
                     }
+                    console.log('editHistoryEntry - Step:', part.step, 'currentStep updated to:', currentStep);
                 } else {
                     currentStep = null;
+                    console.log('editHistoryEntry - No next step, currentStep set to null');
                 }
             }
         });
     
+        console.log('editHistoryEntry - Final state - path:', path, 'currentFlow:', currentFlow, 'currentStep:', currentStep);
         updateInput();
         showSuggestions('');
     }
@@ -654,37 +669,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = createHistoryRow(entry.time, entry.text, entry.path, index);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
         });
+        console.log('History table updated');
     }
 
-    // Update legend with "Title FullName" for chair/vice chair
     function updateLegend() {
         const memberList = document.getElementById('memberList');
-        memberList.innerHTML = ''; // Clear existing list
+        memberList.innerHTML = '';
         const members = getCommitteeMembers();
         
-        // Parse all members
         const parsedMembers = members.map(member => ({
             original: member,
             parsed: parseMember(member)
         }));
         
-        // Find chairperson: first member with title "Chairwoman" or "Chairman"
         const chairperson = parsedMembers.find(m => m.parsed.title === "Chairwoman" || m.parsed.title === "Chairman");
-        
-        // Find vice chairperson: first member with title "Vice Chairwoman" or "Vice Chairman"
         const viceChairperson = parsedMembers.find(m => m.parsed.title === "Vice Chairwoman" || m.parsed.title === "Vice Chairman");
-        
-        // Get other members
         const otherMembers = parsedMembers.filter(m => m !== chairperson && m !== viceChairperson);
         
-        // Function to create list item
         const createLi = (member) => {
             const li = document.createElement('li');
             const displayName = member.parsed.title ? `${member.parsed.title} ${member.parsed.name}` : member.parsed.name;
             li.textContent = displayName;
             li.onclick = () => {
                 if (path.length === 0) {
-                    selectOption(member.original); // Use original member string
+                    selectOption(member.original);
                 } else {
                     console.log('Cannot select member while editing existing path');
                 }
@@ -692,22 +700,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             return li;
         };
         
-        // Add chairperson
         if (chairperson) {
             memberList.appendChild(createLi(chairperson));
             memberList.appendChild(document.createElement('hr'));
         }
         
-        // Add vice chairperson
         if (viceChairperson) {
             memberList.appendChild(createLi(viceChairperson));
             memberList.appendChild(document.createElement('hr'));
         }
         
-        // Add other members
         otherMembers.forEach(member => {
             memberList.appendChild(createLi(member));
         });
+        console.log('Legend updated');
     }
 
     function updateMeetingActionsLegend() {
@@ -726,6 +732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             meetingActionsList.appendChild(li);
         });
+        console.log('Meeting actions legend updated');
     }
 
     function updateVoteActionsLegend() {
@@ -746,6 +753,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 voteActionsList.appendChild(li);
             });
+            console.log('Vote actions legend updated');
         } else {
             console.warn('No voteAction starting point found in flows.json');
         }
@@ -829,6 +837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const token = e.target.parentElement;
             const type = token.getAttribute('data-type');
             const index = parseInt(token.getAttribute('data-index'), 10);
+            console.log('Chevron clicked - type:', type, 'index:', index);
             showTagOptions(token, type, index);
         }
     });
@@ -838,6 +847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         history = [];
         localStorage.removeItem('historyStatements');
         updateHistoryTable();
+        console.log('History cleared');
     });
 
     // Initial updates
