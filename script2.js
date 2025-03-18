@@ -564,6 +564,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
+        } else if (e.key === 'Tab') {
+            const suggestions = modal.querySelectorAll('.option');
+            if (suggestions.length > 0) {
+                e.preventDefault(); // Prevent default tab behavior
+                suggestions[0].click(); // Select the first suggestion
+            }
         } else if (e.key >= '1' && e.key <= '9') {
             const index = parseInt(e.key) - 1;
             const suggestions = modal.querySelectorAll('.option');
