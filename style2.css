@@ -50,11 +50,28 @@ body {
 }
 
 .token {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     background-color: #e0f7fa;
     border: 1px solid #007bff;
     border-radius: 4px;
     padding: 2px 6px;
     margin: 2px;
     color: #007bff;
+    cursor: pointer;
+}
+
+.chevron {
+    margin-left: 4px;
+    font-size: 0.8em;
+    color: #007bff;
+}
+
+.dropdown-option {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.dropdown-option:hover {
+    background-color: #f0f0f0;
 }

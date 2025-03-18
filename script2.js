@@ -85,13 +85,84 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text.trim();
     }
 
+    function showTagOptions(tagElement, stepType, pathIndex) {
+        // Find the flow and step configuration
+        const flow = pathIndex === 0 && !currentFlow ? null : currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
+        let options = [];
+        
+        if (pathIndex === 0 && !flow) {
+            // Starting point options
+            const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === stepType);
+            options = startingPoint.options === "committeeMembers" ? getCommitteeMembers() : startingPoint.options;
+        } else {
+            const stepConfig = flow.steps.find(step => step.step === stepType);
+            options = stepConfig.options === "committeeMembers" ? getCommitteeMembers() :
+                      stepConfig.options === "otherCommittees" ? getOtherCommittees() :
+                      stepConfig.options === "suggestMotionType" ? suggestMotionType() :
+                      stepConfig.options === "suggestFailedReason" ? suggestFailedReason() :
+                      stepConfig.options || [];
+        }
+    
+        // Create dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'dropdown';
+        dropdown.style.position = 'absolute';
+        dropdown.style.background = 'white';
+        dropdown.style.border = '1px solid #ccc';
+        dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        
+        options.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'dropdown-option';
+            div.textContent = opt;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                path[pathIndex].value = opt;
+                updateInput();
+                adjustCurrentStep(pathIndex);
+                document.body.removeChild(dropdown);
+            };
+            dropdown.appendChild(div);
+        });
+    
+        document.body.appendChild(dropdown);
+        const rect = tagElement.getBoundingClientRect();
+        dropdown.style.left = `${rect.left}px`;
+        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+    }
+
+    // Adjust currentStep after tag change
+    function adjustCurrentStep(changedIndex) {
+        if (changedIndex === path.length - 1) {
+            const stepConfig = currentFlow.steps.find(step => step.step === path[changedIndex].step);
+            if (stepConfig.next) {
+                currentStep = typeof stepConfig.next === 'string' ? stepConfig.next : stepConfig.next[path[changedIndex].value] || stepConfig.next.default;
+            } else {
+                currentStep = null;
+            }
+        }
+        showSuggestions('');
+    }
+
     // Create a tag element
-    function createTag(text, type) {
+    function createTag(text, type, index) {
         const span = document.createElement('span');
         span.className = 'token';
-        span.textContent = text;
         span.setAttribute('data-type', type);
+        span.setAttribute('data-index', index); // Store path index
         span.contentEditable = false;
+    
+        const textNode = document.createTextNode(text);
+        const chevron = document.createElement('span');
+        chevron.className = 'chevron';
+        chevron.textContent = ' ▼'; // Down arrow
+        span.appendChild(textNode);
+        span.appendChild(chevron);
+    
+        span.onclick = (e) => {
+            e.stopPropagation();
+            showTagOptions(span, type, index);
+        };
         return span;
     }
 
@@ -134,8 +205,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (startingPoint) {
                 currentFlow = jsonStructure.flows[startingPoint.flow];
-                currentStep = currentFlow.steps[0].step;
-                path.push({ step: startingPoint.type, value: option });
+                const firstStep = currentFlow.steps[0];
+                let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
+                if (stepOptions.includes(option)) {
+                    // Starting point matches the first step's options, so select it and move to next step
+                    path.push({ step: firstStep.step, value: option });
+                    currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
+                } else {
+                    // Starting point is different, set to first step
+                    path.push({ step: startingPoint.type, value: option });
+                    currentStep = firstStep.step;
+                }
             }
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
@@ -151,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         updateInput();
-        showSuggestions(''); // Show next options immediately
+        showSuggestions(''); // Show next options
     }
 
     // Handle module input (simplified for voteModule)
@@ -202,14 +282,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update the input display
     function updateInput() {
         inputDiv.innerHTML = '';
-        path.forEach(part => {
-            const tag = createTag(part.value, part.step);
+        path.forEach((part, index) => {
+            const tag = createTag(part.value, part.step, index);
             inputDiv.appendChild(tag);
         });
         inputDiv.appendChild(document.createTextNode(' '));
         if (!currentStep) {
             const statementText = path.map(p => p.value).join(" - ");
-            console.log("Statement completed:", statementText); // Replace with your function if available
+            console.log("Statement completed:", statementText);
             path = [];
             currentFlow = null;
             currentStep = null;
@@ -319,4 +399,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize
     inputDiv.focus();
+
+    // Add CSS in style2.css
+    document.addEventListener('click', (e) => {
+        const dropdown = document.querySelector('.dropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+            document.body.removeChild(dropdown);
+        }
+    });
 });
