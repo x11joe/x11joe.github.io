@@ -23,10 +23,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let path = []; // Array of {step, value}
     let currentFlow = null;
     let currentStep = null;
+    let statementStartTime = null; // Track when first tag is added
+    let history = []; // Store finalized statements
 
     // DOM elements
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
+    const historyTableBody = document.querySelector('#historyTable tbody');
 
     // Get committee members from currentCommittee
     function getCommitteeMembers() {
@@ -208,11 +211,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const firstStep = currentFlow.steps[0];
                 let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
                 if (stepOptions.includes(option)) {
-                    // Starting point matches the first step's options, so select it and move to next step
                     path.push({ step: firstStep.step, value: option });
                     currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
                 } else {
-                    // Starting point is different, set to first step
                     path.push({ step: startingPoint.type, value: option });
                     currentStep = firstStep.step;
                 }
@@ -230,8 +231,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStep = null;
             }
         }
+        if (path.length === 1) statementStartTime = new Date(); // Add this line
         updateInput();
-        showSuggestions(''); // Show next options
+        showSuggestions('');
     }
 
     // Handle module input (simplified for voteModule)
@@ -287,14 +289,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             inputDiv.appendChild(tag);
         });
         inputDiv.appendChild(document.createTextNode(' '));
-        if (!currentStep) {
-            const statementText = path.map(p => p.value).join(" - ");
-            console.log("Statement completed:", statementText);
-            path = [];
-            currentFlow = null;
-            currentStep = null;
-            inputDiv.innerHTML = '';
-        }
         inputDiv.focus();
         const range = document.createRange();
         const sel = window.getSelection();
@@ -358,6 +352,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function finalizeStatement() {
+        if (path.length === 0) return;
+    
+        const statementText = constructStatementText(path);
+        const tagsText = path.map(p => p.value).join(' ');
+        const startTime = statementStartTime || new Date();
+        history.push({ time: startTime, path: [...path], text: statementText });
+    
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${startTime.toLocaleTimeString()}</td>
+            <td><div class="tags">${path.map(p => `<span class="token">${p.value}</span>`).join(' ')}</div><div>${statementText}</div></td>
+        `;
+        row.onclick = () => {
+            navigator.clipboard.writeText(statementText).then(() => {
+                console.log('Copied to clipboard:', statementText);
+            });
+        };
+        historyTableBody.appendChild(row);
+    
+        path = [];
+        currentFlow = null;
+        currentStep = null;
+        statementStartTime = null;
+        inputDiv.innerHTML = '';
+        inputDiv.focus();
+        showSuggestions('');
+    }
+
+    function constructStatementText(path) {
+        if (path.length === 0) return '';
+        const flowType = path[0].step;
+        if (flowType === 'member') {
+            const member = path.find(p => p.step === 'member')?.value || '';
+            const action = path.find(p => p.step === 'action')?.value || '';
+            const detail = path.find(p => p.step === 'movedDetail')?.value || '';
+            const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
+            let text = `${member} - ${action}`;
+            if (detail) text += ` ${detail}`;
+            if (rerefer) text += ` and Rerefer to ${getShortCommitteeName(rerefer)}`;
+            return text;
+        } else if (flowType === 'meetingAction') {
+            const action = path.find(p => p.step === 'meetingAction')?.value || '';
+            const member = path.find(p => p.step === 'memberOptional')?.value || '';
+            let text = action;
+            if (member) text += ` by ${member}`;
+            return text;
+        } else if (flowType === 'voteAction') {
+            const voteType = path.find(p => p.step === 'voteType')?.value || '';
+            if (voteType === 'Roll Call Vote') {
+                const motionType = path.find(p => p.step === 'rollCallMotionType')?.value || '';
+                const asAmended = path.find(p => p.step === 'asAmendedOptional')?.value || '';
+                const voteResult = path.find(p => p.step === 'voteModule')?.value || '';
+                const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
+                const billCarrier = path.find(p => p.step === 'billCarrier')?.value || '';
+                let text = `Roll Call Vote on ${motionType}`;
+                if (asAmended) text += ` ${asAmended}`;
+                if (voteResult) {
+                    const result = JSON.parse(voteResult);
+                    text += ` - For: ${result.for}, Against: ${result.against}, Outcome: ${result.outcome}`;
+                }
+                if (outcome === 'Passed' && billCarrier) text += ` - Bill Carrier: ${billCarrier}`;
+                return text;
+            } else if (voteType === 'Voice Vote') {
+                const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
+                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
+                return `Voice Vote on ${onWhat} - ${outcome}`;
+            } else if (voteType === 'Motion Failed') {
+                const reason = path.find(p => p.step === 'motionFailedReason')?.value || '';
+                return `Motion Failed ${reason}`;
+            }
+        }
+        return path.map(p => p.value).join(' - ');
+    }
+
+    function getShortCommitteeName(fullName) {
+        const match = fullName.match(/(\w+)\s+Committee$/);
+        return match ? match[1] : fullName;
+    }
+
     // Event listeners
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
@@ -377,6 +451,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const tag = createTag(match, currentStep || 'startingPoint');
                 inputDiv.insertBefore(tag, inputDiv.lastChild);
                 selectOption(match);
+            } else if (currentStep === null || (currentFlow && currentFlow.steps.find(step => step.step === currentStep)?.optional)) {
+                finalizeStatement(); // Add this to finalize on Enter
             }
         } else if (e.key === 'Backspace') {
             const selection = window.getSelection();

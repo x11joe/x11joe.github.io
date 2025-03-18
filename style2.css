@@ -75,3 +75,31 @@ body {
 .dropdown-option:hover {
     background-color: #f0f0f0;
 }
+
+#history {
+    margin-top: 20px;
+    width: 600px;
+}
+
+#historyTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#historyTable th, #historyTable td {
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: left;
+}
+
+#historyTable tr {
+    cursor: pointer;
+}
+
+#historyTable tr:hover {
+    background-color: #f0f0f0;
+}
+
+.tags .token {
+    margin-right: 5px;
+}
