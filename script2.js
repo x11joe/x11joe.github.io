@@ -1,5 +1,3 @@
-// script2.js
-// Wait for the DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
     // Import committee data from defaultCommittees.js
     const committees = window.DEFAULT_COMMITTEES || {};
@@ -31,6 +29,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
     const historyTableBody = document.querySelector('#historyTable tbody');
+    const committeeSelect = document.getElementById('committeeSelect');
+
+    // Populate committee dropdown
+    Object.keys(committees).forEach(committee => {
+        const option = document.createElement('option');
+        option.value = committee;
+        option.textContent = committee;
+        committeeSelect.appendChild(option);
+    });
+
+    // Load saved committee from local storage
+    const savedCommittee = localStorage.getItem('selectedCommittee');
+    if (savedCommittee && committees[savedCommittee]) {
+        currentCommittee = savedCommittee;
+    }
+    committeeSelect.value = currentCommittee;
+
+    // Handle committee selection change
+    committeeSelect.addEventListener('change', () => {
+        currentCommittee = committeeSelect.value;
+        localStorage.setItem('selectedCommittee', currentCommittee);
+    });
+
+    // Functions to serialize and deserialize history for local storage
+    function serializeHistory(history) {
+        return JSON.stringify(history.map(entry => ({
+            time: entry.time.toISOString(),
+            path: entry.path,
+            text: entry.text
+        })));
+    }
+
+    function deserializeHistory(serialized) {
+        const parsed = JSON.parse(serialized);
+        return parsed.map(entry => ({
+            time: new Date(entry.time),
+            path: entry.path,
+            text: entry.text
+        }));
+    }
+
+    // Load saved history from local storage
+    const savedHistory = localStorage.getItem('historyStatements');
+    if (savedHistory) {
+        history = deserializeHistory(savedHistory);
+        updateHistoryTable();
+    }
 
     // Get committee members from currentCommittee
     function getCommitteeMembers() {
@@ -343,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
-        ///This code did not work before so I added it directly in the CSS
+        // Positioned via CSS
     }
 
     // Remove last tag on backspace
@@ -357,10 +402,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (startingPoint) {
                     currentFlow = jsonStructure.flows[startingPoint.flow];
                     if (path.length === 1) {
-                        // If only the starting tag remains, set currentStep to the first step of the flow
-                        currentStep = currentFlow.steps[0].step; // e.g., "memberOptional" for meetingActionFlow
+                        currentStep = currentFlow.steps[0].step;
                     } else {
-                        // Otherwise, set currentStep based on the last tag's next step
                         const lastPart = path[path.length - 1];
                         const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
                         if (stepConfig && stepConfig.next) {
@@ -402,10 +445,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             history.push({ time: startTime, path: [...path], text: statementText });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
-            // Scroll to the top
             document.getElementById('historyWrapper').scrollTop = 0;
             console.log('New entry added, scrolled to top');
         }
+    
+        localStorage.setItem('historyStatements', serializeHistory(history));
     
         editingIndex = null;
         path = [];
@@ -469,7 +513,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return match ? match[1] : fullName;
     }
 
-    // New function to create history rows with edit icon
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -478,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
         `;
         row.querySelector('.edit-icon').onclick = (e) => {
-            e.stopPropagation(); // Prevent row click (copy to clipboard)
+            e.stopPropagation();
             editHistoryEntry(index);
         };
         row.onclick = () => {
@@ -489,18 +532,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
 
-    // New function to edit an entry
     function editHistoryEntry(index) {
         const entry = history[index];
         path = [...entry.path];
         statementStartTime = entry.time;
         editingIndex = index;
     
-        // Reset flow and step
         currentFlow = null;
         currentStep = null;
     
-        // Replay the flow to set currentFlow and currentStep
         path.forEach((part, i) => {
             if (i === 0) {
                 const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === part.step);
@@ -532,12 +572,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
-    // New function to refresh the history table
     function updateHistoryTable() {
-        historyTableBody.innerHTML = ''; // Clear existing rows
+        historyTableBody.innerHTML = '';
         history.forEach((entry, index) => {
             const row = createHistoryRow(entry.time, entry.text, entry.path, index);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Top-first order
+            historyTableBody.insertBefore(row, historyTableBody.firstChild);
         });
     }
 
@@ -545,21 +584,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
         showSuggestions(text);
-        tryToTag(); // Attempt to convert text to tag as you type
+        tryToTag();
     });
 
-    // Handle Enter to lock in selection
     inputDiv.addEventListener('keydown', (e) => {
         if (e.key === 'Backspace') {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                if (range.collapsed) { // Cursor, not a selection
+                if (range.collapsed) {
                     const container = range.startContainer;
                     const offset = range.startOffset;
-                    // Check if cursor is at the end of the last text node
                     if (container === inputDiv.lastChild && offset === inputDiv.lastChild.textContent.length && path.length > 0) {
-                        e.preventDefault(); // Prevent default backspace behavior
+                        e.preventDefault();
                         removeLastTag();
                     }
                 }
@@ -567,8 +604,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (e.key === 'Tab') {
             const suggestions = modal.querySelectorAll('.option');
             if (suggestions.length > 0) {
-                e.preventDefault(); // Prevent default tab behavior
-                suggestions[0].click(); // Select the first suggestion
+                e.preventDefault();
+                suggestions[0].click();
             }
         } else if (e.key >= '1' && e.key <= '9') {
             const index = parseInt(e.key) - 1;
@@ -594,7 +631,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Initialize
     inputDiv.focus();
 
     inputDiv.addEventListener('click', (e) => {
@@ -606,5 +642,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             showTagOptions(token, type, index);
         }
     });
-
 });
