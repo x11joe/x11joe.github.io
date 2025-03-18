@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
         localStorage.setItem('selectedCommittee', currentCommittee);
+        updateLegend(); // Update legend when committee changes
     });
 
     // Functions to serialize and deserialize history for local storage
@@ -137,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showTagOptions(tagElement, stepType, pathIndex) {
-        console.log('showTagOptions called - stepType:', stepType, 'pathIndex:', pathIndex);
         const flow = pathIndex === 0 && !currentFlow ? null : currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
         let options = [];
         
@@ -153,7 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                       stepConfig.options || [];
         }
         
-        console.log('Options for dropdown:', options);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         dropdown.style.position = 'absolute';
@@ -170,9 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.stopPropagation();
                 path[pathIndex].value = opt;
                 updateInput();
-                modal.classList.remove('active'); // Hide suggestions modal
+                modal.classList.remove('active');
                 inputDiv.removeChild(dropdown);
-                console.log('Tag updated to:', opt, 'at index:', pathIndex);
             };
             dropdown.appendChild(div);
         });
@@ -283,7 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStep = null;
             }
         }
-        if (path.length === 1) statementStartTime = new Date(); // Add this line
+        if (path.length === 1) statementStartTime = new Date();
         updateInput();
         showSuggestions('');
     }
@@ -356,10 +354,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show suggestions based on current text
     function showSuggestions(text) {
-        console.log('showSuggestions called with text:', text, 'currentStep:', currentStep);
         if (!text && !currentStep) {
             modal.classList.remove('active');
-            console.log('Modal hidden: no text and no current step');
             return;
         }
         const options = getCurrentOptions();
@@ -371,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 div.className = 'option';
                 div.textContent = `${index + 1}. ${opt}`;
                 div.onclick = () => {
-                    inputDiv.lastChild.textContent = ' '; // Clear text
+                    inputDiv.lastChild.textContent = ' ';
                     const tag = createTag(opt, currentStep || 'startingPoint', path.length);
                     inputDiv.insertBefore(tag, inputDiv.lastChild);
                     selectOption(opt);
@@ -380,10 +376,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             modal.classList.add('active');
             positionModal();
-            console.log('Modal shown with options:', filtered);
         } else {
             modal.classList.remove('active');
-            console.log('Modal hidden: no filtered options');
         }
     }
 
@@ -398,7 +392,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path.length > 0) {
             path.pop();
             if (path.length > 0) {
-                // Determine currentFlow based on the first tag's step
                 const firstStep = path[0].step;
                 const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
                 if (startingPoint) {
@@ -419,7 +412,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
                 } else {
-                    console.warn('No starting point found for step:', firstStep);
                     currentFlow = null;
                     currentStep = null;
                 }
@@ -433,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Updated finalizeStatement function
+    // Finalize statement
     function finalizeStatement() {
         if (path.length === 0) return;
         
@@ -450,7 +442,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => {
                 const historyWrapper = document.getElementById('historyWrapper');
                 historyWrapper.scrollTop = 0;
-                console.log('Scrolled to top after adding new entry');
             }, 0);
         }
         
@@ -467,6 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
+    // Construct statement text (uses "Senator LastName" or "Representative LastName")
     function constructStatementText(path) {
         if (path.length === 0) return '';
         const flowType = path[0].step;
@@ -528,13 +520,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         return match ? match[1] : fullName;
     }
 
+    // Parse member string into name and title, adjusting for gender
+    function parseMember(memberString) {
+        const parts = memberString.split(' - ');
+        if (parts.length === 2) {
+            const name = parts[0];
+            let baseTitle = parts[1];
+            const isFemaleMember = isFemale(name);
+            if (baseTitle === 'Chairman') {
+                baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
+            } else if (baseTitle === 'Vice Chairman') {
+                baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
+            }
+            return { name, title: baseTitle };
+        } else {
+            return { name: memberString, title: null };
+        }
+    }
+
+    // Get display text for tags based on step and value
+    function getTagText(step, value) {
+        if (step === 'member' || step === 'memberOptional' || step === 'billCarrier') {
+            const { name, title } = parseMember(value);
+            if (title) {
+                return `${title} ${name}`;
+            } else {
+                return name;
+            }
+        } else {
+            return value;
+        }
+    }
+
+    // Create history row with transformed tags
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
+        const tagsHtml = path.map(p => {
+            const tagText = getTagText(p.step, p.value);
+            return `<span class="token">${tagText}</span>`;
+        }).join(' ');
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
-            <td><div class="tags">${path.map(p => `<span class="token">${p.value}</span>`).join(' ')}</div><div>${statementText}</div></td>
+            <td><div class="tags">${tagsHtml}</div><div>${statementText}</div></td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
-            <td><span class="delete-icon" data-index="${index}">🗑️</span></td> <!-- Added delete icon -->
+            <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
@@ -553,9 +582,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function deleteHistoryEntry(index) {
-        history.splice(index, 1); // Remove the entry at the specified index
-        localStorage.setItem('historyStatements', serializeHistory(history)); // Update local storage
-        updateHistoryTable(); // Refresh the table
+        history.splice(index, 1);
+        localStorage.setItem('historyStatements', serializeHistory(history));
+        updateHistoryTable();
     }
 
     function editHistoryEntry(index) {
@@ -593,7 +622,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     
-        console.log('editHistoryEntry: currentFlow:', currentFlow, 'currentStep:', currentStep, 'path:', path);
         updateInput();
         showSuggestions('');
     }
@@ -606,24 +634,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Update legend with "Title FullName" for chair/vice chair
     function updateLegend() {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = ''; // Clear existing list
         const members = getCommitteeMembers();
-        members.forEach((member, index) => {
+        members.forEach(member => {
+            const { name, title } = parseMember(member);
+            const displayName = title ? `${title} ${name}` : name;
             const li = document.createElement('li');
-            let displayName = member;
-            if (index === 0) { // Assume the first member is the chairperson
-                const isFemaleChair = isFemale(member);
-                const chairTitle = isFemaleChair ? 'Chairwoman' : 'Chairman';
-                displayName = `${chairTitle} ${getLastName(member)}`;
-            } else {
-                displayName = member; // Full name for non-chair members
-            }
             li.textContent = displayName;
             li.onclick = () => {
-                if (path.length === 0) { // Only allow if no current path is being edited
-                    selectOption(member); // Start the flow with this member
+                if (path.length === 0) {
+                    selectOption(member); // Use original member string
                 } else {
                     console.log('Cannot select member while editing existing path');
                 }
@@ -634,7 +657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateMeetingActionsLegend() {
         const meetingActionsList = document.getElementById('meetingActionsList');
-        meetingActionsList.innerHTML = ''; // Clear existing list
+        meetingActionsList.innerHTML = '';
         const meetingActions = jsonStructure.startingPoints.find(sp => sp.type === "meetingAction").options;
         meetingActions.forEach(action => {
             const li = document.createElement('li');
@@ -652,16 +675,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateVoteActionsLegend() {
         const voteActionsList = document.getElementById('voteActionsList');
-        voteActionsList.innerHTML = ''; // Clear existing list
+        voteActionsList.innerHTML = '';
         const voteActionSP = jsonStructure.startingPoints.find(sp => sp.type === "voteAction");
         if (voteActionSP) {
-            const voteActions = voteActionSP.options; // ["Roll Call Vote", "Voice Vote", "Motion Failed"]
+            const voteActions = voteActionSP.options;
             voteActions.forEach(action => {
                 const li = document.createElement('li');
                 li.textContent = action;
                 li.onclick = () => {
                     if (path.length === 0) {
-                        selectOption(action); // Start the vote action flow
+                        selectOption(action);
                     } else {
                         console.log('Cannot select vote action while editing existing path');
                     }
@@ -673,50 +696,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Determine if the committee is a Senate committee
+    // Helper functions
     function isSenateCommittee(committeeName) {
         return committeeName.toLowerCase().includes("senate");
     }
 
-    // Extract the last name from a full name
     function getLastName(fullName) {
         const parts = fullName.split(' ');
         return parts[parts.length - 1];
     }
 
-    // Check if a member is female based on the FEMALE_NAMES array
     function isFemale(fullName) {
         return window.FEMALE_NAMES.includes(fullName);
     }
 
-    // Function to adjust history position and height
     function adjustHistoryLayout() {
         const entryRect = entryWrapper.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
-        const gap = 10; // Gap between entry and history in pixels
-
-        // Calculate top position for history (just below entry)
+        const gap = 10;
         const historyTop = entryRect.bottom + gap;
         historyDiv.style.top = `${historyTop}px`;
-
-        // Calculate maximum height for history (from its top to bottom of viewport)
-        const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
+        const maxHistoryHeight = viewportHeight - historyTop - 10;
         historyDiv.style.height = `${maxHistoryHeight}px`;
     }
-
-    // Update the committee selection event listener
-    committeeSelect.addEventListener('change', () => {
-        currentCommittee = committeeSelect.value;
-        localStorage.setItem('selectedCommittee', currentCommittee);
-        updateLegend(); // Update the legend when committee changes
-    });
 
     // Event listeners
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
         showSuggestions(text);
         tryToTag();
-        adjustHistoryLayout(); // Adjust layout on input
+        adjustHistoryLayout();
     });
 
     inputDiv.addEventListener('keydown', (e) => {
@@ -770,26 +779,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const token = e.target.parentElement;
             const type = token.getAttribute('data-type');
             const index = parseInt(token.getAttribute('data-index'), 10);
-            console.log('Chevron clicked - type:', type, 'index:', index);
             showTagOptions(token, type, index);
         }
     });
 
-    // Add this after DOM elements are defined
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-
     clearHistoryBtn.addEventListener('click', () => {
-        history = []; // Clear the history array
-        localStorage.removeItem('historyStatements'); // Remove from local storage
-        updateHistoryTable(); // Refresh the table
+        history = [];
+        localStorage.removeItem('historyStatements');
+        updateHistoryTable();
     });
 
-    // Call updateLegend initially to populate it
+    // Initial updates
     updateMeetingActionsLegend();
     updateVoteActionsLegend();
     updateLegend();
 
-    // Call adjustHistoryLayout on load, resize, and input changes
     adjustHistoryLayout();
     window.addEventListener('resize', adjustHistoryLayout);
     inputDiv.addEventListener('input', adjustHistoryLayout);
