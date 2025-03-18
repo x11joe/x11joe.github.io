@@ -3,24 +3,19 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center; /* Center children horizontally */
+    justify-content: space-between; /* Distribute space: top, center, bottom */
     height: 100vh;
     margin: 0;
     background-color: #f5f5f5;
     overflow: hidden;
-    position: relative; /* For absolute positioning of committee selector */
 }
 
-/* Committee selector wrapper pinned to the top */
+/* Committee selector at the top */
 #committeeSelectWrapper {
-    position: absolute;
-    top: 0;
     width: 600px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     padding: 10px;
     background-color: #f5f5f5;
-    z-index: 10; /* Ensure it stays above other content */
+    z-index: 10; /* Keep above other content */
 }
 
 #committeeSelect {
@@ -28,18 +23,17 @@ body {
     width: 600px;
 }
 
-/* Main content area to center the entry field */
+/* Main content to center the entry field */
 .main-content {
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Center vertically */
     align-items: center;
     width: 600px;
-    flex-grow: 1; /* Take up available space */
-    margin-top: 60px; /* Offset for committee selector height */
-    margin-bottom: 10px; /* Space above history */
+    flex-grow: 1; /* Take up available space to center the entry field */
+    justify-content: center; /* Vertically center the entry-wrapper */
 }
 
+/* Entry field wrapper */
 .entry-wrapper {
     width: 600px;
     display: flex;
@@ -116,6 +110,7 @@ body {
     background-color: #f0f0f0;
 }
 
+/* History table at the bottom */
 #history {
     width: 600px;
     max-height: 40vh; /* Limit height, scroll if needed */
