@@ -14,7 +14,7 @@
         <div id="input" class="input" contenteditable="true" spellcheck="false"></div>
     </div>
     <div id="history">
-        <h3>History</h3>
+        <h3>History <button id="clearHistoryBtn">Clear All History</button></h3>
         <div id="historyWrapper">
             <table id="historyTable">
                 <thead>
@@ -22,11 +22,16 @@
                         <th>Time</th>
                         <th>Statement</th>
                         <th>Edit</th>
+                        <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
+    </div>
+    <div id="legend" class="legend">
+        <h4>Committee Members</h4>
+        <ul id="memberList"></ul>
     </div>
     <script src="defaultCommittees.js"></script>
     <script src="script2.js"></script>

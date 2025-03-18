@@ -519,10 +519,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${path.map(p => `<span class="token">${p.value}</span>`).join(' ')}</div><div>${statementText}</div></td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
+            <td><span class="delete-icon" data-index="${index}">🗑️</span></td> <!-- Added delete icon -->
         `;
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
             editHistoryEntry(index);
+        };
+        row.querySelector('.delete-icon').onclick = (e) => {
+            e.stopPropagation();
+            deleteHistoryEntry(index);
         };
         row.onclick = () => {
             navigator.clipboard.writeText(statementText).then(() => {
@@ -530,6 +535,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         };
         return row;
+    }
+
+    function deleteHistoryEntry(index) {
+        history.splice(index, 1); // Remove the entry at the specified index
+        localStorage.setItem('historyStatements', serializeHistory(history)); // Update local storage
+        updateHistoryTable(); // Refresh the table
     }
 
     function editHistoryEntry(index) {
@@ -579,6 +590,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
         });
     }
+
+    function updateLegend() {
+        const memberList = document.getElementById('memberList');
+        memberList.innerHTML = ''; // Clear existing list
+        const members = getCommitteeMembers();
+        members.forEach(member => {
+            const li = document.createElement('li');
+            li.textContent = member;
+            li.onclick = () => {
+                if (path.length === 0) { // Only allow if no current path is being edited
+                    selectOption(member); // Start the flow with this member
+                } else {
+                    console.log('Cannot select member while editing existing path');
+                }
+            };
+            memberList.appendChild(li);
+        });
+    }
+
+    // Update the committee selection event listener
+    committeeSelect.addEventListener('change', () => {
+        currentCommittee = committeeSelect.value;
+        localStorage.setItem('selectedCommittee', currentCommittee);
+        updateLegend(); // Update the legend when committee changes
+    });
 
     // Event listeners
     inputDiv.addEventListener('input', () => {
@@ -642,4 +678,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             showTagOptions(token, type, index);
         }
     });
+
+    // Add this after DOM elements are defined
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    clearHistoryBtn.addEventListener('click', () => {
+        history = []; // Clear the history array
+        localStorage.removeItem('historyStatements'); // Remove from local storage
+        updateHistoryTable(); // Refresh the table
+    });
+
+    // Call updateLegend initially to populate it
+    updateLegend();
 });
