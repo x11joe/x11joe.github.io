@@ -86,8 +86,6 @@ body {
     max-height: 200px;
     overflow-y: auto;
     border: 1px solid #ccc;
-    display: flex;
-    flex-direction: column-reverse;
 }
 
 #historyTable {

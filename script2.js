@@ -434,10 +434,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Updated finalizeStatement function
     function finalizeStatement() {
         if (path.length === 0) return;
-    
+        
         const statementText = constructStatementText(path);
         const startTime = statementStartTime || new Date();
-    
+        
         if (editingIndex !== null) {
             history[editingIndex] = { time: startTime, path: [...path], text: statementText };
             updateHistoryTable();
@@ -445,12 +445,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             history.push({ time: startTime, path: [...path], text: statementText });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
-            document.getElementById('historyWrapper').scrollTop = 0;
-            console.log('New entry added, scrolled to top');
+            setTimeout(() => {
+                const historyWrapper = document.getElementById('historyWrapper');
+                historyWrapper.scrollTop = 0;
+                console.log('Scrolled to top after adding new entry');
+            }, 0);
         }
-    
+        
         localStorage.setItem('historyStatements', serializeHistory(history));
-    
+        
         editingIndex = null;
         path = [];
         currentFlow = null;
