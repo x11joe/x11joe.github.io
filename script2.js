@@ -471,19 +471,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path.length === 0) return '';
         const flowType = path[0].step;
         if (flowType === 'member') {
-            const member = path.find(p => p.step === 'member')?.value || '';
+            const memberFullName = path.find(p => p.step === 'member')?.value || '';
+            const lastName = getLastName(memberFullName);
+            const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
             const action = path.find(p => p.step === 'action')?.value || '';
             const detail = path.find(p => p.step === 'movedDetail')?.value || '';
             const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
-            let text = `${member} - ${action}`;
+            let text = `${chamberPrefix} ${lastName} - ${action}`;
             if (detail) text += ` ${detail}`;
             if (rerefer) text += ` and Rerefer to ${getShortCommitteeName(rerefer)}`;
             return text;
         } else if (flowType === 'meetingAction') {
             const action = path.find(p => p.step === 'meetingAction')?.value || '';
-            const member = path.find(p => p.step === 'memberOptional')?.value || '';
+            const memberFullName = path.find(p => p.step === 'memberOptional')?.value || '';
             let text = action;
-            if (member) text += ` by ${member}`;
+            if (memberFullName) {
+                const lastName = getLastName(memberFullName);
+                const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+                text += ` by ${chamberPrefix} ${lastName}`;
+            }
             return text;
         } else if (flowType === 'voteAction') {
             const voteType = path.find(p => p.step === 'voteType')?.value || '';
@@ -492,14 +498,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const asAmended = path.find(p => p.step === 'asAmendedOptional')?.value || '';
                 const voteResult = path.find(p => p.step === 'voteModule')?.value || '';
                 const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
-                const billCarrier = path.find(p => p.step === 'billCarrier')?.value || '';
+                const billCarrierFullName = path.find(p => p.step === 'billCarrier')?.value || '';
                 let text = `Roll Call Vote on ${motionType}`;
                 if (asAmended) text += ` ${asAmended}`;
                 if (voteResult) {
                     const result = JSON.parse(voteResult);
                     text += ` - For: ${result.for}, Against: ${result.against}, Outcome: ${result.outcome}`;
                 }
-                if (outcome === 'Passed' && billCarrier) text += ` - Bill Carrier: ${billCarrier}`;
+                if (outcome === 'Passed' && billCarrierFullName) {
+                    const lastName = getLastName(billCarrierFullName);
+                    const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+                    text += ` - Bill Carrier: ${chamberPrefix} ${lastName}`;
+                }
                 return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
@@ -600,9 +610,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = ''; // Clear existing list
         const members = getCommitteeMembers();
-        members.forEach(member => {
+        members.forEach((member, index) => {
             const li = document.createElement('li');
-            li.textContent = member;
+            let displayName = member;
+            if (index === 0) { // Assume the first member is the chairperson
+                const isFemaleChair = isFemale(member);
+                const chairTitle = isFemaleChair ? 'Chairwoman' : 'Chairman';
+                displayName = `${chairTitle} ${getLastName(member)}`;
+            } else {
+                displayName = member; // Full name for non-chair members
+            }
+            li.textContent = displayName;
             li.onclick = () => {
                 if (path.length === 0) { // Only allow if no current path is being edited
                     selectOption(member); // Start the flow with this member
@@ -653,6 +671,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             console.warn('No voteAction starting point found in flows.json');
         }
+    }
+
+    // Determine if the committee is a Senate committee
+    function isSenateCommittee(committeeName) {
+        return committeeName.toLowerCase().includes("senate");
+    }
+
+    // Extract the last name from a full name
+    function getLastName(fullName) {
+        const parts = fullName.split(' ');
+        return parts[parts.length - 1];
+    }
+
+    // Check if a member is female based on the FEMALE_NAMES array
+    function isFemale(fullName) {
+        return window.FEMALE_NAMES.includes(fullName);
     }
 
     // Function to adjust history position and height
