@@ -345,25 +345,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Updated finalizeStatement function
     function finalizeStatement() {
-        const statementText = getCurrentText(); // Your function to get the input text
-        const startTime = statementStartTime || new Date().toISOString();
+        if (path.length === 0) return;
+    
+        const statementText = constructStatementText(path);
+        const startTime = statementStartTime || new Date();
     
         if (editingIndex !== null) {
-            // Update existing entry
             history[editingIndex] = { time: startTime, path: [...path], text: statementText };
-            updateHistoryTable(); // Refresh the entire table
+            updateHistoryTable();
         } else {
-            // Add new entry
             history.push({ time: startTime, path: [...path], text: statementText });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Add to top
+            historyTableBody.insertBefore(row, historyTableBody.firstChild);
         }
     
-        // Reset editing state
         editingIndex = null;
         path = [];
+        currentFlow = null;
+        currentStep = null;
+        statementStartTime = null;
         inputDiv.innerHTML = '';
+        inputDiv.appendChild(document.createTextNode(' '));
         inputDiv.focus();
+        showSuggestions('');
     }
 
     function constructStatementText(path) {
@@ -440,10 +444,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // New function to edit an entry
     function editHistoryEntry(index) {
         const entry = history[index];
-        path = [...entry.path]; // Copy the path array
+        path = [...entry.path];
         statementStartTime = entry.time;
         editingIndex = index;
-        updateInput(); // Load tags into inputDiv
+    
+        if (path.length > 0) {
+            const firstStep = path[0].step;
+            const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
+            if (startingPoint) {
+                currentFlow = jsonStructure.flows[startingPoint.flow];
+                const lastStepConfig = currentFlow.steps.find(step => step.step === path[path.length - 1].step);
+                currentStep = lastStepConfig?.next || null;
+                if (typeof currentStep === 'object') {
+                    currentStep = currentStep[path[path.length - 1].value] || currentStep.default;
+                }
+            } else {
+                currentFlow = null;
+                currentStep = null;
+            }
+        } else {
+            currentFlow = null;
+            currentStep = null;
+        }
+    
+        updateInput();
         showSuggestions('');
     }
 
@@ -465,20 +489,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle Enter to lock in selection
     inputDiv.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // Prevent newline
+        if (e.key >= '1' && e.key <= '9') {
+            const index = parseInt(e.key) - 1;
+            const suggestions = modal.querySelectorAll('.option');
+            if (index < suggestions.length) {
+                e.preventDefault(); // Prevent number from being typed
+                suggestions[index].click(); // Trigger the suggestion's onclick
+                return;
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
             const text = getCurrentText();
-            const options = getCurrentOptions(); // Your function for suggestions
+            const options = getCurrentOptions();
             const match = options.find(opt => opt.toLowerCase() === text.toLowerCase());
     
             if (match) {
-                inputDiv.lastChild.textContent = ' '; // Clear text
+                inputDiv.lastChild.textContent = ' ';
                 const tag = createTag(match, currentStep || 'startingPoint', path.length);
                 inputDiv.insertBefore(tag, inputDiv.lastChild);
-                path.push({ value: match, step: currentStep || 'startingPoint' });
-                // Update currentStep if needed
+                selectOption(match);
             } else {
-                // No suggestions active or editing complete, finalize the statement
                 finalizeStatement();
             }
         }
