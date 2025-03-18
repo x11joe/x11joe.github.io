@@ -81,6 +81,14 @@ body {
     width: 600px;
 }
 
+#historyWrapper {
+    max-height: 200px; /* Adjust this value as needed */
+    overflow-y: auto;
+    border: 1px solid #ccc; /* Optional: adds a visual boundary */
+    display: flex;
+    flex-direction: column-reverse; /* Makes latest entries appear at the top */
+}
+
 #historyTable {
     width: 100%;
     border-collapse: collapse;
@@ -102,4 +110,13 @@ body {
 
 .tags .token {
     margin-right: 5px;
+}
+
+.edit-icon {
+    cursor: pointer;
+    padding: 2px 5px;
+}
+
+.edit-icon:hover {
+    background-color: #e0e0e0;
 }

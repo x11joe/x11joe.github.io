@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentStep = null;
     let statementStartTime = null; // Track when first tag is added
     let history = []; // Store finalized statements
+    let editingIndex = null; // Track the index of the entry being edited
 
     // DOM elements
     const inputDiv = document.getElementById('input');
@@ -352,30 +353,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Updated finalizeStatement function
     function finalizeStatement() {
         if (path.length === 0) return;
-    
+
         const statementText = constructStatementText(path);
-        const tagsText = path.map(p => p.value).join(' ');
         const startTime = statementStartTime || new Date();
-        history.push({ time: startTime, path: [...path], text: statementText });
-    
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${startTime.toLocaleTimeString()}</td>
-            <td><div class="tags">${path.map(p => `<span class="token">${p.value}</span>`).join(' ')}</div><div>${statementText}</div></td>
-        `;
-        row.onclick = () => {
-            navigator.clipboard.writeText(statementText).then(() => {
-                console.log('Copied to clipboard:', statementText);
-            });
-        };
-        historyTableBody.appendChild(row);
-    
+
+        if (editingIndex !== null) {
+            // Update existing entry
+            history[editingIndex] = { time: startTime, path: [...path], text: statementText };
+            updateHistoryTable();
+        } else {
+            // Add new entry
+            history.push({ time: startTime, path: [...path], text: statementText });
+            const row = createHistoryRow(startTime, statementText, path, history.length - 1);
+            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Prepend for top-first
+        }
+
+        // Reset state
         path = [];
         currentFlow = null;
         currentStep = null;
         statementStartTime = null;
+        editingIndex = null;
         inputDiv.innerHTML = '';
         inputDiv.focus();
         showSuggestions('');
@@ -430,6 +431,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     function getShortCommitteeName(fullName) {
         const match = fullName.match(/(\w+)\s+Committee$/);
         return match ? match[1] : fullName;
+    }
+
+    // New function to create history rows with edit icon
+    function createHistoryRow(time, statementText, path, index) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${time.toLocaleTimeString()}</td>
+            <td><div class="tags">${path.map(p => `<span class="token">${p.value}</span>`).join(' ')}</div><div>${statementText}</div></td>
+            <td><span class="edit-icon" data-index="${index}">✏️</span></td>
+        `;
+        row.querySelector('.edit-icon').onclick = (e) => {
+            e.stopPropagation(); // Prevent row click (copy to clipboard)
+            editHistoryEntry(index);
+        };
+        row.onclick = () => {
+            navigator.clipboard.writeText(statementText).then(() => {
+                console.log('Copied to clipboard:', statementText);
+            });
+        };
+        return row;
+    }
+
+    // New function to edit an entry
+    function editHistoryEntry(index) {
+        const entry = history[index];
+        path = [...entry.path]; // Copy the path array
+        statementStartTime = entry.time;
+        editingIndex = index;
+        updateInput();
+        showSuggestions('');
+    }
+
+    // New function to refresh the history table
+    function updateHistoryTable() {
+        historyTableBody.innerHTML = '';
+        history.forEach((entry, index) => {
+            const row = createHistoryRow(entry.time, entry.text, entry.path, index);
+            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Prepend for top-first
+        });
     }
 
     // Event listeners
