@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.background = 'white';
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-        dropdown.style.zIndex = '1000'; // Ensure it’s above the modal
+        dropdown.style.zIndex = '1000';
         
         options.forEach(opt => {
             const div = document.createElement('div');
@@ -123,21 +123,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.stopPropagation();
                 path[pathIndex].value = opt;
                 updateInput();
-                adjustCurrentStep(pathIndex);
-                inputDiv.removeChild(dropdown); // Changed from document.body
+                modal.classList.remove('active'); // Hide suggestions modal
+                inputDiv.removeChild(dropdown);
                 console.log('Tag updated to:', opt, 'at index:', pathIndex);
             };
             dropdown.appendChild(div);
         });
         
-        // Append to inputDiv instead of document.body
         inputDiv.appendChild(dropdown);
-        
-        // Position relative to inputDiv using offset properties
         dropdown.style.left = `${tagElement.offsetLeft}px`;
         dropdown.style.top = `${tagElement.offsetTop + tagElement.offsetHeight}px`;
         
-        // Add per-dropdown click listener to close it
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target)) {
                 inputDiv.removeChild(dropdown);
@@ -297,8 +293,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tag = createTag(part.value, part.step, index);
             inputDiv.appendChild(tag);
         });
-        inputDiv.appendChild(document.createTextNode(' '));
+        const textNode = document.createTextNode(' ');
+        inputDiv.appendChild(textNode);
         inputDiv.focus();
+        
+        setTimeout(() => {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(textNode, textNode.length);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }, 0);
     }
 
     // Show suggestions based on current text
@@ -350,16 +356,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     flow.steps.some(step => step.step === lastPart.step)
                 );
                 const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
-                currentStep = stepConfig.next;
-                if (typeof currentStep === 'object') {
-                    currentStep = currentStep[lastPart.value] || currentStep.default;
+                if (stepConfig.next) {
+                    if (typeof stepConfig.next === 'string') {
+                        currentStep = stepConfig.next;
+                    } else if (typeof stepConfig.next === 'object') {
+                        currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
+                    }
+                } else {
+                    currentStep = null;
                 }
             } else {
                 currentFlow = null;
                 currentStep = null;
             }
             updateInput();
-            showSuggestions('');
+            const text = getCurrentText();
+            showSuggestions(text);
         }
     }
 
@@ -525,12 +537,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle Enter to lock in selection
     inputDiv.addEventListener('keydown', (e) => {
-        if (e.key >= '1' && e.key <= '9') {
+        if (e.key === 'Backspace') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (range.collapsed) { // Cursor, not a selection
+                    const container = range.startContainer;
+                    const offset = range.startOffset;
+                    // Check if cursor is at the end of the last text node
+                    if (container === inputDiv.lastChild && offset === inputDiv.lastChild.textContent.length && path.length > 0) {
+                        e.preventDefault(); // Prevent default backspace behavior
+                        removeLastTag();
+                    }
+                }
+            }
+        } else if (e.key >= '1' && e.key <= '9') {
             const index = parseInt(e.key) - 1;
             const suggestions = modal.querySelectorAll('.option');
             if (index < suggestions.length) {
-                e.preventDefault(); // Prevent number from being typed
-                suggestions[index].click(); // Trigger the suggestion's onclick
+                e.preventDefault();
+                suggestions[index].click();
                 return;
             }
         } else if (e.key === 'Enter') {
@@ -538,7 +564,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const text = getCurrentText();
             const options = getCurrentOptions();
             const match = options.find(opt => opt.toLowerCase() === text.toLowerCase());
-    
             if (match) {
                 inputDiv.lastChild.textContent = ' ';
                 const tag = createTag(match, currentStep || 'startingPoint', path.length);
