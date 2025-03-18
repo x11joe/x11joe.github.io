@@ -1,32 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictive Statement System</title>
-    <link rel="stylesheet" href="style2.css">
-</head>
 <body>
-    <label for="committeeSelect">Select Committee:</label>
-    <select id="committeeSelect"></select>
-    <div class="container">
-        <div id="modal" class="modal"></div>
-        <div id="input" class="input" contenteditable="true" spellcheck="false"></div>
-    </div>
-    <div id="history">
-        <h3>History <button id="clearHistoryBtn">Clear All History</button></h3>
-        <div id="historyWrapper">
-            <table id="historyTable">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Statement</th>
-                        <th>Edit</th>
-                        <th>Delete</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <div class="main-content">
+        <label for="committeeSelect">Select Committee:</label>
+        <select id="committeeSelect"></select>
+        <div class="container">
+            <div id="modal" class="modal"></div>
+            <div id="input" class="input" contenteditable="true" spellcheck="false"></div>
+        </div>
+        <div id="history">
+            <h3>History <button id="clearHistoryBtn">Clear All History</button></h3>
+            <div id="historyWrapper">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Statement</th>
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
     <div id="legend" class="legend">
@@ -42,4 +36,3 @@
     <script src="defaultCommittees.js"></script>
     <script src="script2.js"></script>
 </body>
-</html>
