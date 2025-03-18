@@ -155,7 +155,7 @@ label {
 }
 
 .legend h4 {
-    margin: 0 0 10px 0;
+    margin: 10px 0 5px 0; /* Adds space above and below headers */
 }
 
 .legend ul {

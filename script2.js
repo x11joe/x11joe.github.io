@@ -630,6 +630,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function updateVoteActionsLegend() {
+        const voteActionsList = document.getElementById('voteActionsList');
+        voteActionsList.innerHTML = ''; // Clear existing list
+        const voteActionSP = jsonStructure.startingPoints.find(sp => sp.type === "voteAction");
+        if (voteActionSP) {
+            const voteActions = voteActionSP.options; // ["Roll Call Vote", "Voice Vote", "Motion Failed"]
+            voteActions.forEach(action => {
+                const li = document.createElement('li');
+                li.textContent = action;
+                li.onclick = () => {
+                    if (path.length === 0) {
+                        selectOption(action); // Start the vote action flow
+                    } else {
+                        console.log('Cannot select vote action while editing existing path');
+                    }
+                };
+                voteActionsList.appendChild(li);
+            });
+        } else {
+            console.warn('No voteAction starting point found in flows.json');
+        }
+    }
+
     // Update the committee selection event listener
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
@@ -711,5 +734,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Call updateLegend initially to populate it
     updateMeetingActionsLegend();
+    updateVoteActionsLegend();
     updateLegend();
 });
