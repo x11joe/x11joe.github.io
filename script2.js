@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const span = document.createElement('span');
         span.className = 'token';
         span.setAttribute('data-type', type);
-        span.setAttribute('data-index', index); // Store path index
+        span.setAttribute('data-index', index); // Unique index for each tag
         span.contentEditable = false;
     
         const textNode = document.createTextNode(text);
@@ -163,10 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         span.appendChild(textNode);
         span.appendChild(chevron);
     
-        span.onclick = (e) => {
-            e.stopPropagation();
-            showTagOptions(span, type, index);
-        };
         return span;
     }
 
@@ -291,12 +287,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         inputDiv.appendChild(document.createTextNode(' '));
         inputDiv.focus();
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(inputDiv);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
     }
 
     // Show suggestions based on current text
@@ -355,31 +345,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Updated finalizeStatement function
     function finalizeStatement() {
-        if (path.length === 0) return;
-
-        const statementText = constructStatementText(path);
-        const startTime = statementStartTime || new Date();
-
+        const statementText = getCurrentText(); // Your function to get the input text
+        const startTime = statementStartTime || new Date().toISOString();
+    
         if (editingIndex !== null) {
             // Update existing entry
             history[editingIndex] = { time: startTime, path: [...path], text: statementText };
-            updateHistoryTable();
+            updateHistoryTable(); // Refresh the entire table
         } else {
             // Add new entry
             history.push({ time: startTime, path: [...path], text: statementText });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Prepend for top-first
+            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Add to top
         }
-
-        // Reset state
-        path = [];
-        currentFlow = null;
-        currentStep = null;
-        statementStartTime = null;
+    
+        // Reset editing state
         editingIndex = null;
+        path = [];
         inputDiv.innerHTML = '';
         inputDiv.focus();
-        showSuggestions('');
     }
 
     function constructStatementText(path) {
@@ -459,16 +443,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         path = [...entry.path]; // Copy the path array
         statementStartTime = entry.time;
         editingIndex = index;
-        updateInput();
+        updateInput(); // Load tags into inputDiv
         showSuggestions('');
     }
 
     // New function to refresh the history table
     function updateHistoryTable() {
-        historyTableBody.innerHTML = '';
+        historyTableBody.innerHTML = ''; // Clear existing rows
         history.forEach((entry, index) => {
             const row = createHistoryRow(entry.time, entry.text, entry.path, index);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Prepend for top-first
+            historyTableBody.insertBefore(row, historyTableBody.firstChild); // Top-first order
         });
     }
 
@@ -484,37 +468,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === 'Enter') {
             e.preventDefault(); // Prevent newline
             const text = getCurrentText();
-            const options = getCurrentOptions();
+            const options = getCurrentOptions(); // Your function for suggestions
             const match = options.find(opt => opt.toLowerCase() === text.toLowerCase());
+    
             if (match) {
                 inputDiv.lastChild.textContent = ' '; // Clear text
-                const tag = createTag(match, currentStep || 'startingPoint');
+                const tag = createTag(match, currentStep || 'startingPoint', path.length);
                 inputDiv.insertBefore(tag, inputDiv.lastChild);
-                selectOption(match);
-            } else if (currentStep === null || (currentFlow && currentFlow.steps.find(step => step.step === currentStep)?.optional)) {
-                finalizeStatement(); // Add this to finalize on Enter
-            }
-        } else if (e.key === 'Backspace') {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                if (range.collapsed && inputDiv.childNodes.length > 1 && range.startOffset === 0 && inputDiv.lastChild.nodeType === Node.TEXT_NODE) {
-                    e.preventDefault();
-                    removeLastTag();
-                }
-            }
-        } else if (e.key >= '1' && e.key <= '9') {
-            const index = parseInt(e.key) - 1;
-            const suggestions = modal.querySelectorAll('.option');
-            if (index < suggestions.length) {
-                e.preventDefault();
-                suggestions[index].click();
+                path.push({ value: match, step: currentStep || 'startingPoint' });
+                // Update currentStep if needed
+            } else {
+                // No suggestions active or editing complete, finalize the statement
+                finalizeStatement();
             }
         }
     });
 
     // Initialize
     inputDiv.focus();
+
+    inputDiv.addEventListener('click', (e) => {
+        if (e.target.classList.contains('chevron')) {
+            const token = e.target.parentElement; // The tag (span.token)
+            const type = token.getAttribute('data-type');
+            const index = parseInt(token.getAttribute('data-index'), 10);
+            showTagOptions(token, type, index); // Call your dropdown function
+        }
+    });
 
     // Add CSS in style2.css
     document.addEventListener('click', (e) => {
