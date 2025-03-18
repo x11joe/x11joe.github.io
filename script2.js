@@ -351,18 +351,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path.length > 0) {
             path.pop();
             if (path.length > 0) {
-                const lastPart = path[path.length - 1];
-                currentFlow = Object.values(jsonStructure.flows).find(flow => 
-                    flow.steps.some(step => step.step === lastPart.step)
-                );
-                const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
-                if (stepConfig.next) {
-                    if (typeof stepConfig.next === 'string') {
-                        currentStep = stepConfig.next;
-                    } else if (typeof stepConfig.next === 'object') {
-                        currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
+                // Determine currentFlow based on the first tag's step
+                const firstStep = path[0].step;
+                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
+                if (startingPoint) {
+                    currentFlow = jsonStructure.flows[startingPoint.flow];
+                    if (path.length === 1) {
+                        // If only the starting tag remains, set currentStep to the first step of the flow
+                        currentStep = currentFlow.steps[0].step; // e.g., "memberOptional" for meetingActionFlow
+                    } else {
+                        // Otherwise, set currentStep based on the last tag's next step
+                        const lastPart = path[path.length - 1];
+                        const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
+                        if (stepConfig && stepConfig.next) {
+                            if (typeof stepConfig.next === 'string') {
+                                currentStep = stepConfig.next;
+                            } else if (typeof stepConfig.next === 'object') {
+                                currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
+                            }
+                        } else {
+                            currentStep = null;
+                        }
                     }
                 } else {
+                    console.warn('No starting point found for step:', firstStep);
+                    currentFlow = null;
                     currentStep = null;
                 }
             } else {
