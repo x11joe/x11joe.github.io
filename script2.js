@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modal = document.getElementById('modal');
     const historyTableBody = document.querySelector('#historyTable tbody');
     const committeeSelect = document.getElementById('committeeSelect');
+    const historyDiv = document.getElementById('history');
+    const entryWrapper = document.querySelector('.entry-wrapper');
 
     // Populate committee dropdown
     Object.keys(committees).forEach(committee => {
@@ -653,6 +655,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Function to adjust layout dynamically
+    function adjustLayout() {
+        const viewportHeight = window.innerHeight;
+        const committeeHeight = document.getElementById('committeeSelectWrapper').offsetHeight;
+        const entryHeight = entryWrapper.offsetHeight;
+        const entryTop = (viewportHeight - entryHeight) / 2; // Approximate center
+        const historyTop = entryTop + entryHeight + 10; // 10px gap
+
+        // Set max-height for history to fit remaining space
+        const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
+        historyDiv.style.maxHeight = `${maxHistoryHeight}px`;
+    }
+
     // Update the committee selection event listener
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
@@ -736,4 +751,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMeetingActionsLegend();
     updateVoteActionsLegend();
     updateLegend();
+
+    // Call adjustLayout on load, resize, and input changes
+    adjustLayout();
+    window.addEventListener('resize', adjustLayout);
+    inputDiv.addEventListener('input', adjustLayout);
 });
