@@ -90,12 +90,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showTagOptions(tagElement, stepType, pathIndex) {
-        // Find the flow and step configuration
+        console.log('showTagOptions called - stepType:', stepType, 'pathIndex:', pathIndex);
         const flow = pathIndex === 0 && !currentFlow ? null : currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
         let options = [];
         
         if (pathIndex === 0 && !flow) {
-            // Starting point options
             const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === stepType);
             options = startingPoint.options === "committeeMembers" ? getCommitteeMembers() : startingPoint.options;
         } else {
@@ -106,8 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                       stepConfig.options === "suggestFailedReason" ? suggestFailedReason() :
                       stepConfig.options || [];
         }
-    
-        // Create dropdown
+        
+        console.log('Options for dropdown:', options);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         dropdown.style.position = 'absolute';
@@ -125,10 +124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateInput();
                 adjustCurrentStep(pathIndex);
                 document.body.removeChild(dropdown);
+                console.log('Tag updated to:', opt, 'at index:', pathIndex);
             };
             dropdown.appendChild(div);
         });
-    
+        
         document.body.appendChild(dropdown);
         const rect = tagElement.getBoundingClientRect();
         dropdown.style.left = `${rect.left}px`;
@@ -153,16 +153,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const span = document.createElement('span');
         span.className = 'token';
         span.setAttribute('data-type', type);
-        span.setAttribute('data-index', index); // Unique index for each tag
+        span.setAttribute('data-index', index);
         span.contentEditable = false;
-    
+        
         const textNode = document.createTextNode(text);
         const chevron = document.createElement('span');
         chevron.className = 'chevron';
-        chevron.textContent = ' ▼'; // Down arrow
+        chevron.textContent = ' ▼';
         span.appendChild(textNode);
         span.appendChild(chevron);
-    
+        
         return span;
     }
 
@@ -291,6 +291,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show suggestions based on current text
     function showSuggestions(text) {
+        console.log('showSuggestions called with text:', text, 'currentStep:', currentStep);
+        if (!text && !currentStep) {
+            modal.classList.remove('active');
+            console.log('Modal hidden: no text and no current step');
+            return;
+        }
         const options = getCurrentOptions();
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
@@ -301,16 +307,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 div.textContent = `${index + 1}. ${opt}`;
                 div.onclick = () => {
                     inputDiv.lastChild.textContent = ' '; // Clear text
-                    const tag = createTag(opt, currentStep || 'startingPoint');
+                    const tag = createTag(opt, currentStep || 'startingPoint', path.length);
                     inputDiv.insertBefore(tag, inputDiv.lastChild);
                     selectOption(opt);
                 };
                 modal.appendChild(div);
             });
             modal.classList.add('active');
-            positionModal(); // Call after content is added
+            positionModal();
+            console.log('Modal shown with options:', filtered);
         } else {
             modal.classList.remove('active');
+            console.log('Modal hidden: no filtered options');
         }
     }
 
@@ -357,6 +365,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             history.push({ time: startTime, path: [...path], text: statementText });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
+            // Scroll to the top
+            document.getElementById('historyWrapper').scrollTop = 0;
+            console.log('New entry added, scrolled to top');
         }
     
         editingIndex = null;
@@ -448,25 +459,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         statementStartTime = entry.time;
         editingIndex = index;
     
-        if (path.length > 0) {
-            const firstStep = path[0].step;
-            const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
-            if (startingPoint) {
-                currentFlow = jsonStructure.flows[startingPoint.flow];
-                const lastStepConfig = currentFlow.steps.find(step => step.step === path[path.length - 1].step);
-                currentStep = lastStepConfig?.next || null;
-                if (typeof currentStep === 'object') {
-                    currentStep = currentStep[path[path.length - 1].value] || currentStep.default;
+        // Reset flow and step
+        currentFlow = null;
+        currentStep = null;
+    
+        // Replay the flow to set currentFlow and currentStep
+        path.forEach((part, i) => {
+            if (i === 0) {
+                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === part.step);
+                if (startingPoint) {
+                    currentFlow = jsonStructure.flows[startingPoint.flow];
+                    const firstStep = currentFlow.steps[0];
+                    if (firstStep.step === part.step) {
+                        currentStep = firstStep.next;
+                    } else {
+                        currentStep = firstStep.step;
+                    }
                 }
             } else {
-                currentFlow = null;
-                currentStep = null;
+                const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+                if (stepConfig && stepConfig.next) {
+                    if (typeof stepConfig.next === 'string') {
+                        currentStep = stepConfig.next;
+                    } else if (typeof stepConfig.next === 'object') {
+                        currentStep = stepConfig.next[part.value] || stepConfig.next.default;
+                    }
+                } else {
+                    currentStep = null;
+                }
             }
-        } else {
-            currentFlow = null;
-            currentStep = null;
-        }
+        });
     
+        console.log('editHistoryEntry: currentFlow:', currentFlow, 'currentStep:', currentStep, 'path:', path);
         updateInput();
         showSuggestions('');
     }
@@ -519,10 +543,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     inputDiv.addEventListener('click', (e) => {
         if (e.target.classList.contains('chevron')) {
-            const token = e.target.parentElement; // The tag (span.token)
+            const token = e.target.parentElement;
             const type = token.getAttribute('data-type');
             const index = parseInt(token.getAttribute('data-index'), 10);
-            showTagOptions(token, type, index); // Call your dropdown function
+            console.log('Chevron clicked - type:', type, 'index:', index);
+            showTagOptions(token, type, index);
         }
     });
 
