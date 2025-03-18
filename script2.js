@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.background = 'white';
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        dropdown.style.zIndex = '1000'; // Ensure it’s above the modal
         
         options.forEach(opt => {
             const div = document.createElement('div');
@@ -123,16 +124,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 path[pathIndex].value = opt;
                 updateInput();
                 adjustCurrentStep(pathIndex);
-                document.body.removeChild(dropdown);
+                inputDiv.removeChild(dropdown); // Changed from document.body
                 console.log('Tag updated to:', opt, 'at index:', pathIndex);
             };
             dropdown.appendChild(div);
         });
         
-        document.body.appendChild(dropdown);
-        const rect = tagElement.getBoundingClientRect();
-        dropdown.style.left = `${rect.left}px`;
-        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+        // Append to inputDiv instead of document.body
+        inputDiv.appendChild(dropdown);
+        
+        // Position relative to inputDiv using offset properties
+        dropdown.style.left = `${tagElement.offsetLeft}px`;
+        dropdown.style.top = `${tagElement.offsetTop + tagElement.offsetHeight}px`;
+        
+        // Add per-dropdown click listener to close it
+        const closeDropdown = (e) => {
+            if (!dropdown.contains(e.target)) {
+                inputDiv.removeChild(dropdown);
+                document.removeEventListener('click', closeDropdown);
+            }
+        };
+        document.addEventListener('click', closeDropdown);
     }
 
     // Adjust currentStep after tag change
@@ -551,11 +563,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Add CSS in style2.css
-    document.addEventListener('click', (e) => {
-        const dropdown = document.querySelector('.dropdown');
-        if (dropdown && !dropdown.contains(e.target)) {
-            document.body.removeChild(dropdown);
-        }
-    });
 });
