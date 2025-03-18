@@ -331,11 +331,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         positionModal();
     }
 
-    // Update the input display
+    // Update the input display with transformed tags
     function updateInput() {
         inputDiv.innerHTML = '';
         path.forEach((part, index) => {
-            const tag = createTag(part.value, part.step, index);
+            const displayText = getTagText(part.step, part.value);
+            const tag = createTag(displayText, part.step, index);
             inputDiv.appendChild(tag);
         });
         const textNode = document.createTextNode(' ');
@@ -721,8 +722,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     function isSenateCommittee(committeeName) {
         return committeeName.toLowerCase().includes("senate");
     }
-
-    // Removed getLastName function since parseMember now handles last name extraction
 
     function isFemale(fullName) {
         return window.FEMALE_NAMES.includes(fullName);
