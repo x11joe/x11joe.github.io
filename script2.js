@@ -655,18 +655,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to adjust layout dynamically
-    // function adjustLayout() {
-    //     const viewportHeight = window.innerHeight;
-    //     const committeeHeight = document.getElementById('committeeSelectWrapper').offsetHeight;
-    //     const entryHeight = entryWrapper.offsetHeight;
-    //     const entryTop = (viewportHeight - entryHeight) / 2; // Approximate center
-    //     const historyTop = entryTop + entryHeight + 10; // 10px gap
+    // Function to adjust history position and height
+    function adjustHistoryLayout() {
+        const entryRect = entryWrapper.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const gap = 10; // Gap between entry and history in pixels
 
-    //     // Set max-height for history to fit remaining space
-    //     const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
-    //     historyDiv.style.maxHeight = `${maxHistoryHeight}px`;
-    // }
+        // Calculate top position for history (just below entry)
+        const historyTop = entryRect.bottom + gap;
+        historyDiv.style.top = `${historyTop}px`;
+
+        // Calculate maximum height for history (from its top to bottom of viewport)
+        const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
+        historyDiv.style.height = `${maxHistoryHeight}px`;
+    }
 
     // Update the committee selection event listener
     committeeSelect.addEventListener('change', () => {
@@ -680,6 +682,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const text = getCurrentText();
         showSuggestions(text);
         tryToTag();
+        adjustHistoryLayout(); // Adjust layout on input
     });
 
     inputDiv.addEventListener('keydown', (e) => {
@@ -752,8 +755,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateVoteActionsLegend();
     updateLegend();
 
-    // // Call adjustLayout on load, resize, and input changes
-    // adjustLayout();
-    // window.addEventListener('resize', adjustLayout);
-    // inputDiv.addEventListener('input', adjustLayout);
+    // Call adjustHistoryLayout on load, resize, and input changes
+    adjustHistoryLayout();
+    window.addEventListener('resize', adjustHistoryLayout);
+    inputDiv.addEventListener('input', adjustHistoryLayout);
 });
