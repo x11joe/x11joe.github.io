@@ -252,10 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
-        const modalHeight = modal.scrollHeight || 200; // Use scrollHeight for dynamic content, fallback to 200px
-        modal.style.left = `${rect.left + window.scrollX}px`; // Align with input’s left edge
-        modal.style.top = `${rect.top - modalHeight - 10 + window.scrollY}px`; // Place above input
-        modal.style.width = `${rect.width}px`; // Match input width
+        ///This code did not work before so I added it directly in the CSS
     }
 
     // Remove last tag on backspace
