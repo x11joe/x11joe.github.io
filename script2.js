@@ -656,17 +656,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to adjust layout dynamically
-    function adjustLayout() {
-        const viewportHeight = window.innerHeight;
-        const committeeHeight = document.getElementById('committeeSelectWrapper').offsetHeight;
-        const entryHeight = entryWrapper.offsetHeight;
-        const entryTop = (viewportHeight - entryHeight) / 2; // Approximate center
-        const historyTop = entryTop + entryHeight + 10; // 10px gap
+    // function adjustLayout() {
+    //     const viewportHeight = window.innerHeight;
+    //     const committeeHeight = document.getElementById('committeeSelectWrapper').offsetHeight;
+    //     const entryHeight = entryWrapper.offsetHeight;
+    //     const entryTop = (viewportHeight - entryHeight) / 2; // Approximate center
+    //     const historyTop = entryTop + entryHeight + 10; // 10px gap
 
-        // Set max-height for history to fit remaining space
-        const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
-        historyDiv.style.maxHeight = `${maxHistoryHeight}px`;
-    }
+    //     // Set max-height for history to fit remaining space
+    //     const maxHistoryHeight = viewportHeight - historyTop - 10; // 10px bottom margin
+    //     historyDiv.style.maxHeight = `${maxHistoryHeight}px`;
+    // }
 
     // Update the committee selection event listener
     committeeSelect.addEventListener('change', () => {
@@ -752,8 +752,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateVoteActionsLegend();
     updateLegend();
 
-    // Call adjustLayout on load, resize, and input changes
-    adjustLayout();
-    window.addEventListener('resize', adjustLayout);
-    inputDiv.addEventListener('input', adjustLayout);
+    // // Call adjustLayout on load, resize, and input changes
+    // adjustLayout();
+    // window.addEventListener('resize', adjustLayout);
+    // inputDiv.addEventListener('input', adjustLayout);
 });
