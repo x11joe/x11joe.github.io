@@ -612,6 +612,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function updateMeetingActionsLegend() {
+        const meetingActionsList = document.getElementById('meetingActionsList');
+        meetingActionsList.innerHTML = ''; // Clear existing list
+        const meetingActions = jsonStructure.startingPoints.find(sp => sp.type === "meetingAction").options;
+        meetingActions.forEach(action => {
+            const li = document.createElement('li');
+            li.textContent = action;
+            li.onclick = () => {
+                if (path.length === 0) {
+                    selectOption(action);
+                } else {
+                    console.log('Cannot select meeting action while editing existing path');
+                }
+            };
+            meetingActionsList.appendChild(li);
+        });
+    }
+
     // Update the committee selection event listener
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
@@ -692,5 +710,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Call updateLegend initially to populate it
+    updateMeetingActionsLegend();
     updateLegend();
 });

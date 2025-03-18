@@ -171,3 +171,8 @@ label {
 .legend li:hover {
     background-color: #f0f0f0;
 }
+
+.left-legend {
+    right: auto;
+    left: 10px;
+}
