@@ -458,29 +458,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
-    // Construct statement text (uses "Senator LastName" or "Representative LastName")
+    // Construct statement text with title if available
     function constructStatementText(path) {
         if (path.length === 0) return '';
         const flowType = path[0].step;
         if (flowType === 'member') {
-            const memberFullName = path.find(p => p.step === 'member')?.value || '';
-            const lastName = getLastName(memberFullName);
-            const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+            const memberString = path.find(p => p.step === 'member')?.value || '';
+            const { lastName, title } = parseMember(memberString);
             const action = path.find(p => p.step === 'action')?.value || '';
             const detail = path.find(p => p.step === 'movedDetail')?.value || '';
             const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
-            let text = `${chamberPrefix} ${lastName} - ${action}`;
+            let memberText;
+            if (title) {
+                memberText = `${title} ${lastName}`;
+            } else {
+                const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+                memberText = `${chamberPrefix} ${lastName}`;
+            }
+            let text = `${memberText} - ${action}`;
             if (detail) text += ` ${detail}`;
             if (rerefer) text += ` and Rerefer to ${getShortCommitteeName(rerefer)}`;
             return text;
         } else if (flowType === 'meetingAction') {
             const action = path.find(p => p.step === 'meetingAction')?.value || '';
-            const memberFullName = path.find(p => p.step === 'memberOptional')?.value || '';
+            const memberString = path.find(p => p.step === 'memberOptional')?.value || '';
             let text = action;
-            if (memberFullName) {
-                const lastName = getLastName(memberFullName);
-                const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
-                text += ` by ${chamberPrefix} ${lastName}`;
+            if (memberString) {
+                const { lastName, title } = parseMember(memberString);
+                let memberText;
+                if (title) {
+                    memberText = `${title} ${lastName}`;
+                } else {
+                    const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+                    memberText = `${chamberPrefix} ${lastName}`;
+                }
+                text += ` by ${memberText}`;
             }
             return text;
         } else if (flowType === 'voteAction') {
@@ -490,22 +502,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const asAmended = path.find(p => p.step === 'asAmendedOptional')?.value || '';
                 const voteResult = path.find(p => p.step === 'voteModule')?.value || '';
                 const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
-                const billCarrierFullName = path.find(p => p.step === 'billCarrier')?.value || '';
+                const billCarrierString = path.find(p => p.step === 'billCarrier')?.value || '';
                 let text = `Roll Call Vote on ${motionType}`;
                 if (asAmended) text += ` ${asAmended}`;
                 if (voteResult) {
                     const result = JSON.parse(voteResult);
                     text += ` - For: ${result.for}, Against: ${result.against}, Outcome: ${result.outcome}`;
                 }
-                if (outcome === 'Passed' && billCarrierFullName) {
-                    const lastName = getLastName(billCarrierFullName);
-                    const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
-                    text += ` - Bill Carrier: ${chamberPrefix} ${lastName}`;
+                if (outcome === 'Passed' && billCarrierString) {
+                    const { lastName, title } = parseMember(billCarrierString);
+                    let memberText;
+                    if (title) {
+                        memberText = `${title} ${lastName}`;
+                    } else {
+                        const chamberPrefix = isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative';
+                        memberText = `${chamberPrefix} ${lastName}`;
+                    }
+                    text += ` - Bill Carrier: ${memberText}`;
                 }
                 return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
-                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
+                const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
                 return `Voice Vote on ${onWhat} - ${outcome}`;
             } else if (voteType === 'Motion Failed') {
                 const reason = path.find(p => p.step === 'motionFailedReason')?.value || '';
@@ -520,21 +538,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return match ? match[1] : fullName;
     }
 
-    // Parse member string into name and title, adjusting for gender
+    // Parse member string into name, lastName, and title, adjusting for gender
     function parseMember(memberString) {
         const parts = memberString.split(' - ');
         if (parts.length === 2) {
-            const name = parts[0];
-            let baseTitle = parts[1];
+            const name = parts[0]; // e.g., "Diane Larson"
+            let baseTitle = parts[1]; // e.g., "Chairman"
             const isFemaleMember = isFemale(name);
             if (baseTitle === 'Chairman') {
                 baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
             } else if (baseTitle === 'Vice Chairman') {
                 baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
             }
-            return { name, title: baseTitle };
+            const lastName = name.split(' ').pop(); // e.g., "Larson"
+            return { name, lastName, title: baseTitle };
         } else {
-            return { name: memberString, title: null };
+            const name = memberString;
+            const lastName = name.split(' ').pop();
+            return { name, lastName, title: null };
         }
     }
 
@@ -701,10 +722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return committeeName.toLowerCase().includes("senate");
     }
 
-    function getLastName(fullName) {
-        const parts = fullName.split(' ');
-        return parts[parts.length - 1];
-    }
+    // Removed getLastName function since parseMember now handles last name extraction
 
     function isFemale(fullName) {
         return window.FEMALE_NAMES.includes(fullName);
