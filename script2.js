@@ -112,6 +112,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             options = suggestFailedReason();
         } else if (Array.isArray(stepConfig.options)) {
             options = stepConfig.options;
+            // Prioritize "Take the Vote" for motionModifiers and afterAmended
+            if (stepType === 'motionModifiers' || stepType === 'afterAmended') {
+                options = ['Take the Vote', ...options.filter(opt => opt !== 'Take the Vote')];
+            }
         }
         return options;
     }
@@ -157,56 +161,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
-        const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
-        const options = getOptionsForStep(stepType, flow);
-        
-        console.log('Tag options:', options);
-        modal.classList.remove('active');
-        
-        const existingDropdown = document.querySelector('.dropdown');
-        if (existingDropdown) {
-            existingDropdown.remove();
-        }
-    
-        const dropdown = document.createElement('div');
-        dropdown.className = 'dropdown';
-        
-        options.forEach((opt, idx) => {
-            const div = document.createElement('div');
-            div.className = 'dropdown-option';
-            div.textContent = opt;
-            div.onclick = (e) => {
-                e.stopPropagation();
-                const oldValue = path[pathIndex].value;
-                path[pathIndex].value = opt;
-                console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
-                smartInvalidateSubsequentTags(pathIndex, oldValue, opt);
-                updateInput();
-                dropdown.remove();
-                dropdownActive = false;
-                setTimeout(() => showSuggestions(getCurrentText()), 0);
-            };
-            dropdown.appendChild(div);
-        });
-        
-        document.body.appendChild(dropdown);
-        const tagRect = tagElement.getBoundingClientRect();
-        dropdown.style.position = 'absolute';
-        dropdown.style.left = `${tagRect.left}px`;
-        dropdown.style.top = `${tagRect.bottom}px`;
-        dropdown.style.zIndex = '10001';
-        dropdownActive = true;
-        selectedDropdownIndex = -1;
-    
-        const closeDropdown = (e) => {
-            if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
-                dropdown.remove();
-                document.removeEventListener('click', closeDropdown);
-                dropdownActive = false;
-                setTimeout(() => showSuggestions(getCurrentText()), 0);
+        if (stepType === 'voteModule') {
+            const voteResult = JSON.parse(path[pathIndex].value);
+            const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
+            handleModule(stepConfig, voteResult);
+        } else {
+            const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
+            const options = getOptionsForStep(stepType, flow);
+            
+            console.log('Tag options:', options);
+            modal.classList.remove('active');
+            
+            const existingDropdown = document.querySelector('.dropdown');
+            if (existingDropdown) {
+                existingDropdown.remove();
             }
-        };
-        document.addEventListener('click', closeDropdown);
+        
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown';
+            
+            options.forEach((opt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'dropdown-option';
+                div.textContent = opt;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    const oldValue = path[pathIndex].value;
+                    path[pathIndex].value = opt;
+                    console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
+                    smartInvalidateSubsequentTags(pathIndex, oldValue, opt);
+                    updateInput();
+                    dropdown.remove();
+                    dropdownActive = false;
+                    setTimeout(() => showSuggestions(getCurrentText()), 0);
+                };
+                dropdown.appendChild(div);
+            });
+            
+            document.body.appendChild(dropdown);
+            const tagRect = tagElement.getBoundingClientRect();
+            dropdown.style.position = 'absolute';
+            dropdown.style.left = `${tagRect.left}px`;
+            dropdown.style.top = `${tagRect.bottom}px`;
+            dropdown.style.zIndex = '10001';
+            dropdownActive = true;
+            selectedDropdownIndex = -1;
+        
+            const closeDropdown = (e) => {
+                if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
+                    dropdown.remove();
+                    document.removeEventListener('click', closeDropdown);
+                    dropdownActive = false;
+                    setTimeout(() => showSuggestions(getCurrentText()), 0);
+                }
+            };
+            document.addEventListener('click', closeDropdown);
+        }
     }
 
     function smartInvalidateSubsequentTags(changedIndex, oldValue, newValue) {
@@ -597,8 +607,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const voteType = path.find(p => p.step === 'voteType').value;
             if (voteType === 'Roll Call Vote') {
                 const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType').value;
-                const asAmended = path.find(p => p.step === 'asAmendedOptional')?.value;
-                const rereferCommittee = path.find(p => p.step === 'rereferOptional')?.value;
+                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value);
+                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
                 const voteResultPart = path.find(p => p.step === 'voteModule');
                 const result = JSON.parse(voteResultPart.value);
                 const forVotes = result.for || 0;
@@ -606,7 +616,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const neutralVotes = result.neutral || 0;
                 const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
                 let motionText = baseMotionType;
-                if (asAmended) motionText += ` ${asAmended}`;
+                if (modifiers.includes('as Amended')) motionText += ' as Amended';
                 if (rereferCommittee) motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
                 let text = `Roll Call Vote on ${motionText} - Motion ${outcome} - ${forVotes}-${againstVotes}-${neutralVotes}`;
                 const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
