@@ -222,20 +222,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
             handleModule(stepConfig, voteResult);
         } else if (stepType === 'testimony') {
-            const testimonyDetails = parseTestimonyString(path[pathIndex].value);
+            const part = path[pathIndex];
+            let testimonyDetails;
+            if (part.details) {
+                testimonyDetails = part.details;
+            } else {
+                testimonyDetails = parseTestimonyString(part.value);
+            }
             document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
             document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
             document.getElementById('testimonyRole').value = testimonyDetails.role || '';
             document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
             document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
             document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
-            document.getElementById('testimonyLink').value = path[pathIndex].link || '';
-            // Set format if available
+            document.getElementById('testimonyLink').value = testimonyDetails.link || '';
             const formatSelect = document.getElementById('testimonyFormat');
-            if (formatSelect && testimonyDetails.format) {
-                formatSelect.value = testimonyDetails.format;
-            } else if (formatSelect) {
-                formatSelect.value = 'Online'; // Default to 'Online' if not present
+            if (formatSelect) {
+                formatSelect.value = testimonyDetails.format || 'Online';
             }
             openTestimonyModal();
             editingTestimonyIndex = pathIndex;
@@ -1037,6 +1040,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('External actions legend updated');
     }
 
+    function mapFormat(format) {
+        if (format && format.includes('In-Person')) return 'In-Person';
+        if (format && format.includes('Online')) return 'Online';
+        return 'Written';
+    }
+    
     function openTestimonyModal(testimonyDetails = null) {
         if (editingTestimonyIndex !== null) {
             submitTestimonyButton.textContent = 'Save Testimony';
@@ -1045,15 +1054,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitTestimonyButton.textContent = 'Add Testimony';
             if (testimonyDetails) {
                 // Pre-fill from extension payload
-                document.getElementById('testimonyFirstName').value = testimonyDetails.name ? testimonyDetails.name.split(' ')[0] : '';
-                document.getElementById('testimonyLastName').value = testimonyDetails.name ? testimonyDetails.name.split(' ').slice(1).join(' ') : '';
+                const nameParts = testimonyDetails.name ? testimonyDetails.name.split(', ').map(s => s.trim()) : [];
+                const lastName = nameParts[0] || '';
+                const firstName = nameParts.slice(1).join(', ') || '';
+                document.getElementById('testimonyFirstName').value = firstName;
+                document.getElementById('testimonyLastName').value = lastName;
                 document.getElementById('testimonyRole').value = testimonyDetails.role || '';
                 document.getElementById('testimonyOrganization').value = testimonyDetails.org || '';
                 document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
                 document.getElementById('testimonyNumber').value = testimonyDetails.testimonyNo || '';
                 document.getElementById('testimonyLink').value = testimonyDetails.link || '';
                 const formatSelect = document.getElementById('testimonyFormat');
-                if (formatSelect) formatSelect.value = testimonyDetails.format || 'Online';
+                if (formatSelect) {
+                    const mappedFormat = mapFormat(testimonyDetails.format);
+                    formatSelect.value = mappedFormat;
+                }
             } else {
                 // Reset fields when adding manually
                 resetTestimonyModal();
@@ -1088,16 +1103,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (format) parts.push(format); // Include format in testimony string
     
         const testimonyString = parts.join(' - ');
+        const testimonyObject = { firstName, lastName, role, organization, position, number, format, link };
     
         if (editingTestimonyIndex !== null) {
             path[editingTestimonyIndex].value = testimonyString;
-            path[editingTestimonyIndex].link = link;
+            path[editingTestimonyIndex].details = testimonyObject;
             updateInput();
             showSuggestions('');
             editingTestimonyIndex = null;
         } else {
             const startTime = new Date();
-            const pathEntry = { step: 'testimony', value: testimonyString, link: link };
+            const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
             const row = createHistoryRow(startTime, testimonyString, [pathEntry], history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
