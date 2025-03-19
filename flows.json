@@ -30,7 +30,8 @@
                     { "name": "for", "type": "number" },
                     { "name": "against", "type": "number" },
                     { "name": "neutral", "type": "number" }
-                ], "next": "billCarrierOptional" },
+                ], "next": "carryBillPrompt" },
+                { "step": "carryBillPrompt", "type": "select", "options": ["X Carried the Bill", "No Carrier"], "next": { "X Carried the Bill": "billCarrierOptional", "No Carrier": null } },
                 { "step": "billCarrierOptional", "type": "select", "options": "committeeMembers", "optional": true, "next": null },
                 { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
                 { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },

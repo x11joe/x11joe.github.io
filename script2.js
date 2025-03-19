@@ -321,6 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const displayText = constructVoteTagText(moduleResult);
                 path.push({ step: currentStep, value: option, display: displayText });
                 currentStep = stepConfig.next;
+            } else if (currentStep === 'carryBillPrompt') {
+                path.push({ step: currentStep, value: option });
+                currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
             } else {
                 path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
@@ -582,7 +585,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     function constructStatementText(path) {
         if (path.length === 0) return '';
         const flowType = path[0].step;
-        if (flowType === 'member') {
+        if (flowType === 'voteType') {
+            const voteType = path.find(p => p.step === 'voteType').value;
+            if (voteType === 'Roll Call Vote') {
+                const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
+                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended')
+                    .map(p => p.value)
+                    .filter(val => val !== 'Take the Vote');
+                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
+                const voteResultPart = path.find(p => p.step === 'voteModule');
+                const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
+                let text = '';
+    
+                if (voteResultPart) {
+                    const result = JSON.parse(voteResultPart.value);
+                    const forVotes = result.for || 0;
+                    const againstVotes = result.against || 0;
+                    const neutralVotes = result.neutral || 0;
+                    const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
+                    let motionText = baseMotionType;
+                    if (modifiers.includes('as Amended')) motionText += ' as Amended';
+                    if (rereferCommittee) motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                    text = `Roll Call Vote on ${motionText} - Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
+                    if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
+                        const { lastName, title } = parseMember(billCarrier);
+                        const memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+                        text += ` - ${memberText} Carried the Bill`;
+                    }
+                } else {
+                    text = `Roll Call Vote on ${baseMotionType}`;
+                    if (modifiers.includes('as Amended')) text += ' as Amended';
+                    if (rereferCommittee) text += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                }
+                return text;
+            } else if (voteType === 'Voice Vote') {
+                const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
+                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
+                return `Voice Vote on ${onWhat} - ${outcome}`;
+            } else if (voteType === 'Motion Failed') {
+                const reason = path.find(p => p.step === 'motionFailedReason')?.value || '';
+                return `Motion Failed ${reason}`;
+            }
+        } else if (flowType === 'member') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
             const { lastName, title } = parseMember(memberString);
             const action = path.find(p => p.step === 'action')?.value || '';
@@ -603,37 +647,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 text += ` by ${memberText}`;
             }
             return text;
-        } else if (flowType === 'voteAction') {
-            const voteType = path.find(p => p.step === 'voteType').value;
-            if (voteType === 'Roll Call Vote') {
-                const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType').value;
-                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value);
-                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
-                const voteResultPart = path.find(p => p.step === 'voteModule');
-                const result = JSON.parse(voteResultPart.value);
-                const forVotes = result.for || 0;
-                const againstVotes = result.against || 0;
-                const neutralVotes = result.neutral || 0;
-                const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
-                let motionText = baseMotionType;
-                if (modifiers.includes('as Amended')) motionText += ' as Amended';
-                if (rereferCommittee) motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
-                let text = `Roll Call Vote on ${motionText} - Motion ${outcome} - ${forVotes}-${againstVotes}-${neutralVotes}`;
-                const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
-                if (billCarrier) {
-                    const { lastName, title } = parseMember(billCarrier);
-                    const memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-                    text += ` - ${memberText} Carried the Bill`;
-                }
-                return text;
-            } else if (voteType === 'Voice Vote') {
-                const onWhat = path.find(p => p.step === 'voiceVoteOn').value;
-                const outcome = path.find(p => p.step === 'voiceVoteOutcome').value;
-                return `Voice Vote on ${onWhat} - ${outcome}`;
-            } else if (voteType === 'Motion Failed') {
-                const reason = path.find(p => p.step === 'motionFailedReason').value;
-                return `Motion Failed ${reason}`;
-            }
         }
         return path.map(p => p.value).join(' - ');
     }
@@ -670,7 +683,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
-        const tagsHtml = path.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
+        const visibleTags = path.filter(p => !['motionModifiers', 'afterAmended', 'carryBillPrompt'].includes(p.step));
+        const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div><div>${statementText}</div></td>
@@ -706,23 +720,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         statementStartTime = entry.time;
         editingIndex = index;
     
-        currentFlow = null;
-        currentStep = null;
-    
-        path.forEach((part, i) => {
-            if (i === 0) {
-                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === part.step);
-                if (startingPoint) {
-                    currentFlow = jsonStructure.flows[startingPoint.flow];
-                    const firstStep = currentFlow.steps[0];
-                    if (firstStep.step === part.step) {
-                        currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
-                    } else {
-                        currentStep = firstStep.step;
-                    }
-                    console.log('editHistoryEntry - Initial flow:', startingPoint.flow, 'currentStep:', currentStep);
-                }
+        // Determine the flow from the first step
+        const firstStep = path[0].step;
+        const startingPoint = jsonStructure.startingPoints.find(sp => sp.options.includes(path[0].value) || sp.type === 'voteAction');
+        if (startingPoint) {
+            currentFlow = jsonStructure.flows[startingPoint.flow];
+            // Set initial currentStep based on the first step's next property
+            const initialStepConfig = currentFlow.steps.find(step => step.step === firstStep);
+            if (initialStepConfig && initialStepConfig.next) {
+                currentStep = typeof initialStepConfig.next === 'string' ? initialStepConfig.next : initialStepConfig.next[path[0].value] || initialStepConfig.next.default;
             } else {
+                currentStep = null;
+            }
+        } else {
+            currentFlow = null;
+            currentStep = null;
+        }
+    
+        // Rebuild the flow state for subsequent steps
+        path.forEach((part, i) => {
+            if (i > 0 && currentFlow) {
                 const stepConfig = currentFlow.steps.find(step => step.step === part.step);
                 if (stepConfig && stepConfig.next) {
                     if (typeof stepConfig.next === 'string') {
@@ -730,10 +747,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else if (typeof stepConfig.next === 'object') {
                         currentStep = stepConfig.next[part.value] || stepConfig.next.default;
                     }
-                    console.log('editHistoryEntry - Step:', part.step, 'currentStep updated to:', currentStep);
                 } else {
                     currentStep = null;
-                    console.log('editHistoryEntry - No next step, currentStep set to null');
                 }
             }
         });
