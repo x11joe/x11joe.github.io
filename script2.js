@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let statementStartTime = null; // Track when first tag is added
     let history = []; // Store finalized statements
     let editingIndex = null; // Track the index of the entry being edited
+    let dropdownActive = false; // Track if dropdown is active
 
     // DOM elements
     const inputDiv = document.getElementById('input');
@@ -96,9 +97,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         ).filter(c => c !== currentCommittee);
     }
 
-    // Get options for the current step
+    // Get options for a specific step
+    function getOptionsForStep(stepType, flow) {
+        const stepConfig = flow.steps.find(step => step.step === stepType);
+        if (!stepConfig) return [];
+        let options = [];
+        if (stepConfig.options === "committeeMembers") {
+            options = getCommitteeMembers();
+        } else if (stepConfig.options === "otherCommittees") {
+            options = getOtherCommittees();
+        } else if (stepConfig.options === "suggestMotionType") {
+            options = suggestMotionType();
+        } else if (stepConfig.options === "suggestFailedReason") {
+            options = suggestFailedReason();
+        } else if (Array.isArray(stepConfig.options)) {
+            options = stepConfig.options;
+        }
+        return options;
+    }
+
+    // Get current options based on state
     function getCurrentOptions() {
-        console.log('getCurrentOptions called - currentFlow:', currentFlow, 'currentStep:', currentStep);
+        console.log('getCurrentOptions - currentFlow:', currentFlow, 'currentStep:', currentStep);
         if (!currentFlow) {
             let allOptions = [];
             jsonStructure.startingPoints.forEach(sp => {
@@ -108,28 +128,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     allOptions = allOptions.concat(sp.options);
                 }
             });
-            console.log('No current flow, returning starting options:', allOptions);
             return allOptions;
         } else {
-            const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-            if (!stepConfig) {
-                console.log('No step config found for currentStep, returning empty array');
-                return [];
-            }
-            let options = [];
-            if (stepConfig.options === "committeeMembers") {
-                options = getCommitteeMembers();
-            } else if (stepConfig.options === "otherCommittees") {
-                options = getOtherCommittees();
-            } else if (stepConfig.options === "suggestMotionType") {
-                options = suggestMotionType();
-            } else if (stepConfig.options === "suggestFailedReason") {
-                options = suggestFailedReason();
-            } else if (Array.isArray(stepConfig.options)) {
-                options = stepConfig.options;
-            }
-            console.log('Options for current step:', options);
-            return options;
+            return getOptionsForStep(currentStep, currentFlow);
         }
     }
 
@@ -147,22 +148,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text.trim();
     }
 
+    // Show dropdown options for a tag
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
-        const flow = pathIndex === 0 && !currentFlow ? null : currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
-        let options = [];
-        
-        if (pathIndex === 0 && !flow) {
-            const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === stepType);
-            options = startingPoint.options === "committeeMembers" ? getCommitteeMembers() : startingPoint.options;
-        } else {
-            const stepConfig = flow.steps.find(step => step.step === stepType);
-            options = stepConfig.options === "committeeMembers" ? getCommitteeMembers() :
-                      stepConfig.options === "otherCommittees" ? getOtherCommittees() :
-                      stepConfig.options === "suggestMotionType" ? suggestMotionType() :
-                      stepConfig.options === "suggestFailedReason" ? suggestFailedReason() :
-                      stepConfig.options || [];
-        }
+        const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
+        let options = getOptionsForStep(stepType, flow);
         
         console.log('Tag options:', options);
         const dropdown = document.createElement('div');
@@ -179,11 +169,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.textContent = opt;
             div.onclick = (e) => {
                 e.stopPropagation();
+                const oldValue = path[pathIndex].value;
                 path[pathIndex].value = opt;
-                console.log('Tag updated at index', pathIndex, 'to:', opt);
+                console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
+                // Invalidate subsequent tags if necessary
+                invalidateSubsequentTags(pathIndex);
                 updateInput();
                 modal.classList.remove('active');
                 inputDiv.removeChild(dropdown);
+                dropdownActive = false;
+                showSuggestions('');
             };
             dropdown.appendChild(div);
         });
@@ -191,30 +186,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputDiv.appendChild(dropdown);
         dropdown.style.left = `${tagElement.offsetLeft}px`;
         dropdown.style.top = `${tagElement.offsetTop + tagElement.offsetHeight}px`;
+        dropdownActive = true;
         
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target)) {
                 inputDiv.removeChild(dropdown);
                 document.removeEventListener('click', closeDropdown);
+                dropdownActive = false;
+                showSuggestions('');
             }
         };
         document.addEventListener('click', closeDropdown);
     }
 
-    // Adjust currentStep after tag change
-    function adjustCurrentStep(changedIndex) {
-        console.log('adjustCurrentStep - changedIndex:', changedIndex);
-        if (changedIndex === path.length - 1) {
-            const stepConfig = currentFlow.steps.find(step => step.step === path[changedIndex].step);
-            if (stepConfig.next) {
-                currentStep = typeof stepConfig.next === 'string' ? stepConfig.next : stepConfig.next[path[changedIndex].value] || stepConfig.next.default;
-                console.log('currentStep adjusted to:', currentStep);
+    // Invalidate subsequent tags if the flow changes
+    function invalidateSubsequentTags(changedIndex) {
+        console.log('invalidateSubsequentTags - changedIndex:', changedIndex);
+        let tempFlow = null;
+        let tempStep = null;
+        for (let i = 0; i <= changedIndex; i++) {
+            const part = path[i];
+            if (i === 0) {
+                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === part.step);
+                if (startingPoint) {
+                    tempFlow = jsonStructure.flows[startingPoint.flow];
+                    const firstStep = tempFlow.steps[0];
+                    if (firstStep.step === part.step) {
+                        tempStep = firstStep.next;
+                    } else {
+                        tempStep = firstStep.step;
+                    }
+                }
             } else {
-                currentStep = null;
-                console.log('No next step, currentStep set to null');
+                const stepConfig = tempFlow.steps.find(step => step.step === part.step);
+                if (stepConfig && stepConfig.next) {
+                    if (typeof stepConfig.next === 'string') {
+                        tempStep = stepConfig.next;
+                    } else if (typeof stepConfig.next === 'object') {
+                        tempStep = stepConfig.next[part.value] || stepConfig.next.default;
+                    }
+                } else {
+                    tempStep = null;
+                }
             }
         }
-        showSuggestions('');
+        // Remove tags after changedIndex if the next step doesn't match
+        if (tempStep !== currentStep) {
+            path = path.slice(0, changedIndex + 1);
+            currentStep = tempStep;
+            currentFlow = tempFlow;
+            console.log('Invalidated subsequent tags, new path:', path, 'currentStep:', currentStep);
+        }
     }
 
     // Create a tag element
@@ -386,6 +408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Modal hidden: no text and no current step');
             return;
         }
+        if (dropdownActive) return; // Don't show suggestions if dropdown is active
         const options = getCurrentOptions();
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
@@ -546,7 +569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
-                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
+                const outcome = path.find(p => p.step === 'voteOutcome')?.value || '';
                 return `Voice Vote on ${onWhat} - ${outcome}`;
             } else if (voteType === 'Motion Failed') {
                 const reason = path.find(p => p.step === 'motionFailedReason')?.value || '';
@@ -827,6 +850,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 finalizeStatement();
             }
+        } else if (e.key === 'Escape' && dropdownActive) {
+            // Close the dropdown and show previous suggestions
+            document.dispatchEvent(new MouseEvent('click'));
+            e.preventDefault();
         }
     });
 
