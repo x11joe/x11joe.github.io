@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Import committee data from defaultCommittees.js
     const committees = window.DEFAULT_COMMITTEES || {};
-    let currentCommittee = "Senate Judiciary Committee"; // Default to Senate Judiciary
-
-    // Load flows.json using async/await
+    let currentCommittee = "Senate Judiciary Committee";
     let jsonStructure;
     try {
         const response = await fetch('flows.json');
@@ -11,24 +8,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('flows.json loaded:', jsonStructure);
     } catch (error) {
         console.error('Error loading flows.json:', error);
-        return; // Exit if fetch fails
+        return;
     }
 
-    // Dynamic option functions
     const suggestMotionType = () => ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
     const suggestFailedReason = () => ["for lack of a second"];
 
-    // State variables
-    let path = []; // Array of {step, value}
+    let path = [];
     let currentFlow = null;
     let currentStep = null;
-    let statementStartTime = null; // Track when first tag is added
-    let history = []; // Store finalized statements
-    let editingIndex = null; // Track the index of the entry being edited
-    let dropdownActive = false; // Track if dropdown is active
-    let selectedSuggestionIndex = -1; // Track selected suggestion index
+    let statementStartTime = null;
+    let history = [];
+    let editingIndex = null;
+    let dropdownActive = false;
+    let selectedSuggestionIndex = -1;
+    let selectedDropdownIndex = -1; // New: Track dropdown selection
 
-    // DOM elements
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
     const historyTableBody = document.querySelector('#historyTable tbody');
@@ -36,7 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const historyDiv = document.getElementById('history');
     const entryWrapper = document.querySelector('.entry-wrapper');
 
-    // Populate committee dropdown
     Object.keys(committees).forEach(committee => {
         const option = document.createElement('option');
         option.value = committee;
@@ -44,14 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         committeeSelect.appendChild(option);
     });
 
-    // Load saved committee from local storage
     const savedCommittee = localStorage.getItem('selectedCommittee');
     if (savedCommittee && committees[savedCommittee]) {
         currentCommittee = savedCommittee;
     }
     committeeSelect.value = currentCommittee;
 
-    // Handle committee selection change
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;
         localStorage.setItem('selectedCommittee', currentCommittee);
@@ -59,7 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Committee changed to:', currentCommittee);
     });
 
-    // Functions to serialize and deserialize history for local storage
     function serializeHistory(history) {
         return JSON.stringify(history.map(entry => ({
             time: entry.time.toISOString(),
@@ -77,7 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
     }
 
-    // Load saved history from local storage
     const savedHistory = localStorage.getItem('historyStatements');
     if (savedHistory) {
         history = deserializeHistory(savedHistory);
@@ -85,12 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('History loaded from local storage:', history);
     }
 
-    // Get committee members from currentCommittee
     function getCommitteeMembers() {
         return committees[currentCommittee] || [];
     }
 
-    // Get other committees based on chamber
     function getOtherCommittees() {
         const isHouse = currentCommittee.toLowerCase().includes("house");
         return Object.keys(committees).filter(c => 
@@ -98,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ).filter(c => c !== currentCommittee);
     }
 
-    // Get options for a specific step
     function getOptionsForStep(stepType, flow) {
         const stepConfig = flow.steps.find(step => step.step === stepType);
         if (!stepConfig) return [];
@@ -117,7 +104,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return options;
     }
 
-    // Get current options based on state
     function getCurrentOptions() {
         console.log('getCurrentOptions - currentFlow:', currentFlow, 'currentStep:', currentStep);
         if (!currentFlow) {
@@ -135,7 +121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Get the current untagged text at the end
     function getCurrentText() {
         let text = '';
         for (let i = inputDiv.childNodes.length - 1; i >= 0; i--) {
@@ -149,16 +134,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text.trim();
     }
 
-    // Show dropdown options for a tag
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
         const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
         const options = getOptionsForStep(stepType, flow);
         
         console.log('Tag options:', options);
-        modal.classList.remove('active'); // Hide modal to prevent overlap
+        modal.classList.remove('active');
         
-        // Remove any existing dropdown
         const existingDropdown = document.querySelector('.dropdown');
         if (existingDropdown && existingDropdown.parentNode) {
             existingDropdown.parentNode.removeChild(existingDropdown);
@@ -170,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.background = 'white';
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-        dropdown.style.zIndex = '1002'; // Above modal and other elements
+        dropdown.style.zIndex = '1002';
         dropdown.style.display = 'block';
         
         options.forEach(opt => {
@@ -188,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     inputDiv.removeChild(dropdown);
                 }
                 dropdownActive = false;
-                setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to ensure dropdown is gone
+                setTimeout(() => showSuggestions(getCurrentText()), 0);
             };
             dropdown.appendChild(div);
         });
@@ -197,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.left = `${tagElement.offsetLeft}px`;
         dropdown.style.top = `${tagElement.offsetTop + tagElement.offsetHeight}px`;
         dropdownActive = true;
+        selectedDropdownIndex = -1; // Reset dropdown selection
         
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
@@ -205,13 +189,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 document.removeEventListener('click', closeDropdown);
                 dropdownActive = false;
-                setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to prevent overlap
+                setTimeout(() => showSuggestions(getCurrentText()), 0);
             }
         };
         document.addEventListener('click', closeDropdown);
     }
 
-    // Invalidate subsequent tags if the flow changes
     function invalidateSubsequentTags(changedIndex) {
         console.log('invalidateSubsequentTags - changedIndex:', changedIndex);
         let tempFlow = null;
@@ -250,7 +233,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Create a tag element
     function createTag(text, type, index) {
         const span = document.createElement('span');
         span.className = 'token';
@@ -268,7 +250,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return span;
     }
 
-    // Try to convert the last word into a tag
     function tryToTag() {
         let lastTextNode = null;
         for (let i = inputDiv.childNodes.length - 1; i >= 0; i--) {
@@ -295,7 +276,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Select an option and update state
     function selectOption(option) {
         console.log('selectOption - option:', option);
         if (!currentFlow) {
@@ -341,7 +321,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
-    // Handle module input (simplified for voteModule)
     function handleModule(stepConfig, triggerOption) {
         console.log('handleModule - stepConfig:', stepConfig);
         modal.innerHTML = '';
@@ -388,7 +367,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         positionModal();
     }
 
-    // Update the input display with transformed tags
     function updateInput() {
         console.log('updateInput - path:', path);
         inputDiv.innerHTML = '';
@@ -411,7 +389,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 0);
     }
 
-    // Show suggestions based on current text
     function showSuggestions(text) {
         console.log('showSuggestions - text:', text, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
         if (!text && !currentStep) {
@@ -446,23 +423,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             modal.classList.remove('active');
             console.log('Modal hidden: no filtered options');
         }
-        selectedSuggestionIndex = -1; // Reset selection
+        selectedSuggestionIndex = -1;
     }
 
-    // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
         // Positioned via CSS
     }
 
-    // Update suggestion highlight
     function updateSuggestionHighlight(suggestions) {
         suggestions.forEach((sug, idx) => {
             sug.classList.toggle('highlighted', idx === selectedSuggestionIndex);
         });
     }
 
-    // Remove last tag on backspace
+    function updateDropdownHighlight(dropdown) {
+        const options = dropdown.querySelectorAll('.dropdown-option');
+        options.forEach((opt, idx) => {
+            opt.classList.toggle('highlighted', idx === selectedDropdownIndex);
+        });
+    }
+
     function removeLastTag() {
         if (path.length > 0) {
             path.pop();
@@ -508,7 +489,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Finalize statement
     function finalizeStatement() {
         if (path.length === 0) return;
         
@@ -544,7 +524,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
-    // Construct statement text with title if available
     function constructStatementText(path) {
         if (path.length === 0) return '';
         const flowType = path[0].step;
@@ -606,7 +585,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return match ? match[1] : fullName;
     }
 
-    // Parse member string into name, lastName, and title
     function parseMember(memberString) {
         const parts = memberString.split(' - ');
         if (parts.length === 2) {
@@ -624,7 +602,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Get display text for tags
     function getTagText(step, value) {
         if (step === 'member' || step === 'memberOptional' || step === 'billCarrier') {
             const { name, title } = parseMember(value);
@@ -804,7 +781,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Helper functions
     function isSenateCommittee(committeeName) {
         return committeeName.toLowerCase().includes("senate");
     }
@@ -823,7 +799,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         historyDiv.style.height = `${maxHistoryHeight}px`;
     }
 
-    // Event listeners
     inputDiv.addEventListener('input', () => {
         const text = getCurrentText();
         showSuggestions(text);
@@ -847,10 +822,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            const suggestions = modal.querySelectorAll('.option');
-            if (suggestions.length > 0) {
-                const index = selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
-                suggestions[index].click();
+            if (modal.classList.contains('active')) {
+                const suggestions = modal.querySelectorAll('.option');
+                if (suggestions.length > 0) {
+                    const index = selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
+                    suggestions[index].click();
+                }
+            } else if (dropdownActive) {
+                const dropdown = document.querySelector('.dropdown');
+                if (dropdown) {
+                    const options = dropdown.querySelectorAll('.dropdown-option');
+                    if (options.length > 0) {
+                        const index = selectedDropdownIndex >= 0 ? selectedDropdownIndex : 0;
+                        options[index].click();
+                    }
+                }
             }
         } else if (e.key >= '1' && e.key <= '9') {
             const index = parseInt(e.key) - 1;
@@ -861,20 +847,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            finalizeStatement();
+            if (dropdownActive) {
+                const dropdown = document.querySelector('.dropdown');
+                if (dropdown) {
+                    const options = dropdown.querySelectorAll('.dropdown-option');
+                    if (options.length > 0) {
+                        const index = selectedDropdownIndex >= 0 ? selectedDropdownIndex : 0;
+                        options[index].click();
+                    }
+                }
+            } else {
+                finalizeStatement();
+            }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
-            const suggestions = modal.querySelectorAll('.option');
-            if (suggestions.length > 0) {
-                selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
-                updateSuggestionHighlight(suggestions);
+            if (dropdownActive) {
+                const dropdown = document.querySelector('.dropdown');
+                if (dropdown) {
+                    const options = dropdown.querySelectorAll('.dropdown-option');
+                    if (options.length > 0) {
+                        selectedDropdownIndex = Math.min(selectedDropdownIndex + 1, options.length - 1);
+                        updateDropdownHighlight(dropdown);
+                    }
+                }
+            } else if (modal.classList.contains('active')) {
+                const suggestions = modal.querySelectorAll('.option');
+                if (suggestions.length > 0) {
+                    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+                    updateSuggestionHighlight(suggestions);
+                }
             }
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            const suggestions = modal.querySelectorAll('.option');
-            if (suggestions.length > 0) {
-                selectedSuggestionIndex = selectedSuggestionIndex === -1 ? suggestions.length - 1 : Math.max(selectedSuggestionIndex - 1, 0);
-                updateSuggestionHighlight(suggestions);
+            if (dropdownActive) {
+                const dropdown = document.querySelector('.dropdown');
+                if (dropdown) {
+                    const options = dropdown.querySelectorAll('.dropdown-option');
+                    if (options.length > 0) {
+                        selectedDropdownIndex = selectedDropdownIndex === -1 ? options.length - 1 : Math.max(selectedDropdownIndex - 1, 0);
+                        updateDropdownHighlight(dropdown);
+                    }
+                }
+            } else if (modal.classList.contains('active')) {
+                const suggestions = modal.querySelectorAll('.option');
+                if (suggestions.length > 0) {
+                    selectedSuggestionIndex = selectedSuggestionIndex === -1 ? suggestions.length - 1 : Math.max(selectedSuggestionIndex - 1, 0);
+                    updateSuggestionHighlight(suggestions);
+                }
             }
         } else if (e.key === 'Escape' && dropdownActive) {
             document.dispatchEvent(new MouseEvent('click'));
@@ -886,7 +905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     inputDiv.addEventListener('click', (e) => {
         if (e.target.classList.contains('chevron')) {
-            e.stopPropagation(); // Prevent immediate closure
+            e.stopPropagation();
             const token = e.target.parentElement;
             const type = token.getAttribute('data-type');
             const index = parseInt(token.getAttribute('data-index'), 10);
@@ -903,7 +922,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('History cleared');
     });
 
-    // Initial updates
     updateMeetingActionsLegend();
     updateVoteActionsLegend();
     updateLegend();
