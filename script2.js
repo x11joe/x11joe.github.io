@@ -354,7 +354,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const moduleResult = JSON.parse(option);
                 const displayText = constructVoteTagText(moduleResult);
                 path.push({ step: currentStep, value: option, display: displayText });
-                currentStep = stepConfig.next;
+                // Check if the motion is "Reconsider" to end the flow
+                const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                if (motionType === 'Reconsider') {
+                    currentStep = null; // End the flow for Reconsider
+                } else {
+                    currentStep = 'carryBillPrompt'; // Proceed to carryBillPrompt for other motions
+                }
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
                 currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
