@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const oldValue = path[pathIndex].value;
                 path[pathIndex].value = opt;
                 console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
-                invalidateSubsequentTags(pathIndex);
+                smartInvalidateSubsequentTags(pathIndex, oldValue, opt);
                 updateInput();
                 dropdown.remove();
                 dropdownActive = false;
@@ -187,41 +187,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.addEventListener('click', closeDropdown);
     }
 
-    function invalidateSubsequentTags(changedIndex) {
-        console.log('invalidateSubsequentTags - changedIndex:', changedIndex);
-        let tempFlow = null;
-        let tempStep = null;
-        for (let i = 0; i <= changedIndex; i++) {
-            const part = path[i];
-            if (i === 0) {
-                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === part.step);
-                if (startingPoint) {
-                    tempFlow = jsonStructure.flows[startingPoint.flow];
-                    const firstStep = tempFlow.steps[0];
-                    if (firstStep.step === part.step) {
-                        tempStep = firstStep.next;
-                    } else {
-                        tempStep = firstStep.step;
-                    }
-                }
+    function smartInvalidateSubsequentTags(changedIndex, oldValue, newValue) {
+        console.log('smartInvalidateSubsequentTags - changedIndex:', changedIndex, 'oldValue:', oldValue, 'newValue:', newValue);
+        const part = path[changedIndex];
+        const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === part.step)?.flow];
+        const stepConfig = flow.steps.find(step => step.step === part.step);
+        
+        if (stepConfig && stepConfig.next && typeof stepConfig.next === 'object') {
+            const oldNextStep = stepConfig.next[oldValue] || stepConfig.next.default;
+            const newNextStep = stepConfig.next[newValue] || stepConfig.next.default;
+            if (oldNextStep !== newNextStep) {
+                console.log('Flow path changed, invalidating subsequent tags');
+                path = path.slice(0, changedIndex + 1);
+                currentStep = newNextStep;
+                currentFlow = flow;
             } else {
-                const stepConfig = tempFlow.steps.find(step => step.step === part.step);
-                if (stepConfig && stepConfig.next) {
-                    if (typeof stepConfig.next === 'string') {
-                        tempStep = stepConfig.next;
-                    } else if (typeof stepConfig.next === 'object') {
-                        tempStep = stepConfig.next[part.value] || stepConfig.next.default;
-                    }
-                } else {
-                    tempStep = null;
-                }
+                console.log('Flow path unchanged, no invalidation needed');
             }
-        }
-        if (tempStep !== currentStep) {
-            path = path.slice(0, changedIndex + 1);
-            currentStep = tempStep;
-            currentFlow = tempFlow;
-            console.log('Invalidated subsequent tags, new path:', path, 'currentStep:', currentStep);
+        } else {
+            console.log('Non-critical step or no branching, no invalidation');
         }
     }
 
