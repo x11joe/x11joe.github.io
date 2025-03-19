@@ -38,17 +38,20 @@ body {
 }
 
 /* Entry field wrapper centered in viewport */
+/* Ensure no clipping */
 .entry-wrapper {
     position: absolute;
     top: 50vh;
     left: 50vw;
     transform: translate(-50%, -50%);
     width: 600px;
+    overflow: visible; /* Prevent clipping of dropdown */
 }
 
 .container {
     position: relative;
-    width: 100%; /* Adjusted to fill entry-wrapper */
+    width: 100%;
+    overflow: visible; /* Prevent clipping of dropdown */
 }
 
 .input {
@@ -60,7 +63,8 @@ body {
     background-color: white;
     outline: none;
     white-space: pre-wrap;
-    z-index: 1; /* Below committee selector but above history */
+    position: relative; /* New: Establishes stacking context */
+    z-index: 2; /* Higher than #history (0) */
 }
 
 /* History positioned below entry field */
@@ -71,7 +75,7 @@ body {
     width: 600px;
     display: flex;
     flex-direction: column;
-    z-index: 0; /* Below entry field */
+    z-index: 0; /* Below .input */
 }
 
 #historyWrapper {
@@ -151,7 +155,7 @@ body {
     background: white;
     border: 1px solid #ccc;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 1002; /* Updated to match JS */
+    z-index: 1002; /* Above modal (1000) and other elements */
     display: block;
 }
 
