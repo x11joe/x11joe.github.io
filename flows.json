@@ -21,18 +21,15 @@
         },
         "voteActionFlow": {
             "steps": [
-                { "step": "voteType", "type": "select", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "next": { "Roll Call Vote": "rollCallMotionType", "Voice Vote": "voiceVoteOn", "Motion Failed": "motionFailedReason" } },
-                { "step": "rollCallMotionType", "type": "select", "options": [
-                    "Do Pass", "Do Pass as Amended", "Do Pass and Rereferred", "Do Pass as Amended and Rereferred",
-                    "Do Not Pass", "Do Not Pass as Amended", "Do Not Pass and Rereferred", "Do Not Pass as Amended and Rereferred",
-                    "Reconsider", "Without Committee Recommendation", "Without Committee Recommendation as Amended"
-                ], "next": null },
-                { "step": "rereferCommittee", "type": "select", "options": "otherCommittees", "next": "voteModule" },
+                { "step": "voteType", "type": "select", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "next": { "Roll Call Vote": "rollCallBaseMotionType", "Voice Vote": "voiceVoteOn", "Motion Failed": "motionFailedReason" } },
+                { "step": "rollCallBaseMotionType", "type": "select", "options": ["Do Pass", "Do Not Pass", "Reconsider", "Without Committee Recommendation"], "next": "asAmendedOptional" },
+                { "step": "asAmendedOptional", "type": "select", "options": ["as Amended"], "optional": true, "next": "rereferOptional" },
+                { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "optional": true, "next": "voteModule" },
                 { "step": "voteModule", "type": "module", "fields": [
                     { "name": "for", "type": "number" },
                     { "name": "against", "type": "number" },
                     { "name": "neutral", "type": "number" }
-                ], "next": null },
+                ], "next": "billCarrierOptional" },
                 { "step": "billCarrierOptional", "type": "select", "options": "committeeMembers", "optional": true, "next": null },
                 { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
                 { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },

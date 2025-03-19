@@ -305,46 +305,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Initial path:', path, 'currentStep:', currentStep);
             }
         } else {
-            path.push({ step: currentStep, value: option });
-            if (currentFlow === jsonStructure.flows.voteActionFlow) {
-                if (currentStep === 'rollCallMotionType') {
-                    if (option.includes('and Rereferred')) {
-                        currentStep = 'rereferCommittee';
-                    } else {
-                        currentStep = 'voteModule';
-                    }
-                } else if (currentStep === 'rereferCommittee') {
-                    currentStep = 'voteModule';
-                } else if (currentStep === 'voteModule') {
-                    const voteResult = JSON.parse(option);
-                    const forVotes = voteResult.for || 0;
-                    const againstVotes = voteResult.against || 0;
-                    if (forVotes > againstVotes) {
-                        const motionType = path.find(p => p.step === 'rollCallMotionType').value;
-                        if (motionType.startsWith('Do Pass')) {
-                            currentStep = 'billCarrierOptional';
-                        } else {
-                            currentStep = null;
-                        }
-                    } else {
-                        currentStep = null;
-                    }
-                } else if (currentStep === 'billCarrierOptional') {
-                    currentStep = null;
-                } else {
-                    const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-                    if (stepConfig.next) {
-                        if (typeof stepConfig.next === 'string') {
-                            currentStep = stepConfig.next;
-                        } else if (typeof stepConfig.next === 'object') {
-                            currentStep = stepConfig.next[option] || stepConfig.next.default;
-                        }
-                    } else {
-                        currentStep = null;
-                    }
-                }
+            const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+            if (stepConfig.type === 'module') {
+                const moduleResult = JSON.parse(option);
+                const displayText = constructVoteTagText(moduleResult);
+                path.push({ step: currentStep, value: option, display: displayText });
+                currentStep = stepConfig.next;
             } else {
-                const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+                path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
                     if (typeof stepConfig.next === 'string') {
                         currentStep = stepConfig.next;
@@ -361,11 +329,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuggestions('');
     }
 
+    function constructVoteTagText(voteResult) {
+        const forVotes = voteResult.for || 0;
+        const againstVotes = voteResult.against || 0;
+        const neutralVotes = voteResult.neutral || 0;
+        const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
+        return `Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
+    }
+
     function handleModule(stepConfig, triggerOption) {
         console.log('handleModule - stepConfig:', stepConfig);
         modal.innerHTML = '';
         const form = document.createElement('div');
-        form.className = 'vote-form'; // Added class for CSS styling
+        form.className = 'vote-form';
 
         const voteCounts = { for: 0, against: 0, neutral: 0 };
 
@@ -414,25 +390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 moduleResult[field.name] = voteCounts[field.name];
             });
             const resultStr = JSON.stringify(moduleResult);
-            path.push({ step: currentStep, value: resultStr });
-            if (currentFlow === jsonStructure.flows.voteActionFlow && currentStep === 'voteModule') {
-                const forVotes = moduleResult.for || 0;
-                const againstVotes = moduleResult.against || 0;
-                if (forVotes > againstVotes) {
-                    const motionType = path.find(p => p.step === 'rollCallMotionType').value;
-                    if (motionType.startsWith('Do Pass')) {
-                        currentStep = 'billCarrierOptional';
-                    } else {
-                        currentStep = null;
-                    }
-                } else {
-                    currentStep = null;
-                }
-            } else {
-                currentStep = stepConfig.next;
-            }
-            console.log('Module submitted - path:', path, 'currentStep:', currentStep);
-            updateInput();
+            selectOption(resultStr);
             modal.classList.remove('active');
         };
         form.appendChild(submit);
@@ -445,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('updateInput - path:', path);
         inputDiv.innerHTML = '';
         path.forEach((part, index) => {
-            const displayText = getTagText(part.step, part.value);
+            const displayText = part.display || getTagText(part.step, part.value);
             const tag = createTag(displayText, part.step, index);
             inputDiv.appendChild(tag);
         });
@@ -623,7 +581,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
             let text = `${memberText} - ${action}`;
             if (detail) text += ` ${detail}`;
-            if (rerefer) text += ` and Rerefer to ${getShortCommitteeName(rerefer)}`;
+            if (rerefer) text += ` and Rereferred to ${getShortCommitteeName(rerefer)}`;
             return text;
         } else if (flowType === 'meetingAction') {
             const action = path.find(p => p.step === 'meetingAction')?.value || '';
@@ -638,18 +596,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (flowType === 'voteAction') {
             const voteType = path.find(p => p.step === 'voteType').value;
             if (voteType === 'Roll Call Vote') {
-                let motionType = path.find(p => p.step === 'rollCallMotionType').value;
-                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
-                if (rereferCommittee && motionType.includes('and Rereferred')) {
-                    motionType = motionType.replace('and Rereferred', `and Rereferred to ${getShortCommitteeName(rereferCommittee)}`);
-                }
-                const voteResult = path.find(p => p.step === 'voteModule').value;
-                const result = JSON.parse(voteResult);
+                const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType').value;
+                const asAmended = path.find(p => p.step === 'asAmendedOptional')?.value;
+                const rereferCommittee = path.find(p => p.step === 'rereferOptional')?.value;
+                const voteResultPart = path.find(p => p.step === 'voteModule');
+                const result = JSON.parse(voteResultPart.value);
                 const forVotes = result.for || 0;
                 const againstVotes = result.against || 0;
                 const neutralVotes = result.neutral || 0;
                 const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
-                let text = `Roll Call Vote on ${motionType} - Motion ${outcome} - ${forVotes}-${againstVotes}-${neutralVotes}`;
+                let motionText = baseMotionType;
+                if (asAmended) motionText += ` ${asAmended}`;
+                if (rereferCommittee) motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                let text = `Roll Call Vote on ${motionText} - Motion ${outcome} - ${forVotes}-${againstVotes}-${neutralVotes}`;
                 const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
                 if (billCarrier) {
                     const { lastName, title } = parseMember(billCarrier);
@@ -701,7 +660,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
-        const tagsHtml = path.map(p => `<span class="token">${getTagText(p.step, p.value)}</span>`).join(' ');
+        const tagsHtml = path.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div><div>${statementText}</div></td>
@@ -943,7 +902,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     options[selectedDropdownIndex].click();
                 }
             } else if (currentStep && currentFlow.steps.find(step => step.step === currentStep).optional) {
-                currentStep = null;
+                const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+                currentStep = stepConfig.next;
                 updateInput();
                 showSuggestions('');
             } else {
