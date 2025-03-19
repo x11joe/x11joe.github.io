@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedSuggestionIndex = -1;
     let selectedDropdownIndex = -1;
     let lastAction = null;
+    let editingTestimonyIndex = null; // Track if we're editing a testimony entry
 
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
@@ -197,6 +198,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const voteResult = JSON.parse(path[pathIndex].value);
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
             handleModule(stepConfig, voteResult);
+        } else if (stepType === 'testimony') {
+            const testimonyDetails = parseTestimonyString(path[pathIndex].value);
+            document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
+            document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
+            document.getElementById('testimonyRole').value = testimonyDetails.role || '';
+            document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
+            document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
+            document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
+            document.getElementById('testimonyLink').value = path[pathIndex].link || '';
+            openTestimonyModal();
+            editingTestimonyIndex = pathIndex;
         } else {
             const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
             const options = getOptionsForStep(stepType, flow);
@@ -1011,12 +1023,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const position = document.getElementById('testimonyPosition').value;
         const number = document.getElementById('testimonyNumber').value.trim();
         const link = document.getElementById('testimonyLink').value.trim();
-
+    
         if (!position) {
             alert('Position is required.');
             return;
         }
-
+    
         const parts = [];
         if (firstName || lastName) {
             parts.push(`${firstName} ${lastName}`.trim());
@@ -1025,18 +1037,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (organization) parts.push(organization);
         parts.push(position);
         if (number) parts.push(`Testimony#${number}`);
-
+    
         const testimonyString = parts.join(' - ');
-
-        const startTime = new Date();
-        const path = [{ step: 'testimony', value: testimonyString, link: link }];
-        const statementText = testimonyString;
-        history.push({ time: startTime, path: path, text: statementText, link: link });
-        const row = createHistoryRow(startTime, statementText, path, history.length - 1);
-        historyTableBody.insertBefore(row, historyTableBody.firstChild);
-        localStorage.setItem('historyStatements', serializeHistory(history));
-        console.log('Added testimony to history:', testimonyString);
-
+    
+        if (editingTestimonyIndex !== null) {
+            path[editingTestimonyIndex].value = testimonyString;
+            path[editingTestimonyIndex].link = link;
+            updateInput();
+            showSuggestions('');
+            editingTestimonyIndex = null;
+        } else {
+            const startTime = new Date();
+            const pathEntry = { step: 'testimony', value: testimonyString, link: link };
+            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
+            const row = createHistoryRow(startTime, testimonyString, [pathEntry], history.length - 1);
+            historyTableBody.insertBefore(row, historyTableBody.firstChild);
+            localStorage.setItem('historyStatements', serializeHistory(history));
+            console.log('Added testimony to history:', testimonyString);
+        }
+    
         closeTestimonyModal();
     }
 
@@ -1224,11 +1243,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputDiv.addEventListener('input', adjustHistoryLayout);
 
     window.addEventListener("message", function (event) {
+        console.log('Message received:', event.data);
         if (event.source !== window) return;
         if (!event.data || event.data.source !== "CLERK_EXTENSION") return;
         if (event.data.type === "HEARING_STATEMENT") {
+            console.log('HEARING_STATEMENT received:', event.data.payload);
             const payload = event.data.payload;
             if (typeof payload === 'string' && payload.includes("Testimony#")) {
+                console.log('Processing testimony payload:', payload);
                 const testimonyDetails = parseTestimonyString(payload);
                 document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
                 document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
@@ -1239,6 +1261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('testimonyLink').value = payload.link || '';
                 openTestimonyModal();
             } else {
+                console.log('Adding custom statement:', payload);
                 const startTime = new Date();
                 const statementText = String(payload);
                 const path = [{ step: 'custom', value: statementText }];
