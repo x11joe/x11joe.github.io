@@ -360,8 +360,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
             } else if (currentStep === 'rereferCommittee') {
                 path.push({ step: currentStep, value: option });
-                currentStep = 'voteModule'; // Automatically transition to voteModule
-                console.log('Selected committee, transitioning to voteModule');
+                currentStep = 'voteModule';
+                console.log('Selected committee:', option, 'transitioning to voteModule');
+                console.log('Current path after selection:', path);
             } else {
                 path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
@@ -389,18 +390,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function handleModule(stepConfig, existingVotes = null) {
-        console.log('handleModule - stepConfig:', stepConfig, 'existingVotes:', existingVotes);
+        console.log('handleModule called for stepConfig:', stepConfig, 'existingVotes:', existingVotes);
         modal.innerHTML = '';
         const form = document.createElement('div');
         form.className = 'vote-form';
-    
+        
         const voteCounts = existingVotes ? { ...existingVotes } : { for: 0, against: 0, neutral: 0 };
-    
+        
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = `${field.name}: `;
-    
+        
             const decrement = document.createElement('button');
             decrement.textContent = '-';
             decrement.onclick = () => {
@@ -409,7 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     input.value = voteCounts[field.name];
                 }
             };
-    
+        
             const input = document.createElement('input');
             input.type = 'number';
             input.id = `module-${field.name}`;
@@ -418,21 +419,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             input.onchange = () => {
                 voteCounts[field.name] = parseInt(input.value) || 0;
             };
-    
+        
             const increment = document.createElement('button');
             increment.textContent = '+';
             increment.onclick = () => {
                 voteCounts[field.name]++;
                 input.value = voteCounts[field.name];
             };
-    
+        
             container.appendChild(label);
             container.appendChild(decrement);
             container.appendChild(input);
             container.appendChild(increment);
             form.appendChild(container);
         });
-    
+        
         const submit = document.createElement('button');
         submit.textContent = 'Submit';
         submit.onclick = () => {
@@ -459,7 +460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
-        console.log('Vote module modal opened');
+        console.log('Vote module modal should now be visible');
     }
 
     function updateInput() {
@@ -497,12 +498,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const options = getCurrentOptions();
         if (currentStep === 'voteModule') {
-            console.log('Showing voteModule for currentFlow:', currentFlow);
+            console.log('Attempting to show voteModule');
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
             if (stepConfig) {
+                console.log('Found voteModule stepConfig:', stepConfig);
                 handleModule(stepConfig, null);
             } else {
-                console.error('voteModule step config not found in currentFlow');
+                console.error('voteModule step config not found in currentFlow:', currentFlow);
             }
             return;
         }
