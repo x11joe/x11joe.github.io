@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let dropdownActive = false;
     let selectedSuggestionIndex = -1;
     let selectedDropdownIndex = -1;
+    let lastAction = null; // Track the last action for smarter suggestions
 
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
@@ -117,7 +118,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             return allOptions;
         } else {
-            return getOptionsForStep(currentStep, currentFlow);
+            let options = getOptionsForStep(currentStep, currentFlow);
+            // Reorder options for 'action' step in committeeMemberFlow based on lastAction
+            if (currentFlow === jsonStructure.flows.committeeMemberFlow && currentStep === 'action' && lastAction) {
+                if (lastAction === 'Moved') {
+                    // Prioritize "Seconded" after "Moved"
+                    options = ['Seconded', ...options.filter(opt => opt !== 'Seconded')];
+                } else if (lastAction === 'Seconded' || lastAction === 'Withdrew') {
+                    // Prioritize "Moved" after "Seconded" or "Withdrew"
+                    options = ['Moved', ...options.filter(opt => opt !== 'Moved')];
+                }
+                // For other actions, keep default order
+                console.log('Reordered action options based on lastAction:', lastAction, 'new options:', options);
+            }
+            return options;
         }
     }
 
@@ -470,6 +484,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path.length === 0) return;
         
         const statementText = constructStatementText(path);
+
+        // Update lastAction for committeeMemberFlow
+        if (currentFlow === jsonStructure.flows.committeeMemberFlow) {
+            const actionPart = path.find(p => p.step === 'action');
+            if (actionPart) {
+                lastAction = actionPart.value;
+                console.log('Updated lastAction to:', lastAction);
+            }
+        }
+
         const startTime = statementStartTime || new Date();
         
         if (editingIndex !== null) {
