@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const committeeSelect = document.getElementById('committeeSelect');
     const historyDiv = document.getElementById('history');
     const entryWrapper = document.querySelector('.entry-wrapper');
+    const submitTestimonyButton = document.getElementById('submitTestimonyButton');
 
     // **New Variables Added for Testimony Modal**
     const testimonyModal = document.getElementById('testimonyModal');
@@ -66,6 +67,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateLegend();
         console.log('Committee changed to:', currentCommittee);
     });
+
+    function resetTestimonyModal() {
+        document.getElementById('testimonyFirstName').value = '';
+        document.getElementById('testimonyLastName').value = '';
+        document.getElementById('testimonyRole').value = '';
+        document.getElementById('testimonyOrganization').value = '';
+        document.getElementById('testimonyPosition').value = '';
+        document.getElementById('testimonyNumber').value = '';
+        document.getElementById('testimonyLink').value = '';
+    }
 
     function serializeHistory(history) {
         return JSON.stringify(history.map(entry => ({
@@ -1018,7 +1029,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function openTestimonyModal() {
-        document.getElementById('testimonyModal').classList.add('active');
+        if (editingTestimonyIndex !== null) {
+            submitTestimonyButton.textContent = 'Save Testimony';
+        } else {
+            submitTestimonyButton.textContent = 'Add Testimony';
+            resetTestimonyModal();
+        }
+        testimonyModal.classList.add('active');
     }
 
     function submitTestimonyModal() {
@@ -1239,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('submitTestimonyButton').addEventListener('click', submitTestimonyModal);
 
-    // **New Event Listener for Cancel Testimony Button**
+            // **New Event Listener for Cancel Testimony Button**
     cancelTestimonyButton.addEventListener('click', () => {
         closeTestimonyModal();
     });
@@ -1260,6 +1277,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (event.data.type === "HEARING_STATEMENT") {
             console.log('HEARING_STATEMENT received:', event.data.payload);
             const payload = event.data.payload;
+            // Add this to debug payload issues
+            console.log('Raw payload type and value:', typeof payload, payload);
             if (typeof payload === 'string' && payload.includes("Testimony#")) {
                 console.log('Processing testimony payload:', payload);
                 const testimonyDetails = parseTestimonyString(payload);
