@@ -224,15 +224,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         const part = path[changedIndex];
         const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === part.step)?.flow];
         const stepConfig = flow.steps.find(step => step.step === part.step);
-        
+    
         if (stepConfig && stepConfig.next && typeof stepConfig.next === 'object') {
             const oldNextStep = stepConfig.next[oldValue] || stepConfig.next.default;
             const newNextStep = stepConfig.next[newValue] || stepConfig.next.default;
+    
             if (oldNextStep !== newNextStep) {
-                console.log('Flow path changed, invalidating subsequent tags');
+                console.log('Flow path changed from', oldNextStep, 'to', newNextStep);
+                const subsequentPath = path.slice(changedIndex + 1);
                 path = path.slice(0, changedIndex + 1);
                 currentStep = newNextStep;
-                currentFlow = flow;
+    
+                // Special case for voteActionFlow modifiers to preserve voteModule and beyond
+                if (flow === jsonStructure.flows.voteActionFlow && (part.step === 'motionModifiers' || part.step === 'afterAmended')) {
+                    let nextStepConfig = flow.steps.find(step => step.step === newNextStep);
+                    let expectedNext = newNextStep;
+    
+                    // Follow the flow to see if we can reattach subsequent steps
+                    while (nextStepConfig && expectedNext !== 'voteModule') {
+                        if (nextStepConfig.next && typeof nextStepConfig.next === 'object') {
+                            // For steps like rereferCommittee, we need to add it if not present
+                            if (expectedNext === 'rereferCommittee' && !subsequentPath.some(p => p.step === 'rereferCommittee')) {
+                                path.push({ step: 'rereferCommittee', value: 'Senate Appropriations Committee' }); // Default value; adjust as needed
+                            }
+                            expectedNext = Object.values(nextStepConfig.next)[0] || nextStepConfig.next.default;
+                        } else {
+                            expectedNext = nextStepConfig.next;
+                        }
+                        nextStepConfig = flow.steps.find(step => step.step === expectedNext);
+                    }
+    
+                    // Try to reattach voteModule and subsequent steps
+                    const voteModuleIndex = subsequentPath.findIndex(p => p.step === 'voteModule');
+                    if (voteModuleIndex !== -1 && expectedNext === 'voteModule') {
+                        const remainingSteps = subsequentPath.slice(voteModuleIndex);
+                        path.push(...remainingSteps);
+                        currentStep = remainingSteps.length > 1 ? flow.steps.find(step => step.step === remainingSteps[0].step).next : null;
+                        console.log('Preserved voteModule and subsequent steps:', remainingSteps);
+                    } else {
+                        console.log('Could not preserve subsequent steps; truncated path');
+                    }
+                } else {
+                    console.log('No preservation logic applied; truncated path');
+                }
             } else {
                 console.log('Flow path unchanged, no invalidation needed');
             }
@@ -327,6 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (currentStep === 'rereferCommittee') {
                 path.push({ step: currentStep, value: option });
                 currentStep = 'voteModule'; // Automatically transition to voteModule
+                console.log('Selected committee, transitioning to voteModule');
             } else {
                 path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
@@ -342,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (path.length === 1) statementStartTime = new Date();
         updateInput();
-        setTimeout(() => showSuggestions(''), 0); // Defer to fix timing issue
+        setTimeout(() => showSuggestions(''), 0); // Defer to ensure DOM updates
     }
 
     function constructVoteTagText(voteResult) {
@@ -424,6 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
+        console.log('Vote module modal opened');
     }
 
     function updateInput() {
@@ -461,8 +497,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const options = getCurrentOptions();
         if (currentStep === 'voteModule') {
+            console.log('Showing voteModule for currentFlow:', currentFlow);
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
-            handleModule(stepConfig, null);
+            if (stepConfig) {
+                handleModule(stepConfig, null);
+            } else {
+                console.error('voteModule step config not found in currentFlow');
+            }
             return;
         }
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
