@@ -555,34 +555,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             path.pop();
             console.log('removeLastTag - After pop, path:', path);
             if (path.length > 0) {
-                const firstStep = path[0].step;
-                const startingPoint = jsonStructure.startingPoints.find(sp => sp.type === firstStep);
+                const firstValue = path[0].value;
+                const startingPoint = jsonStructure.startingPoints.find(sp => {
+                    if (sp.options === "committeeMembers") {
+                        return getCommitteeMembers().includes(firstValue);
+                    } else if (Array.isArray(sp.options)) {
+                        return sp.options.includes(firstValue);
+                    }
+                    return false;
+                });
                 if (startingPoint) {
                     currentFlow = jsonStructure.flows[startingPoint.flow];
                     console.log('currentFlow set to:', startingPoint.flow);
-                    if (path.length === 1) {
-                        const firstStepConfig = currentFlow.steps[0];
-                        currentStep = firstStepConfig.next;
-                        console.log('Path has one tag, currentStep set to:', currentStep);
-                    } else {
-                        const lastPart = path[path.length - 1];
-                        const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
-                        if (stepConfig && stepConfig.next) {
-                            if (typeof stepConfig.next === 'string') {
-                                currentStep = stepConfig.next;
-                            } else if (typeof stepConfig.next === 'object') {
-                                currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
-                            }
-                            console.log('Path has multiple tags, currentStep set to:', currentStep);
-                        } else {
-                            currentStep = null;
-                            console.log('No next step found, currentStep set to null');
+                    const lastPart = path[path.length - 1];
+                    const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
+                    if (stepConfig && stepConfig.next) {
+                        if (typeof stepConfig.next === 'string') {
+                            currentStep = stepConfig.next;
+                        } else if (typeof stepConfig.next === 'object') {
+                            currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default || null;
                         }
+                        console.log('currentStep set to:', currentStep);
+                    } else {
+                        currentStep = null;
+                        console.log('No next step found, currentStep set to null');
                     }
                 } else {
                     currentFlow = null;
                     currentStep = null;
-                    console.log('No starting point found, currentFlow and currentStep set to null');
+                    console.log('No starting point found for first value:', firstValue);
                 }
             } else {
                 currentFlow = null;
