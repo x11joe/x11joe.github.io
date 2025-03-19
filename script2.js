@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function selectOption(option) {
-        console.log('selectOption - option:', option);
+        console.log('selectOption - option:', option, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
         if (!currentFlow) {
             const startingPoint = jsonStructure.startingPoints.find(sp => {
                 if (sp.options === "committeeMembers") {
@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showSuggestions(text) {
-        console.log('showSuggestions - text:', text, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
+        console.log('showSuggestions called with text:', text, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
         if (!text && !currentStep) {
             modal.classList.remove('active');
             console.log('Modal hidden: no text and no current step');
