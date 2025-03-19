@@ -216,26 +216,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function populateTestimonyModal(part) {
-        let testimonyDetails;
-        if (part.details) {
-            testimonyDetails = part.details;
-            console.log('Populating modal with details:', testimonyDetails);
-        } else {
-            testimonyDetails = parseTestimonyString(part.value);
-            console.log('Populating modal with parsed string:', testimonyDetails);
-        }
-        document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
-        document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
-        document.getElementById('testimonyRole').value = testimonyDetails.role || '';
-        document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
-        document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
-        document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
-        document.getElementById('testimonyLink').value = part.link || '';
-        const formatSelect = document.getElementById('testimonyFormat');
-        if (formatSelect) {
-            formatSelect.value = testimonyDetails.format || 'Online';
-            console.log('Set testimonyFormat to:', formatSelect.value);
-        }
+        setTimeout(() => {
+            let testimonyDetails;
+            if (part.details) {
+                testimonyDetails = part.details;
+                console.log('Populating modal with details:', testimonyDetails);
+            } else {
+                testimonyDetails = parseTestimonyString(part.value);
+                console.log('Populating modal with parsed string:', testimonyDetails);
+            }
+            const firstNameInput = document.getElementById('testimonyFirstName');
+            const lastNameInput = document.getElementById('testimonyLastName');
+            const roleInput = document.getElementById('testimonyRole');
+            const organizationInput = document.getElementById('testimonyOrganization');
+            const positionSelect = document.getElementById('testimonyPosition');
+            const numberInput = document.getElementById('testimonyNumber');
+            const linkInput = document.getElementById('testimonyLink');
+            const formatSelect = document.getElementById('testimonyFormat');
+    
+            // Log errors if elements are not found
+            if (!firstNameInput) console.error('First Name input not found');
+            if (!lastNameInput) console.error('Last Name input not found');
+            if (!roleInput) console.error('Role input not found');
+            if (!organizationInput) console.error('Organization input not found');
+            if (!positionSelect) console.error('Position select not found');
+            if (!numberInput) console.error('Testimony Number input not found');
+            if (!linkInput) console.error('Link input not found');
+            if (!formatSelect) console.error('Format select not found');
+    
+            // Populate fields only if elements exist
+            if (firstNameInput) firstNameInput.value = testimonyDetails.firstName || '';
+            if (lastNameInput) lastNameInput.value = testimonyDetails.lastName || '';
+            if (roleInput) roleInput.value = testimonyDetails.role || '';
+            if (organizationInput) organizationInput.value = testimonyDetails.organization || '';
+            if (positionSelect) positionSelect.value = testimonyDetails.position || '';
+            if (numberInput) numberInput.value = testimonyDetails.number || '';
+            if (linkInput) linkInput.value = part.link || '';
+            if (formatSelect) {
+                formatSelect.value = testimonyDetails.format || 'Online';
+                console.log('Set testimonyFormat to:', formatSelect.value);
+            }
+        }, 0);
     }
 
     function showTagOptions(tagElement, stepType, pathIndex) {
@@ -1064,7 +1085,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function openTestimonyModal(testimonyDetails = null) {
         if (editingTestimonyIndex !== null) {
             submitTestimonyButton.textContent = 'Save Testimony';
-            // Fields are already populated in showTagOptions for editing
+            // Fields are populated in showTagOptions via populateTestimonyModal
+            testimonyModal.classList.add('active');
+            console.log('Modal opened for editing, classList:', testimonyModal.classList);
         } else {
             submitTestimonyButton.textContent = 'Add Testimony';
             if (testimonyDetails) {
@@ -1072,24 +1095,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const nameParts = testimonyDetails.name ? testimonyDetails.name.split(', ').map(s => s.trim()) : [];
                 const lastName = nameParts[0] || '';
                 const firstName = nameParts.slice(1).join(', ') || '';
-                document.getElementById('testimonyFirstName').value = firstName;
-                document.getElementById('testimonyLastName').value = lastName;
-                document.getElementById('testimonyRole').value = testimonyDetails.role || '';
-                document.getElementById('testimonyOrganization').value = testimonyDetails.org || '';
-                document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
-                document.getElementById('testimonyNumber').value = testimonyDetails.testimonyNo || '';
-                document.getElementById('testimonyLink').value = testimonyDetails.link || '';
-                const formatSelect = document.getElementById('testimonyFormat');
-                if (formatSelect) {
-                    const mappedFormat = mapFormat(testimonyDetails.format);
-                    formatSelect.value = mappedFormat;
-                }
+                setTimeout(() => {
+                    const firstNameInput = document.getElementById('testimonyFirstName');
+                    const lastNameInput = document.getElementById('testimonyLastName');
+                    const roleInput = document.getElementById('testimonyRole');
+                    const organizationInput = document.getElementById('testimonyOrganization');
+                    const positionSelect = document.getElementById('testimonyPosition');
+                    const numberInput = document.getElementById('testimonyNumber');
+                    const linkInput = document.getElementById('testimonyLink');
+                    const formatSelect = document.getElementById('testimonyFormat');
+    
+                    if (!firstNameInput) console.error('First Name input not found');
+                    if (!lastNameInput) console.error('Last Name input not found');
+                    if (!roleInput) console.error('Role input not found');
+                    if (!organizationInput) console.error('Organization input not found');
+                    if (!positionSelect) console.error('Position select not found');
+                    if (!numberInput) console.error('Testimony Number input not found');
+                    if (!linkInput) console.error('Link input not found');
+                    if (!formatSelect) console.error('Format select not found');
+    
+                    if (firstNameInput) firstNameInput.value = firstName;
+                    if (lastNameInput) lastNameInput.value = lastName;
+                    if (roleInput) roleInput.value = testimonyDetails.role || '';
+                    if (organizationInput) organizationInput.value = testimonyDetails.org || '';
+                    if (positionSelect) positionSelect.value = testimonyDetails.position || '';
+                    if (numberInput) numberInput.value = testimonyDetails.testimonyNo || '';
+                    if (linkInput) linkInput.value = testimonyDetails.link || '';
+                    if (formatSelect) {
+                        const mappedFormat = mapFormat(testimonyDetails.format);
+                        formatSelect.value = mappedFormat;
+                        console.log('Set testimonyFormat to:', mappedFormat);
+                    }
+                }, 0);
             } else {
                 // Reset fields when adding manually
                 resetTestimonyModal();
             }
+            testimonyModal.classList.add('active');
+            console.log('Modal opened, classList:', testimonyModal.classList);
         }
-        testimonyModal.classList.add('active');
     }
 
     function submitTestimonyModal() {
