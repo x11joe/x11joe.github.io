@@ -1037,12 +1037,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('External actions legend updated');
     }
 
-    function openTestimonyModal() {
+    function openTestimonyModal(testimonyDetails = null) {
         if (editingTestimonyIndex !== null) {
             submitTestimonyButton.textContent = 'Save Testimony';
+            // Fields are already populated in showTagOptions for editing
         } else {
             submitTestimonyButton.textContent = 'Add Testimony';
-            resetTestimonyModal();
+            if (testimonyDetails) {
+                // Pre-fill from extension payload
+                document.getElementById('testimonyFirstName').value = testimonyDetails.name ? testimonyDetails.name.split(' ')[0] : '';
+                document.getElementById('testimonyLastName').value = testimonyDetails.name ? testimonyDetails.name.split(' ').slice(1).join(' ') : '';
+                document.getElementById('testimonyRole').value = testimonyDetails.role || '';
+                document.getElementById('testimonyOrganization').value = testimonyDetails.org || '';
+                document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
+                document.getElementById('testimonyNumber').value = testimonyDetails.testimonyNo || '';
+                document.getElementById('testimonyLink').value = testimonyDetails.link || '';
+                const formatSelect = document.getElementById('testimonyFormat');
+                if (formatSelect) formatSelect.value = testimonyDetails.format || 'Online';
+            } else {
+                // Reset fields when adding manually
+                resetTestimonyModal();
+            }
         }
         testimonyModal.classList.add('active');
     }
@@ -1296,18 +1311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Check if payload is an object with testimony properties
             if (typeof payload === 'object' && payload.testimonyNo) {
                 console.log('Processing testimony payload:', payload);
-                // Pre-fill modal fields with payload properties
-                document.getElementById('testimonyFirstName').value = payload.name ? payload.name.split(' ')[0] : '';
-                document.getElementById('testimonyLastName').value = payload.name ? payload.name.split(' ').slice(1).join(' ') : '';
-                document.getElementById('testimonyRole').value = payload.role || '';
-                document.getElementById('testimonyOrganization').value = payload.org || '';
-                document.getElementById('testimonyPosition').value = payload.position || '';
-                document.getElementById('testimonyNumber').value = payload.testimonyNo || '';
-                document.getElementById('testimonyLink').value = payload.link || '';
-                // Set format if provided (defaults to empty if not present)
-                const formatSelect = document.getElementById('testimonyFormat');
-                if (formatSelect) formatSelect.value = payload.format || 'Online'; // Default to 'Online' if not specified
-                openTestimonyModal();
+                openTestimonyModal(payload); // Pass payload to openTestimonyModal
             } else {
                 console.log('Adding custom statement:', payload);
                 const startTime = new Date();
