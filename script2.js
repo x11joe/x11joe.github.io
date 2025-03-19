@@ -225,6 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 testimonyDetails = parseTestimonyString(part.value);
                 console.log('Populating modal with parsed string:', testimonyDetails);
             }
+            
             const firstNameInput = document.getElementById('testimonyFirstName');
             const lastNameInput = document.getElementById('testimonyLastName');
             const roleInput = document.getElementById('testimonyRole');
@@ -234,16 +235,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const linkInput = document.getElementById('testimonyLink');
             const formatSelect = document.getElementById('testimonyFormat');
     
-            // Log errors if elements are not found
-            if (!firstNameInput) console.error('First Name input not found');
-            if (!lastNameInput) console.error('Last Name input not found');
-            if (!roleInput) console.error('Role input not found');
-            if (!organizationInput) console.error('Organization input not found');
-            if (!positionSelect) console.error('Position select not found');
-            if (!numberInput) console.error('Testimony Number input not found');
-            if (!linkInput) console.error('Link input not found');
-            if (!formatSelect) console.error('Format select not found');
-    
             // Populate fields only if elements exist
             if (firstNameInput) firstNameInput.value = testimonyDetails.firstName || '';
             if (lastNameInput) lastNameInput.value = testimonyDetails.lastName || '';
@@ -251,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (organizationInput) organizationInput.value = testimonyDetails.organization || '';
             if (positionSelect) positionSelect.value = testimonyDetails.position || '';
             if (numberInput) numberInput.value = testimonyDetails.number || '';
-            if (linkInput) linkInput.value = part.link || '';
+            if (linkInput) linkInput.value = testimonyDetails.link || ''; // Fixed to use testimonyDetails.link
             if (formatSelect) {
                 formatSelect.value = testimonyDetails.format || 'Online';
                 console.log('Set testimonyFormat to:', formatSelect.value);
