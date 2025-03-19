@@ -153,10 +153,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
         const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
-        let options = getOptionsForStep(stepType, flow);
+        const options = getOptionsForStep(stepType, flow);
         
         console.log('Tag options:', options);
         modal.classList.remove('active'); // Hide modal to prevent overlap
+        
+        // Remove any existing dropdown
+        const existingDropdown = document.querySelector('.dropdown');
+        if (existingDropdown) existingDropdown.remove();
+
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         dropdown.style.position = 'absolute';
@@ -164,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
         dropdown.style.zIndex = '1001'; // Above modal (assumed z-index 1000)
-        dropdown.style.display = 'block'; // Ensure visibility
+        dropdown.style.display = 'block';
         
         options.forEach(opt => {
             const div = document.createElement('div');
@@ -177,9 +182,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
                 invalidateSubsequentTags(pathIndex);
                 updateInput();
-                inputDiv.removeChild(dropdown);
                 dropdownActive = false;
-                showSuggestions(getCurrentText()); // Show suggestions after closing
+                inputDiv.removeChild(dropdown);
+                setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to ensure dropdown is gone
             };
             dropdown.appendChild(div);
         });
@@ -190,11 +195,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdownActive = true;
         
         const closeDropdown = (e) => {
-            if (!dropdown.contains(e.target)) {
+            if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
                 inputDiv.removeChild(dropdown);
                 document.removeEventListener('click', closeDropdown);
                 dropdownActive = false;
-                showSuggestions(getCurrentText()); // Restore suggestions
+                setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to prevent overlap
             }
         };
         document.addEventListener('click', closeDropdown);
@@ -408,7 +413,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Modal hidden: no text and no current step');
             return;
         }
-        if (dropdownActive) return; // Don't show suggestions if dropdown is active
+        if (dropdownActive) {
+            console.log('Suggestions skipped: dropdown is active');
+            return;
+        }
         const options = getCurrentOptions();
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
@@ -832,10 +840,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } else if (e.key === 'Tab') {
+            e.preventDefault();
             const suggestions = modal.querySelectorAll('.option');
             if (suggestions.length > 0) {
-                e.preventDefault();
-                suggestions[0].click();
+                const index = selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
+                suggestions[index].click();
             }
         } else if (e.key >= '1' && e.key <= '9') {
             const index = parseInt(e.key) - 1;
@@ -843,16 +852,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (index < suggestions.length) {
                 e.preventDefault();
                 suggestions[index].click();
-                return;
             }
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            const suggestions = modal.querySelectorAll('.option');
-            if (selectedSuggestionIndex >= 0 && suggestions.length > 0) {
-                suggestions[selectedSuggestionIndex].click();
-            } else {
-                finalizeStatement();
-            }
+            finalizeStatement();
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
             const suggestions = modal.querySelectorAll('.option');
@@ -877,6 +880,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     inputDiv.addEventListener('click', (e) => {
         if (e.target.classList.contains('chevron')) {
+            e.stopPropagation(); // Prevent immediate closure
             const token = e.target.parentElement;
             const type = token.getAttribute('data-type');
             const index = parseInt(token.getAttribute('data-index'), 10);
