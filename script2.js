@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existingDropdown) {
             existingDropdown.remove();
         }
-
+    
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         
@@ -168,14 +168,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             dropdown.appendChild(div);
         });
         
-        inputDiv.appendChild(dropdown);
+        // Append to body instead of inputDiv
+        document.body.appendChild(dropdown);
         const tagRect = tagElement.getBoundingClientRect();
-        const inputRect = inputDiv.getBoundingClientRect();
-        dropdown.style.left = `${tagRect.left - inputRect.left}px`;
-        dropdown.style.top = `${tagRect.bottom - inputRect.top}px`;
+        dropdown.style.position = 'absolute'; // Ensure absolute positioning
+        dropdown.style.left = `${tagRect.left}px`;
+        dropdown.style.top = `${tagRect.bottom}px`;
+        dropdown.style.zIndex = '10001'; // Explicitly set high z-index
         dropdownActive = true;
         selectedDropdownIndex = -1;
-
+    
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
                 dropdown.remove();
