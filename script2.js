@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let editingIndex = null;
     let dropdownActive = false;
     let selectedSuggestionIndex = -1;
-    let selectedDropdownIndex = -1; // New: Track dropdown selection
+    let selectedDropdownIndex = -1;
 
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
@@ -143,20 +143,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.classList.remove('active');
         
         const existingDropdown = document.querySelector('.dropdown');
-        if (existingDropdown && existingDropdown.parentNode) {
-            existingDropdown.parentNode.removeChild(existingDropdown);
+        if (existingDropdown) {
+            existingDropdown.remove();
         }
 
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
-        dropdown.style.position = 'absolute';
-        dropdown.style.background = 'white';
-        dropdown.style.border = '1px solid #ccc';
-        dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-        dropdown.style.zIndex = '1002';
-        dropdown.style.display = 'block';
         
-        options.forEach(opt => {
+        options.forEach((opt, idx) => {
             const div = document.createElement('div');
             div.className = 'dropdown-option';
             div.textContent = opt;
@@ -167,9 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
                 invalidateSubsequentTags(pathIndex);
                 updateInput();
-                if (inputDiv.contains(dropdown)) {
-                    inputDiv.removeChild(dropdown);
-                }
+                dropdown.remove();
                 dropdownActive = false;
                 setTimeout(() => showSuggestions(getCurrentText()), 0);
             };
@@ -177,16 +169,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         inputDiv.appendChild(dropdown);
-        dropdown.style.left = `${tagElement.offsetLeft}px`;
-        dropdown.style.top = `${tagElement.offsetTop + tagElement.offsetHeight}px`;
+        const tagRect = tagElement.getBoundingClientRect();
+        const inputRect = inputDiv.getBoundingClientRect();
+        dropdown.style.left = `${tagRect.left - inputRect.left}px`;
+        dropdown.style.top = `${tagRect.bottom - inputRect.top}px`;
         dropdownActive = true;
-        selectedDropdownIndex = -1; // Reset dropdown selection
-        
+        selectedDropdownIndex = -1;
+
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
-                if (inputDiv.contains(dropdown)) {
-                    inputDiv.removeChild(dropdown);
-                }
+                dropdown.remove();
                 document.removeEventListener('click', closeDropdown);
                 dropdownActive = false;
                 setTimeout(() => showSuggestions(getCurrentText()), 0);
@@ -427,7 +419,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function positionModal() {
-        const rect = inputDiv.getBoundingClientRect();
         // Positioned via CSS
     }
 
@@ -849,12 +840,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.preventDefault();
             if (dropdownActive) {
                 const dropdown = document.querySelector('.dropdown');
-                if (dropdown) {
+                if (dropdown && selectedDropdownIndex >= 0) {
                     const options = dropdown.querySelectorAll('.dropdown-option');
-                    if (options.length > 0) {
-                        const index = selectedDropdownIndex >= 0 ? selectedDropdownIndex : 0;
-                        options[index].click();
-                    }
+                    options[selectedDropdownIndex].click();
                 }
             } else {
                 finalizeStatement();
@@ -884,14 +872,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (dropdown) {
                     const options = dropdown.querySelectorAll('.dropdown-option');
                     if (options.length > 0) {
-                        selectedDropdownIndex = selectedDropdownIndex === -1 ? options.length - 1 : Math.max(selectedDropdownIndex - 1, 0);
+                        selectedDropdownIndex = selectedDropdownIndex <= 0 ? -1 : selectedDropdownIndex - 1;
                         updateDropdownHighlight(dropdown);
                     }
                 }
             } else if (modal.classList.contains('active')) {
                 const suggestions = modal.querySelectorAll('.option');
                 if (suggestions.length > 0) {
-                    selectedSuggestionIndex = selectedSuggestionIndex === -1 ? suggestions.length - 1 : Math.max(selectedSuggestionIndex - 1, 0);
+                    selectedSuggestionIndex = selectedSuggestionIndex <= 0 ? -1 : selectedSuggestionIndex - 1;
                     updateSuggestionHighlight(suggestions);
                 }
             }
