@@ -215,6 +215,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         editingTestimonyIndex = null; // Reset editing index when closing
     }
 
+    function populateTestimonyModal(part) {
+        let testimonyDetails;
+        if (part.details) {
+            testimonyDetails = part.details;
+            console.log('Populating modal with details:', testimonyDetails);
+        } else {
+            testimonyDetails = parseTestimonyString(part.value);
+            console.log('Populating modal with parsed string:', testimonyDetails);
+        }
+        document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
+        document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
+        document.getElementById('testimonyRole').value = testimonyDetails.role || '';
+        document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
+        document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
+        document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
+        document.getElementById('testimonyLink').value = part.link || '';
+        const formatSelect = document.getElementById('testimonyFormat');
+        if (formatSelect) {
+            formatSelect.value = testimonyDetails.format || 'Online';
+            console.log('Set testimonyFormat to:', formatSelect.value);
+        }
+    }
+
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
         if (stepType === 'voteModule') {
@@ -223,23 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             handleModule(stepConfig, voteResult);
         } else if (stepType === 'testimony') {
             const part = path[pathIndex];
-            let testimonyDetails;
-            if (part.details) {
-                testimonyDetails = part.details;
-            } else {
-                testimonyDetails = parseTestimonyString(part.value);
-            }
-            document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
-            document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
-            document.getElementById('testimonyRole').value = testimonyDetails.role || '';
-            document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
-            document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
-            document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
-            document.getElementById('testimonyLink').value = testimonyDetails.link || '';
-            const formatSelect = document.getElementById('testimonyFormat');
-            if (formatSelect) {
-                formatSelect.value = testimonyDetails.format || 'Online';
-            }
+            populateTestimonyModal(part);
             openTestimonyModal();
             editingTestimonyIndex = pathIndex;
         } else {
@@ -920,6 +927,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('editHistoryEntry - Final state - path:', path, 'currentFlow:', currentFlow, 'currentStep:', currentStep);
         updateInput();
         showSuggestions('');
+    
+        // If it's a testimony entry, directly open the modal
+        if (path.length === 1 && path[0].step === 'testimony') {
+            console.log('Editing testimony entry, opening modal with:', path[0]);
+            populateTestimonyModal(path[0]);
+            openTestimonyModal();
+            editingTestimonyIndex = 0;
+        }
     }
 
     function updateHistoryTable() {
@@ -1045,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (format && format.includes('Online')) return 'Online';
         return 'Written';
     }
-    
+
     function openTestimonyModal(testimonyDetails = null) {
         if (editingTestimonyIndex !== null) {
             submitTestimonyButton.textContent = 'Save Testimony';
@@ -1108,9 +1123,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (editingTestimonyIndex !== null) {
             path[editingTestimonyIndex].value = testimonyString;
             path[editingTestimonyIndex].details = testimonyObject;
-            updateInput();
-            showSuggestions('');
-            editingTestimonyIndex = null;
+            closeTestimonyModal();
+            if (editingIndex !== null) {
+                finalizeStatement(); // Finalize the statement when editing
+            } else {
+                updateInput(); // Update input if not finalizing (e.g., mid-flow edit)
+                showSuggestions('');
+            }
         } else {
             const startTime = new Date();
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
@@ -1119,38 +1138,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
             localStorage.setItem('historyStatements', serializeHistory(history));
             console.log('Added testimony to history:', testimonyString);
+            closeTestimonyModal();
         }
-    
-        closeTestimonyModal();
     }
 
     function parseTestimonyString(str) {
         const parts = str.split(' - ').map(p => p.trim());
         let testimonyDetails = {};
-        if (parts.length >= 1) {
-            const nameParts = parts[0].split(' ');
-            if (nameParts.length > 1) {
-                testimonyDetails.firstName = nameParts.slice(0, -1).join(' ');
-                testimonyDetails.lastName = nameParts[nameParts.length - 1];
-            } else {
-                testimonyDetails.firstName = parts[0];
-                testimonyDetails.lastName = '';
+        // Find position index (In Favor, In Opposition, Neutral)
+        const positionIndex = parts.findIndex(p => p === 'In Favor' || p === 'In Opposition' || p === 'Neutral');
+        if (positionIndex >= 0) {
+            testimonyDetails.position = parts[positionIndex];
+            // Check for testimony number and format after position
+            if (positionIndex + 1 < parts.length && parts[positionIndex + 1].startsWith('Testimony#')) {
+                testimonyDetails.number = parts[positionIndex + 1].replace('Testimony#', '');
+                if (positionIndex + 2 < parts.length) {
+                    testimonyDetails.format = parts[positionIndex + 2];
+                }
+            } else if (positionIndex + 1 < parts.length) {
+                testimonyDetails.format = parts[positionIndex + 1];
             }
-        }
-        if (parts.length >= 2) {
-            testimonyDetails.role = parts[1];
-        }
-        if (parts.length >= 3) {
-            testimonyDetails.organization = parts[2];
-        }
-        if (parts.length >= 4) {
-            testimonyDetails.position = parts[3];
-        }
-        if (parts.length >= 5) {
-            testimonyDetails.number = parts[4].replace('Testimony#', '');
-        }
-        if (parts.length >= 6) {
-            testimonyDetails.format = parts[5]; // Extract format
+            // Parse parts before position (name, role, organization)
+            const beforeParts = parts.slice(0, positionIndex);
+            if (beforeParts.length >= 1) {
+                const nameParts = beforeParts[0].split(' ');
+                if (nameParts.length > 1) {
+                    testimonyDetails.firstName = nameParts.slice(0, -1).join(' ');
+                    testimonyDetails.lastName = nameParts[nameParts.length - 1];
+                } else {
+                    testimonyDetails.firstName = beforeParts[0];
+                    testimonyDetails.lastName = '';
+                }
+            }
+            if (beforeParts.length >= 2) {
+                testimonyDetails.role = beforeParts[1];
+            }
+            if (beforeParts.length >= 3) {
+                testimonyDetails.organization = beforeParts[2];
+            }
         }
         return testimonyDetails;
     }
