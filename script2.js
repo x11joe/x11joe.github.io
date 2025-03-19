@@ -160,7 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Remove any existing dropdown
         const existingDropdown = document.querySelector('.dropdown');
-        if (existingDropdown) existingDropdown.remove();
+        if (existingDropdown && existingDropdown.parentNode) {
+            existingDropdown.parentNode.removeChild(existingDropdown);
+        }
 
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
@@ -168,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropdown.style.background = 'white';
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-        dropdown.style.zIndex = '1001'; // Above modal (assumed z-index 1000)
+        dropdown.style.zIndex = '1002'; // Above modal and other elements
         dropdown.style.display = 'block';
         
         options.forEach(opt => {
@@ -182,8 +184,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
                 invalidateSubsequentTags(pathIndex);
                 updateInput();
+                if (inputDiv.contains(dropdown)) {
+                    inputDiv.removeChild(dropdown);
+                }
                 dropdownActive = false;
-                inputDiv.removeChild(dropdown);
                 setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to ensure dropdown is gone
             };
             dropdown.appendChild(div);
@@ -196,7 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const closeDropdown = (e) => {
             if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
-                inputDiv.removeChild(dropdown);
+                if (inputDiv.contains(dropdown)) {
+                    inputDiv.removeChild(dropdown);
+                }
                 document.removeEventListener('click', closeDropdown);
                 dropdownActive = false;
                 setTimeout(() => showSuggestions(getCurrentText()), 0); // Delay to prevent overlap
