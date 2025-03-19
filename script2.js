@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (stepType === 'voteModule') {
             const voteResult = JSON.parse(path[pathIndex].value);
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
-            handleModule(stepConfig, voteResult);
+            handleModule(stepConfig, voteResult); // Pass existing votes for prefill
         } else {
             const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
             const options = getOptionsForStep(stepType, flow);
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
             } else if (currentStep === 'rereferCommittee') {
                 path.push({ step: currentStep, value: option });
-                currentStep = 'voteModule'; // Directly transition to voteModule
+                currentStep = 'voteModule'; // Automatically transition to voteModule
             } else {
                 path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (path.length === 1) statementStartTime = new Date();
         updateInput();
-        setTimeout(() => showSuggestions(''), 0); // Ensure DOM updates before showing suggestions
+        setTimeout(() => showSuggestions(''), 0); // Defer to fix timing issue
     }
 
     function constructVoteTagText(voteResult) {
@@ -353,19 +353,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
     }
 
-    function handleModule(stepConfig, triggerOption) {
-        console.log('handleModule - stepConfig:', stepConfig);
+    function handleModule(stepConfig, existingVotes = null) {
+        console.log('handleModule - stepConfig:', stepConfig, 'existingVotes:', existingVotes);
         modal.innerHTML = '';
         const form = document.createElement('div');
         form.className = 'vote-form';
-
-        const voteCounts = { for: 0, against: 0, neutral: 0 };
-
+    
+        const voteCounts = existingVotes ? { ...existingVotes } : { for: 0, against: 0, neutral: 0 };
+    
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = `${field.name}: `;
-
+    
             const decrement = document.createElement('button');
             decrement.textContent = '-';
             decrement.onclick = () => {
@@ -374,30 +374,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                     input.value = voteCounts[field.name];
                 }
             };
-
+    
             const input = document.createElement('input');
             input.type = 'number';
             input.id = `module-${field.name}`;
-            input.value = '0';
+            input.value = voteCounts[field.name];
             input.min = '0';
             input.onchange = () => {
                 voteCounts[field.name] = parseInt(input.value) || 0;
             };
-
+    
             const increment = document.createElement('button');
             increment.textContent = '+';
             increment.onclick = () => {
                 voteCounts[field.name]++;
                 input.value = voteCounts[field.name];
             };
-
+    
             container.appendChild(label);
             container.appendChild(decrement);
             container.appendChild(input);
             container.appendChild(increment);
             form.appendChild(container);
         });
-
+    
         const submit = document.createElement('button');
         submit.textContent = 'Submit';
         submit.onclick = () => {
@@ -406,7 +406,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 moduleResult[field.name] = voteCounts[field.name];
             });
             const resultStr = JSON.stringify(moduleResult);
-            selectOption(resultStr);
+            if (currentStep === 'voteModule') {
+                selectOption(resultStr);
+            } else {
+                // Editing mode: update the existing path entry
+                const voteIndex = path.findIndex(p => p.step === 'voteModule');
+                if (voteIndex !== -1) {
+                    path[voteIndex].value = resultStr;
+                    path[voteIndex].display = constructVoteTagText(moduleResult);
+                    updateInput();
+                    showSuggestions('');
+                }
+            }
             modal.classList.remove('active');
         };
         form.appendChild(submit);
