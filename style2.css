@@ -59,7 +59,7 @@ body {
     outline: none;
     white-space: pre-wrap;
     position: relative;
-    z-index: 1000; /* Above #history */
+    z-index: 1000;
 }
 
 #history {
@@ -69,7 +69,7 @@ body {
     width: 600px;
     display: flex;
     flex-direction: column;
-    z-index: 1; /* Below .input */
+    z-index: 1;
 }
 
 #historyWrapper {
@@ -106,7 +106,7 @@ body {
     width: 600px;
     overflow-y: auto;
     display: none;
-    z-index: 10000; /* Above .input */
+    z-index: 10000;
     top: -210px;
     left: 0;
 }
@@ -147,7 +147,7 @@ body {
     background: white;
     border: 1px solid #ccc;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 10001; /* Above modal and .input */
+    z-index: 10001;
     display: block;
     overflow: visible;
 }
@@ -234,5 +234,46 @@ label {
 }
 
 #clearHistoryBtn {
-    z-index: 1; /* Below .input and dropdown */
+    z-index: 1;
+}
+
+/* Vote Module Styling */
+.vote-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.vote-form div {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vote-form label {
+    width: 60px;
+    font-weight: bold;
+    margin-right: 0; /* Override default label margin */
+}
+
+.vote-form input[type="number"] {
+    width: 50px;
+    padding: 5px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.vote-form button {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.vote-form button:hover {
+    background-color: #0056b3;
 }

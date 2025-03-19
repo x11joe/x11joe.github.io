@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let dropdownActive = false;
     let selectedSuggestionIndex = -1;
     let selectedDropdownIndex = -1;
-    let lastAction = null; // Track the last action for smarter suggestions
+    let lastAction = null;
 
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
     }
 
-    // Load history from local storage first
     const savedHistory = localStorage.getItem('historyStatements');
     if (savedHistory) {
         history = deserializeHistory(savedHistory);
@@ -77,10 +76,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('History loaded from local storage:', history);
     }
 
-    // Set lastAction based on the last history entry immediately after loading history
     if (history.length > 0) {
         const lastEntry = history[history.length - 1];
-        if (lastEntry.path[0].step === 'member') { // Check if it's from committeeMemberFlow
+        if (lastEntry.path[0].step === 'member') {
             const actionPart = lastEntry.path.find(p => p.step === 'action');
             if (actionPart) {
                 lastAction = actionPart.value;
@@ -132,16 +130,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return allOptions;
         } else {
             let options = getOptionsForStep(currentStep, currentFlow);
-            // Reorder options for 'action' step in committeeMemberFlow based on lastAction
             if (currentFlow === jsonStructure.flows.committeeMemberFlow && currentStep === 'action' && lastAction) {
                 if (lastAction === 'Moved') {
-                    // Prioritize "Seconded" after "Moved"
                     options = ['Seconded', ...options.filter(opt => opt !== 'Seconded')];
                 } else if (lastAction === 'Seconded' || lastAction === 'Withdrew') {
-                    // Prioritize "Moved" after "Seconded" or "Withdrew"
                     options = ['Moved', ...options.filter(opt => opt !== 'Moved')];
                 }
-                // For other actions, keep default order
                 console.log('Reordered action options based on lastAction:', lastAction, 'new options:', options);
             }
             return options;
@@ -294,23 +288,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (startingPoint) {
                 currentFlow = jsonStructure.flows[startingPoint.flow];
                 console.log('Flow set to:', startingPoint.flow);
-                const firstStep = currentFlow.steps[0];
-                let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
-                if (stepOptions.includes(option)) {
-                    path.push({ step: firstStep.step, value: option });
-                    currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
+                if (startingPoint.type === 'voteAction') {
+                    path.push({ step: 'voteType', value: option });
+                    currentStep = jsonStructure.flows.voteActionFlow.steps.find(step => step.step === 'voteType').next[option];
                 } else {
-                    path.push({ step: startingPoint.type, value: option });
-                    currentStep = firstStep.step;
+                    const firstStep = currentFlow.steps[0];
+                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
+                    if (stepOptions.includes(option)) {
+                        path.push({ step: firstStep.step, value: option });
+                        currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
+                    } else {
+                        path.push({ step: startingPoint.type, value: option });
+                        currentStep = firstStep.step;
+                    }
                 }
                 console.log('Initial path:', path, 'currentStep:', currentStep);
             }
         } else {
             path.push({ step: currentStep, value: option });
             if (currentFlow === jsonStructure.flows.voteActionFlow) {
-                if (currentStep === 'voteType') {
-                    currentStep = jsonStructure.flows.voteActionFlow.steps.find(step => step.step === 'voteType').next[option];
-                } else if (currentStep === 'rollCallMotionType') {
+                if (currentStep === 'rollCallMotionType') {
                     if (option.includes('and Rereferred')) {
                         currentStep = 'rereferCommittee';
                     } else {
@@ -368,21 +365,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('handleModule - stepConfig:', stepConfig);
         modal.innerHTML = '';
         const form = document.createElement('div');
-        form.style.display = 'flex';
-        form.style.flexDirection = 'column';
-        form.style.gap = '10px';
+        form.className = 'vote-form'; // Added class for CSS styling
 
         const voteCounts = { for: 0, against: 0, neutral: 0 };
 
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
-            container.style.display = 'flex';
-            container.style.alignItems = 'center';
-            container.style.gap = '5px';
-
             const label = document.createElement('label');
             label.textContent = `${field.name}: `;
-            label.style.width = '60px';
 
             const decrement = document.createElement('button');
             decrement.textContent = '-';
@@ -398,7 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             input.id = `module-${field.name}`;
             input.value = '0';
             input.min = '0';
-            input.style.width = '50px';
             input.onchange = () => {
                 voteCounts[field.name] = parseInt(input.value) || 0;
             };
@@ -486,6 +475,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         const options = getCurrentOptions();
+        if (currentStep === 'voteModule') {
+            const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
+            handleModule(stepConfig, null);
+            return;
+        }
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
         if (filtered.length > 0) {
@@ -578,7 +572,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const statementText = constructStatementText(path);
 
-        // Update lastAction for committeeMemberFlow
         if (currentFlow === jsonStructure.flows.committeeMemberFlow) {
             const actionPart = path.find(p => p.step === 'action');
             if (actionPart) {
@@ -1014,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     clearHistoryBtn.addEventListener('click', () => {
         history = [];
-        lastAction = null; // Reset lastAction when history is cleared
+        lastAction = null;
         localStorage.removeItem('historyStatements');
         updateHistoryTable();
         console.log('History cleared');
