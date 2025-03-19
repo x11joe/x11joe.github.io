@@ -69,11 +69,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
     }
 
+    // Load history from local storage first
     const savedHistory = localStorage.getItem('historyStatements');
     if (savedHistory) {
         history = deserializeHistory(savedHistory);
         updateHistoryTable();
         console.log('History loaded from local storage:', history);
+    }
+
+    // Set lastAction based on the last history entry immediately after loading history
+    if (history.length > 0) {
+        const lastEntry = history[history.length - 1];
+        if (lastEntry.path[0].step === 'member') { // Check if it's from committeeMemberFlow
+            const actionPart = lastEntry.path.find(p => p.step === 'action');
+            if (actionPart) {
+                lastAction = actionPart.value;
+                console.log('Set lastAction from history to:', lastAction);
+            }
+        }
     }
 
     function getCommitteeMembers() {
@@ -182,13 +195,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             dropdown.appendChild(div);
         });
         
-        // Append to body instead of inputDiv
         document.body.appendChild(dropdown);
         const tagRect = tagElement.getBoundingClientRect();
-        dropdown.style.position = 'absolute'; // Ensure absolute positioning
+        dropdown.style.position = 'absolute';
         dropdown.style.left = `${tagRect.left}px`;
         dropdown.style.top = `${tagRect.bottom}px`;
-        dropdown.style.zIndex = '10001'; // Explicitly set high z-index
+        dropdown.style.zIndex = '10001';
         dropdownActive = true;
         selectedDropdownIndex = -1;
     
@@ -915,6 +927,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     clearHistoryBtn.addEventListener('click', () => {
         history = [];
+        lastAction = null; // Reset lastAction when history is cleared
         localStorage.removeItem('historyStatements');
         updateHistoryTable();
         console.log('History cleared');
