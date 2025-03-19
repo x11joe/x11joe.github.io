@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let history = []; // Store finalized statements
     let editingIndex = null; // Track the index of the entry being edited
     let dropdownActive = false; // Track if dropdown is active
+    let selectedSuggestionIndex = -1; // Track selected suggestion index
 
     // DOM elements
     const inputDiv = document.getElementById('input');
@@ -155,13 +156,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         let options = getOptionsForStep(stepType, flow);
         
         console.log('Tag options:', options);
+        modal.classList.remove('active'); // Hide modal to prevent overlap
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
         dropdown.style.position = 'absolute';
         dropdown.style.background = 'white';
         dropdown.style.border = '1px solid #ccc';
         dropdown.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-        dropdown.style.zIndex = '1000';
+        dropdown.style.zIndex = '1001'; // Above modal (assumed z-index 1000)
+        dropdown.style.display = 'block'; // Ensure visibility
         
         options.forEach(opt => {
             const div = document.createElement('div');
@@ -172,13 +175,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const oldValue = path[pathIndex].value;
                 path[pathIndex].value = opt;
                 console.log('Tag updated at index', pathIndex, 'from', oldValue, 'to:', opt);
-                // Invalidate subsequent tags if necessary
                 invalidateSubsequentTags(pathIndex);
                 updateInput();
-                modal.classList.remove('active');
                 inputDiv.removeChild(dropdown);
                 dropdownActive = false;
-                showSuggestions('');
+                showSuggestions(getCurrentText()); // Show suggestions after closing
             };
             dropdown.appendChild(div);
         });
@@ -193,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 inputDiv.removeChild(dropdown);
                 document.removeEventListener('click', closeDropdown);
                 dropdownActive = false;
-                showSuggestions('');
+                showSuggestions(getCurrentText()); // Restore suggestions
             }
         };
         document.addEventListener('click', closeDropdown);
@@ -230,7 +231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
-        // Remove tags after changedIndex if the next step doesn't match
         if (tempStep !== currentStep) {
             path = path.slice(0, changedIndex + 1);
             currentStep = tempStep;
@@ -432,12 +432,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             modal.classList.remove('active');
             console.log('Modal hidden: no filtered options');
         }
+        selectedSuggestionIndex = -1; // Reset selection
     }
 
     // Position modal above input
     function positionModal() {
         const rect = inputDiv.getBoundingClientRect();
         // Positioned via CSS
+    }
+
+    // Update suggestion highlight
+    function updateSuggestionHighlight(suggestions) {
+        suggestions.forEach((sug, idx) => {
+            sug.classList.toggle('highlighted', idx === selectedSuggestionIndex);
+        });
     }
 
     // Remove last tag on backspace
@@ -453,7 +461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log('currentFlow set to:', startingPoint.flow);
                     if (path.length === 1) {
                         const firstStepConfig = currentFlow.steps[0];
-                        currentStep = firstStepConfig.next; // Set to next step after the first tag
+                        currentStep = firstStepConfig.next;
                         console.log('Path has one tag, currentStep set to:', currentStep);
                     } else {
                         const lastPart = path[path.length - 1];
@@ -839,19 +847,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            const text = getCurrentText();
-            const options = getCurrentOptions();
-            const match = options.find(opt => opt.toLowerCase() === text.toLowerCase());
-            if (match) {
-                inputDiv.lastChild.textContent = ' ';
-                const tag = createTag(match, currentStep || 'startingPoint', path.length);
-                inputDiv.insertBefore(tag, inputDiv.lastChild);
-                selectOption(match);
+            const suggestions = modal.querySelectorAll('.option');
+            if (selectedSuggestionIndex >= 0 && suggestions.length > 0) {
+                suggestions[selectedSuggestionIndex].click();
             } else {
                 finalizeStatement();
             }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const suggestions = modal.querySelectorAll('.option');
+            if (suggestions.length > 0) {
+                selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+                updateSuggestionHighlight(suggestions);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const suggestions = modal.querySelectorAll('.option');
+            if (suggestions.length > 0) {
+                selectedSuggestionIndex = selectedSuggestionIndex === -1 ? suggestions.length - 1 : Math.max(selectedSuggestionIndex - 1, 0);
+                updateSuggestionHighlight(suggestions);
+            }
         } else if (e.key === 'Escape' && dropdownActive) {
-            // Close the dropdown and show previous suggestions
             document.dispatchEvent(new MouseEvent('click'));
             e.preventDefault();
         }

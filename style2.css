@@ -218,3 +218,7 @@ label {
     right: auto;
     left: 10px;
 }
+
+.option.highlighted {
+    background-color: #e0e0e0; /* Light gray highlight */
+}
