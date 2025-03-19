@@ -43,6 +43,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const historyDiv = document.getElementById('history');
     const entryWrapper = document.querySelector('.entry-wrapper');
 
+    // **New Variables Added for Testimony Modal**
+    const testimonyModal = document.getElementById('testimonyModal');
+    const cancelTestimonyButton = document.getElementById('cancelTestimonyButton');
+
     Object.keys(committees).forEach(committee => {
         const option = document.createElement('option');
         option.value = committee;
@@ -190,6 +194,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         return text.trim();
+    }
+
+    // **New Function to Close Testimony Modal**
+    function closeTestimonyModal() {
+        testimonyModal.classList.remove('active');
+        editingTestimonyIndex = null; // Reset editing index when closing
     }
 
     function showTagOptions(tagElement, stepType, pathIndex) {
@@ -1011,10 +1021,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('testimonyModal').classList.add('active');
     }
 
-    function closeTestimonyModal() {
-        document.getElementById('testimonyModal').classList.remove('active');
-    }
-
     function submitTestimonyModal() {
         const firstName = document.getElementById('testimonyFirstName').value.trim();
         const lastName = document.getElementById('testimonyLastName').value.trim();
@@ -1232,6 +1238,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('submitTestimonyButton').addEventListener('click', submitTestimonyModal);
+
+    // **New Event Listener for Cancel Testimony Button**
+    cancelTestimonyButton.addEventListener('click', () => {
+        closeTestimonyModal();
+    });
 
     updateMeetingActionsLegend();
     updateVoteActionsLegend();
