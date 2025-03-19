@@ -2,7 +2,8 @@
     "startingPoints": [
         { "type": "member", "options": "committeeMembers", "flow": "committeeMemberFlow" },
         { "type": "meetingAction", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "flow": "meetingActionFlow" },
-        { "type": "voteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" }
+        { "type": "voteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" },
+        { "type": "introducedBill", "options": ["Introduced Bill"], "flow": "introducedBillFlow" }
     ],
     "flows": {
         "committeeMemberFlow": {
@@ -36,6 +37,11 @@
                 { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
                 { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },
                 { "step": "motionFailedReason", "type": "select", "options": "suggestFailedReason", "next": null }
+            ]
+        },
+        "introducedBillFlow": {
+            "steps": [
+                { "step": "member", "type": "select", "options": "allMembers", "next": null }
             ]
         }
     }

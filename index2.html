@@ -46,6 +46,24 @@
         <ul id="meetingActionsList"></ul>
         <h4>Vote Actions</h4>
         <ul id="voteActionsList"></ul>
+        <h4>External Actions</h4>
+        <ul id="externalActionsList"></ul>
+    </div>
+    <div id="testimonyModal" class="modal">
+        <h3>Add Testimony</h3>
+        <label>First Name: <input type="text" id="testimonyFirstName"></label><br>
+        <label>Last Name: <input type="text" id="testimonyLastName"></label><br>
+        <label>Role: <input type="text" id="testimonyRole"></label><br>
+        <label>Organization: <input type="text" id="testimonyOrganization"></label><br>
+        <label>Position: <select id="testimonyPosition">
+            <option value="In Favor">In Favor</option>
+            <option value="In Opposition">In Opposition</option>
+            <option value="Neutral">Neutral</option>
+        </select></label><br>
+        <label>Testimony Number: <input type="text" id="testimonyNumber"></label><br>
+        <label>Link: <input type="text" id="testimonyLink"></label><br>
+        <button id="submitTestimonyButton">Add Testimony</button>
+        <button onclick="closeTestimonyModal()">Cancel</button>
     </div>
     <script src="defaultCommittees.js"></script>
     <script src="script2.js"></script>

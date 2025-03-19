@@ -1,3 +1,5 @@
+let allMembers = []; // Global array to store all members from XML
+
 document.addEventListener('DOMContentLoaded', async () => {
     const committees = window.DEFAULT_COMMITTEES || {};
     let currentCommittee = "Senate Judiciary Committee";
@@ -6,8 +8,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const response = await fetch('flows.json');
         jsonStructure = await response.json();
         console.log('flows.json loaded:', jsonStructure);
+
+        // Load and parse allMember.xml
+        const xmlResponse = await fetch('allMember.xml');
+        const xmlText = await xmlResponse.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        allMembers = parseMembersFromXML(xmlDoc);
+        console.log('All members loaded:', allMembers);
     } catch (error) {
-        console.error('Error loading flows.json:', error);
+        console.error('Error loading flows.json or allMember.xml:', error);
         return;
     }
 
@@ -56,7 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return JSON.stringify(history.map(entry => ({
             time: entry.time.toISOString(),
             path: entry.path,
-            text: entry.text
+            text: entry.text,
+            link: entry.link || ''
         })));
     }
 
@@ -65,7 +76,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return parsed.map(entry => ({
             time: new Date(entry.time),
             path: entry.path,
-            text: entry.text
+            text: entry.text,
+            link: entry.link || ''
         }));
     }
 
@@ -87,6 +99,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function parseMembersFromXML(xmlDoc) {
+        const hotKeys = xmlDoc.getElementsByTagName('HotKey');
+        const members = [];
+        for (let i = 0; i < hotKeys.length; i++) {
+            const hotKey = hotKeys[i];
+            const nameElem = hotKey.getElementsByTagName('Name')[0];
+            const firstNameElem = hotKey.getElementsByTagName('FirstName')[0];
+            if (nameElem && firstNameElem) {
+                const lastName = nameElem.textContent.trim();
+                const firstName = firstNameElem.textContent.trim();
+                const fullName = `${firstName} ${lastName}`;
+                if (fullName.match(/^(Senator|Representative)\b/i)) {
+                    members.push(fullName);
+                }
+            }
+        }
+        return members;
+    }
+
     function getCommitteeMembers() {
         return committees[currentCommittee] || [];
     }
@@ -106,13 +137,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             options = getCommitteeMembers();
         } else if (stepConfig.options === "otherCommittees") {
             options = getOtherCommittees();
+        } else if (stepConfig.options === "allMembers") {
+            options = allMembers;
         } else if (stepConfig.options === "suggestMotionType") {
             options = suggestMotionType();
         } else if (stepConfig.options === "suggestFailedReason") {
             options = suggestFailedReason();
         } else if (Array.isArray(stepConfig.options)) {
             options = stepConfig.options;
-            // Prioritize "Take the Vote" for motionModifiers and afterAmended
             if (stepType === 'motionModifiers' || stepType === 'afterAmended') {
                 options = ['Take the Vote', ...options.filter(opt => opt !== 'Take the Vote')];
             }
@@ -164,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (stepType === 'voteModule') {
             const voteResult = JSON.parse(path[pathIndex].value);
             const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
-            handleModule(stepConfig, voteResult); // Pass existing votes for prefill
+            handleModule(stepConfig, voteResult);
         } else {
             const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
             const options = getOptionsForStep(stepType, flow);
@@ -235,17 +267,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 path = path.slice(0, changedIndex + 1);
                 currentStep = newNextStep;
     
-                // Special case for voteActionFlow modifiers to preserve voteModule and beyond
                 if (flow === jsonStructure.flows.voteActionFlow && (part.step === 'motionModifiers' || part.step === 'afterAmended')) {
                     let nextStepConfig = flow.steps.find(step => step.step === newNextStep);
                     let expectedNext = newNextStep;
     
-                    // Follow the flow to see if we can reattach subsequent steps
                     while (nextStepConfig && expectedNext !== 'voteModule') {
                         if (nextStepConfig.next && typeof nextStepConfig.next === 'object') {
-                            // For steps like rereferCommittee, we need to add it if not present
                             if (expectedNext === 'rereferCommittee' && !subsequentPath.some(p => p.step === 'rereferCommittee')) {
-                                path.push({ step: 'rereferCommittee', value: 'Senate Appropriations Committee' }); // Default value; adjust as needed
+                                path.push({ step: 'rereferCommittee', value: 'Senate Appropriations Committee' });
                             }
                             expectedNext = Object.values(nextStepConfig.next)[0] || nextStepConfig.next.default;
                         } else {
@@ -254,7 +283,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         nextStepConfig = flow.steps.find(step => step.step === expectedNext);
                     }
     
-                    // Try to reattach voteModule and subsequent steps
                     const voteModuleIndex = subsequentPath.findIndex(p => p.step === 'voteModule');
                     if (voteModuleIndex !== -1 && expectedNext === 'voteModule') {
                         const remainingSteps = subsequentPath.slice(voteModuleIndex);
@@ -337,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentStep = jsonStructure.flows.voteActionFlow.steps.find(step => step.step === 'voteType').next[option];
                 } else {
                     const firstStep = currentFlow.steps[0];
-                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : firstStep.options;
+                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers : firstStep.options);
                     if (stepOptions.includes(option)) {
                         path.push({ step: firstStep.step, value: option });
                         currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
@@ -354,12 +382,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const moduleResult = JSON.parse(option);
                 const displayText = constructVoteTagText(moduleResult);
                 path.push({ step: currentStep, value: option, display: displayText });
-                // Check if the motion is "Reconsider" to end the flow
                 const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
                 if (motionType === 'Reconsider') {
-                    currentStep = null; // End the flow for Reconsider
+                    currentStep = null;
                 } else {
-                    currentStep = 'carryBillPrompt'; // Proceed to carryBillPrompt for other motions
+                    currentStep = 'carryBillPrompt';
                 }
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
@@ -384,7 +411,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (path.length === 1) statementStartTime = new Date();
         updateInput();
-        setTimeout(() => showSuggestions(''), 0); // Defer to ensure DOM updates
+        setTimeout(() => showSuggestions(''), 0);
     }
 
     function constructVoteTagText(voteResult) {
@@ -451,7 +478,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentStep === 'voteModule') {
                 selectOption(resultStr);
             } else {
-                // Editing mode: update the existing path entry
                 const voteIndex = path.findIndex(p => p.step === 'voteModule');
                 if (voteIndex !== -1) {
                     path[voteIndex].value = resultStr;
@@ -618,11 +644,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const startTime = statementStartTime || new Date();
         
         if (editingIndex !== null) {
-            history[editingIndex] = { time: startTime, path: [...path], text: statementText };
+            history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '' };
             console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
             updateHistoryTable();
         } else {
-            history.push({ time: startTime, path: [...path], text: statementText });
+            history.push({ time: startTime, path: [...path], text: statementText, link: '' });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
             setTimeout(() => {
@@ -727,6 +753,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 text += ` by ${memberText}`;
             }
             return text;
+        } else if (flowType === 'introducedBill') {
+            const memberString = path.find(p => p.step === 'member')?.value || '';
+            const { lastName, title } = parseMember(memberString);
+            let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+            return `${memberText} - Introduced Bill`;
         }
         return path.map(p => p.value).join(' - ');
     }
@@ -737,19 +768,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function parseMember(memberString) {
-        const parts = memberString.split(' - ');
-        if (parts.length === 2) {
-            const name = parts[0];
-            let baseTitle = parts[1];
-            const isFemaleMember = isFemale(name);
-            if (baseTitle === 'Chairman') baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
-            else if (baseTitle === 'Vice Chairman') baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
+        const titleMatch = memberString.match(/^(Senator|Representative)\s+/);
+        if (titleMatch) {
+            const title = titleMatch[0].trim();
+            const name = memberString.replace(title, '').trim();
             const lastName = name.split(' ').pop();
-            return { name, lastName, title: baseTitle };
+            return { name, lastName, title };
         } else {
-            const name = memberString;
-            const lastName = name.split(' ').pop();
-            return { name, lastName, title: null };
+            const parts = memberString.split(' - ');
+            if (parts.length === 2) {
+                const name = parts[0];
+                let baseTitle = parts[1];
+                const isFemaleMember = isFemale(name);
+                if (baseTitle === 'Chairman') baseTitle = isFemaleMember ? 'Chairwoman' : 'Chairman';
+                else if (baseTitle === 'Vice Chairman') baseTitle = isFemaleMember ? 'Vice Chairwoman' : 'Vice Chairman';
+                const lastName = name.split(' ').pop();
+                return { name, lastName, title: baseTitle };
+            } else {
+                const name = memberString;
+                const lastName = name.split(' ').pop();
+                return { name, lastName, title: null };
+            }
         }
     }
 
@@ -771,6 +810,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
+        if (path[0].step === 'testimony' && path[0].link) {
+            row.dataset.fileLink = path[0].link;
+        }
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
             editHistoryEntry(index);
@@ -800,12 +842,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         statementStartTime = entry.time;
         editingIndex = index;
     
-        // Determine the flow from the first step
         const firstStep = path[0].step;
-        const startingPoint = jsonStructure.startingPoints.find(sp => sp.options.includes(path[0].value) || sp.type === 'voteAction');
+        const startingPoint = jsonStructure.startingPoints.find(sp => sp.options.includes(path[0].value) || sp.type === 'voteAction' || sp.type === firstStep);
         if (startingPoint) {
             currentFlow = jsonStructure.flows[startingPoint.flow];
-            // Set initial currentStep based on the first step's next property
             const initialStepConfig = currentFlow.steps.find(step => step.step === firstStep);
             if (initialStepConfig && initialStepConfig.next) {
                 currentStep = typeof initialStepConfig.next === 'string' ? initialStepConfig.next : initialStepConfig.next[path[0].value] || initialStepConfig.next.default;
@@ -817,7 +857,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentStep = null;
         }
     
-        // Rebuild the flow state for subsequent steps
         path.forEach((part, i) => {
             if (i > 0 && currentFlow) {
                 const stepConfig = currentFlow.steps.find(step => step.step === part.step);
@@ -932,6 +971,101 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             console.warn('No voteAction starting point found in flows.json');
         }
+    }
+
+    function updateExternalActionsLegend() {
+        const externalActionsList = document.getElementById('externalActionsList');
+        externalActionsList.innerHTML = '';
+        const externalActions = [
+            { name: "Introduced Bill", handler: () => selectOption("Introduced Bill") },
+            { name: "Add Testimony", handler: () => openTestimonyModal() }
+        ];
+        externalActions.forEach(action => {
+            const li = document.createElement('li');
+            li.textContent = action.name;
+            li.onclick = () => {
+                if (path.length === 0) {
+                    action.handler();
+                } else {
+                    console.log('Cannot perform external action while editing existing path');
+                }
+            };
+            externalActionsList.appendChild(li);
+        });
+        console.log('External actions legend updated');
+    }
+
+    function openTestimonyModal() {
+        document.getElementById('testimonyModal').classList.add('active');
+    }
+
+    function closeTestimonyModal() {
+        document.getElementById('testimonyModal').classList.remove('active');
+    }
+
+    function submitTestimonyModal() {
+        const firstName = document.getElementById('testimonyFirstName').value.trim();
+        const lastName = document.getElementById('testimonyLastName').value.trim();
+        const role = document.getElementById('testimonyRole').value.trim();
+        const organization = document.getElementById('testimonyOrganization').value.trim();
+        const position = document.getElementById('testimonyPosition').value;
+        const number = document.getElementById('testimonyNumber').value.trim();
+        const link = document.getElementById('testimonyLink').value.trim();
+
+        if (!position) {
+            alert('Position is required.');
+            return;
+        }
+
+        const parts = [];
+        if (firstName || lastName) {
+            parts.push(`${firstName} ${lastName}`.trim());
+        }
+        if (role) parts.push(role);
+        if (organization) parts.push(organization);
+        parts.push(position);
+        if (number) parts.push(`Testimony#${number}`);
+
+        const testimonyString = parts.join(' - ');
+
+        const startTime = new Date();
+        const path = [{ step: 'testimony', value: testimonyString, link: link }];
+        const statementText = testimonyString;
+        history.push({ time: startTime, path: path, text: statementText, link: link });
+        const row = createHistoryRow(startTime, statementText, path, history.length - 1);
+        historyTableBody.insertBefore(row, historyTableBody.firstChild);
+        localStorage.setItem('historyStatements', serializeHistory(history));
+        console.log('Added testimony to history:', testimonyString);
+
+        closeTestimonyModal();
+    }
+
+    function parseTestimonyString(str) {
+        const parts = str.split(' - ').map(p => p.trim());
+        let testimonyDetails = {};
+        if (parts.length >= 1) {
+            const nameParts = parts[0].split(' ');
+            if (nameParts.length > 1) {
+                testimonyDetails.firstName = nameParts.slice(0, -1).join(' ');
+                testimonyDetails.lastName = nameParts[nameParts.length - 1];
+            } else {
+                testimonyDetails.firstName = parts[0];
+                testimonyDetails.lastName = '';
+            }
+        }
+        if (parts.length >= 2) {
+            testimonyDetails.role = parts[1];
+        }
+        if (parts.length >= 3) {
+            testimonyDetails.organization = parts[2];
+        }
+        if (parts.length >= 4) {
+            testimonyDetails.position = parts[3];
+        }
+        if (parts.length >= 5) {
+            testimonyDetails.number = parts[4].replace('Testimony#', '');
+        }
+        return testimonyDetails;
     }
 
     function isSenateCommittee(committeeName) {
@@ -1078,11 +1212,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('History cleared');
     });
 
+    document.getElementById('submitTestimonyButton').addEventListener('click', submitTestimonyModal);
+
     updateMeetingActionsLegend();
     updateVoteActionsLegend();
+    updateExternalActionsLegend();
     updateLegend();
 
     adjustHistoryLayout();
     window.addEventListener('resize', adjustHistoryLayout);
     inputDiv.addEventListener('input', adjustHistoryLayout);
+
+    window.addEventListener("message", function (event) {
+        if (event.source !== window) return;
+        if (!event.data || event.data.source !== "CLERK_EXTENSION") return;
+        if (event.data.type === "HEARING_STATEMENT") {
+            const payload = event.data.payload;
+            if (typeof payload === 'string' && payload.includes("Testimony#")) {
+                const testimonyDetails = parseTestimonyString(payload);
+                document.getElementById('testimonyFirstName').value = testimonyDetails.firstName || '';
+                document.getElementById('testimonyLastName').value = testimonyDetails.lastName || '';
+                document.getElementById('testimonyRole').value = testimonyDetails.role || '';
+                document.getElementById('testimonyOrganization').value = testimonyDetails.organization || '';
+                document.getElementById('testimonyPosition').value = testimonyDetails.position || '';
+                document.getElementById('testimonyNumber').value = testimonyDetails.number || '';
+                document.getElementById('testimonyLink').value = payload.link || '';
+                openTestimonyModal();
+            } else {
+                const startTime = new Date();
+                const statementText = String(payload);
+                const path = [{ step: 'custom', value: statementText }];
+                history.push({ time: startTime, path: path, text: statementText });
+                const row = createHistoryRow(startTime, statementText, path, history.length - 1);
+                historyTableBody.insertBefore(row, historyTableBody.firstChild);
+                localStorage.setItem('historyStatements', serializeHistory(history));
+            }
+        }
+    });
 });
