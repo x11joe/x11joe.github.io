@@ -661,8 +661,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const neutralVotes = result.neutral || 0;
                     const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
                     let motionText = baseMotionType;
-                    if (modifiers.includes('as Amended')) motionText += ' as Amended';
-                    if (rereferCommittee) motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                    if (modifiers.includes('as Amended')) {
+                        motionText += ' as Amended';
+                    }
+                    if (modifiers.includes('and Rereferred')) {
+                        if (rereferCommittee) {
+                            motionText += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                        } else {
+                            motionText += ' and Rereferred';
+                        }
+                    }
                     text = `Roll Call Vote on ${motionText} - Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
                     if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
                         const { lastName, title } = parseMember(billCarrier);
@@ -671,8 +679,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 } else {
                     text = `Roll Call Vote on ${baseMotionType}`;
-                    if (modifiers.includes('as Amended')) text += ' as Amended';
-                    if (rereferCommittee) text += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                    if (modifiers.includes('as Amended')) {
+                        text += ' as Amended';
+                    }
+                    if (modifiers.includes('and Rereferred')) {
+                        if (rereferCommittee) {
+                            text += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                        } else {
+                            text += ' and Rereferred';
+                        }
+                    }
                 }
                 return text;
             } else if (voteType === 'Voice Vote') {
@@ -740,7 +756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function createHistoryRow(time, statementText, path, index) {
         const row = document.createElement('tr');
-        const visibleTags = path.filter(p => !['motionModifiers', 'afterAmended', 'carryBillPrompt'].includes(p.step));
+        const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
