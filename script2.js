@@ -324,6 +324,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
                 currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
+            } else if (currentStep === 'rereferCommittee') {
+                path.push({ step: currentStep, value: option });
+                currentStep = 'voteModule'; // Directly transition to voteModule
             } else {
                 path.push({ step: currentStep, value: option });
                 if (stepConfig.next) {
@@ -339,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (path.length === 1) statementStartTime = new Date();
         updateInput();
-        showSuggestions('');
+        setTimeout(() => showSuggestions(''), 0); // Ensure DOM updates before showing suggestions
     }
 
     function constructVoteTagText(voteResult) {
