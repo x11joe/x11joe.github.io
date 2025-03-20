@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (stepConfig.options === "otherCommittees") {
             options = getOtherCommittees();
         } else if (stepConfig.options === "allMembers") {
-            options = allMembers;
+            options = allMembers.map(member => member.fullName); // Return array of full names
         } else if (stepConfig.options === "suggestMotionType") {
             options = suggestMotionType();
         } else if (stepConfig.options === "suggestFailedReason") {
