@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (position === 'Neutral') {
                     positionPhrase = 'as neutral';
                 } else {
-                    positionPhrase = `in ${position.toLowerCase()}`;
+                    positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
                 }
                 statement += ` and submitted testimony ${positionPhrase} #${number}`;
             }
@@ -239,22 +239,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (format === 'Written') {
                 if (organization) statement += `, ${organization}`;
                 statement += `, submitted testimony`;
+                let positionPhrase;
                 if (position === 'Neutral') {
-                    statement += ` as neutral`;
+                    positionPhrase = 'as neutral';
                 } else {
-                    statement += ` in ${position.toLowerCase()}`;
+                    positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
                 }
+                statement += ` ${positionPhrase}`;
                 if (number) statement += ` #${number}`;
             } else {
                 // In-Person or Online
                 if (role) statement += `, ${role}`;
                 if (organization) statement += `, ${organization}`;
                 statement += `, testified`;
+                let positionPhrase;
                 if (position === 'Neutral') {
-                    statement += ` as neutral`;
+                    positionPhrase = 'as neutral';
                 } else {
-                    statement += ` in ${position.toLowerCase()}`;
+                    positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
                 }
+                statement += ` ${positionPhrase}`;
                 if (number) statement += ` and submitted testimony #${number}`;
             }
         }
