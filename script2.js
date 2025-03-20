@@ -80,6 +80,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function extractLastName(option) {
+        const parts = option.split(' ');
+        return parts[parts.length - 1];
+    }
+
     function handleTestimonyPrompts(index) {
         return new Promise((resolve) => {
             const entry = history[index];
@@ -627,10 +632,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers.map(m => m.fullName) : firstStep.options);
                     if (stepOptions.includes(option)) {
                         if (firstStep.options === "committeeMembers" || firstStep.options === "allMembers") {
-                            const member = allMembers.find(m => m.fullName === option);
+                            const lastName = extractLastName(option);
+                            const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
                             if (member) {
+                                console.log('Member found:', member);
                                 path.push({ step: firstStep.step, value: option, memberNo: member.memberNo });
                             } else {
+                                console.warn('No member found for option:', option);
                                 path.push({ step: firstStep.step, value: option });
                             }
                         } else {
@@ -666,10 +674,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Current path after selection:', path);
             } else {
                 if (stepConfig.options === "committeeMembers" || stepConfig.options === "allMembers") {
-                    const member = allMembers.find(m => m.fullName === option);
+                    const lastName = extractLastName(option);
+                    const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
                     if (member) {
+                        console.log('Member found:', member);
                         path.push({ step: currentStep, value: option, memberNo: member.memberNo });
                     } else {
+                        console.warn('No member found for option:', option);
                         path.push({ step: currentStep, value: option });
                     }
                 } else {
