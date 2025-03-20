@@ -81,8 +81,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function extractLastName(option) {
-        const parts = option.split(' ');
-        return parts[parts.length - 1];
+        const parts = option.split(' - ');
+        if (parts.length > 1) {
+            // If there's a title like " - Chairman", take the name part
+            const namePart = parts[0];
+            const nameParts = namePart.split(' ');
+            return nameParts[nameParts.length - 1]; // Last word of the name part
+        } else {
+            // No title, just split the name
+            const nameParts = option.split(' ');
+            return nameParts[nameParts.length - 1];
+        }
     }
 
     function handleTestimonyPrompts(index) {
