@@ -977,7 +977,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Special format for Tech Clerk with Ctrl+Click
                     const techStatement = box.getAttribute('data-tech-statement');
                     const link = box.getAttribute('data-link');
-                    const formattedTime = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    // Format time to 12-hour format with AM/PM in uppercase, no periods
+                    const formattedTime = time.toLocaleTimeString('en-US', { 
+                        hour12: true, 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit' 
+                    });
+                    
                     const specialFormat = `${formattedTime} | ${techStatement} |   | ${link}`;
                     textToCopy = specialFormat;
                     box.classList.add('special-copied');
