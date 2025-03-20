@@ -950,7 +950,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         
-            const link = path[0].link || '';
+            // Correctly retrieve the link from testimonyDetails (path[0].details.link)
+            const link = path[0].details.link || '';
             statementHtml = `
                 <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
