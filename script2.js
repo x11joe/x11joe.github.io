@@ -368,6 +368,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         return statement;
     }
 
+    function constructMemberActionProceduralStatement(time, path) {
+        const memberString = path.find(p => p.step === 'member')?.value || '';
+        const { lastName, title } = parseMember(memberString);
+        const action = path.find(p => p.step === 'action')?.value || '';
+        const detail = path.find(p => p.step === 'movedDetail')?.value || '';
+        const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
+        const amendmentText = path.find(p => p.step === 'amendmentModule')?.value || '';
+        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+        let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+    
+        let statement = `${formattedTime} ${memberText}`;
+    
+        if (action === 'Moved') {
+            statement += ` moved ${detail}`;
+            if (rerefer) statement += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
+        } else if (action === 'Seconded') {
+            statement += ` seconded the motion`;
+        } else if (action === 'Withdrew') {
+            statement += ` withdrew the motion`;
+        } else if (action === 'Proposed Amendment') {
+            statement += ` proposed an amendment: ${amendmentText}`;
+        } else if (action === 'Introduced Bill') {
+            statement += ` introduced the bill`;
+        } else {
+            statement += ` performed action: ${action}`;
+        }
+    
+        return statement;
+    }
+
     // **New Function to Close Testimony Modal**
     function closeTestimonyModal() {
         testimonyModal.classList.remove('active');
@@ -594,7 +624,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const firstStep = currentFlow.steps[0];
                     let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers.map(m => m.fullName) : firstStep.options);
                     if (stepOptions.includes(option)) {
-                        path.push({ step: firstStep.step, value: option });
+                        if (firstStep.options === "committeeMembers" || firstStep.options === "allMembers") {
+                            const member = allMembers.find(m => m.fullName === option);
+                            if (member) {
+                                path.push({ step: firstStep.step, value: option, memberNo: member.memberNo });
+                            } else {
+                                path.push({ step: firstStep.step, value: option });
+                            }
+                        } else {
+                            path.push({ step: firstStep.step, value: option });
+                        }
                         currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
                     } else {
                         path.push({ step: startingPoint.type, value: option });
@@ -624,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Selected committee:', option, 'transitioning to voteModule');
                 console.log('Current path after selection:', path);
             } else {
-                if (currentFlow === jsonStructure.flows.introducedBillFlow && currentStep === 'member') {
+                if (stepConfig.options === "committeeMembers" || stepConfig.options === "allMembers") {
                     const member = allMembers.find(m => m.fullName === option);
                     if (member) {
                         path.push({ step: currentStep, value: option, memberNo: member.memberNo });
@@ -1084,6 +1123,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             statementHtml = `
                 <div class="statement-box tech-clerk" 
                      data-tech-statement="${techStatement}" 
+                     data-memberno="${memberNo}" 
+                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                    ${techStatement}
+                </div>
+                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+            `;
+        } else if (path[0].step === 'member') {
+            const techStatement = statementText; // e.g., "Senator Boehm - Moved Do Pass"
+            const proceduralStatement = constructMemberActionProceduralStatement(time, path);
+            const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
+            const link = ''; // No link for committee member actions
+            statementHtml = `
+                <div class="statement-box tech-clerk" 
+                     data-tech-statement="${techStatement}" 
+                     data-link="${link}" 
                      data-memberno="${memberNo}" 
                      title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement}
