@@ -263,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function populateTestimonyModal(part) {
         setTimeout(() => {
+            console.log('populateTestimonyModal called with:', part);
             let testimonyDetails;
             if (part.details) {
                 testimonyDetails = part.details;
@@ -281,14 +282,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const linkInput = document.getElementById('testimonyLink');
             const formatSelect = document.getElementById('testimonyFormat');
     
-            // Populate fields only if elements exist
             if (firstNameInput) firstNameInput.value = testimonyDetails.firstName || '';
             if (lastNameInput) lastNameInput.value = testimonyDetails.lastName || '';
             if (roleInput) roleInput.value = testimonyDetails.role || '';
             if (organizationInput) organizationInput.value = testimonyDetails.organization || '';
             if (positionSelect) positionSelect.value = testimonyDetails.position || '';
             if (numberInput) numberInput.value = testimonyDetails.number || '';
-            if (linkInput) linkInput.value = testimonyDetails.link || ''; // Fixed to use testimonyDetails.link
+            if (linkInput) linkInput.value = testimonyDetails.link || '';
             if (formatSelect) {
                 formatSelect.value = testimonyDetails.format || 'Online';
                 console.log('Set testimonyFormat to:', formatSelect.value);
@@ -914,13 +914,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-    
+        
         let statementHtml = '';
         if (path[0].step === 'testimony') {
             let techStatement = statementText; // Tech Clerk statement without format
             const testimonyDetails = path[0].details;
             let proceduralStatement;
-    
+        
             // Handle bill introduction case
             if (testimonyDetails.isIntroducingBill) {
                 const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
-    
+        
             // Prompt for bill introduction if not already marked
             if (!testimonyDetails.isIntroducingBill && /Representative|Senator/.test(techStatement)) {
                 const confirmation = confirm("Is this a Representative or Senator introducing a bill?");
@@ -939,7 +939,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const lastName = testimonyDetails.lastName;
                     techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
                     proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
-    
+        
                     // Update the history entry
                     history[index].text = techStatement;
                     history[index].path[0].value = techStatement;
@@ -947,7 +947,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     localStorage.setItem('historyStatements', serializeHistory(history));
                 }
             }
-    
+        
             const link = path[0].link || '';
             statementHtml = `
                 <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
@@ -956,15 +956,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             statementHtml = `<div class="statement-box">${statementText}</div>`;
         }
-    
-        // Rest of the function remains unchanged...
+        
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
-        // Event listeners and other logic...
+        
+        // Add click listeners to statement boxes for copying
+        const statementBoxes = row.querySelectorAll('.statement-box');
+        statementBoxes.forEach(box => {
+            box.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let textToCopy;
+                if (box.classList.contains('tech-clerk') && e.ctrlKey) {
+                    // Special format for Tech Clerk with Ctrl+Click
+                    const techStatement = box.getAttribute('data-tech-statement');
+                    const link = box.getAttribute('data-link');
+                    const formattedTime = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${link}`;
+                    textToCopy = specialFormat;
+                    box.classList.add('special-copied');
+                    setTimeout(() => box.classList.remove('special-copied'), 500);
+                } else {
+                    textToCopy = box.textContent; // Includes timestamp for Procedural Clerk
+                    box.classList.add('copied');
+                    setTimeout(() => box.classList.remove('copied'), 500);
+                }
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    console.log('Copied to clipboard:', textToCopy);
+                });
+            });
+        });
+        
+        // Attach event listener for edit icon
+        const editIcon = row.querySelector('.edit-icon');
+        editIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Edit button clicked for index:', index);
+            editHistoryEntry(index);
+        });
+        
+        row.querySelector('.delete-icon').onclick = (e) => {
+            e.stopPropagation();
+            deleteHistoryEntry(index);
+        };
+        
         return row;
     }
 
@@ -977,6 +1015,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function editHistoryEntry(index) {
         const entry = history[index];
+        console.log('Editing entry at index:', index, 'entry:', entry);
         path = [...entry.path];
         statementStartTime = entry.time;
         editingIndex = index;
@@ -1015,12 +1054,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateInput();
         showSuggestions('');
     
-        // If it's a testimony entry, directly open the modal
         if (path.length === 1 && path[0].step === 'testimony') {
-            console.log('Editing testimony entry, opening modal with:', path[0]);
+            console.log('Testimony entry detected. Path[0]:', path[0]);
             populateTestimonyModal(path[0]);
             openTestimonyModal(null, true);
             editingTestimonyIndex = 0;
+        } else {
+            console.log('Not a testimony entry. Path:', path);
         }
     }
 
@@ -1149,15 +1189,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function openTestimonyModal(testimonyDetails = null, isEditing = false) {
-        // Set button text based on isEditing flag
+        console.log('openTestimonyModal called, isEditing:', isEditing);
         if (isEditing) {
             submitTestimonyButton.textContent = 'Save Testimony';
         } else {
             submitTestimonyButton.textContent = 'Add Testimony';
         }
-    
         if (testimonyDetails) {
-            // Pre-fill from extension payload (adding a new testimony)
             const nameParts = testimonyDetails.name ? testimonyDetails.name.split(', ').map(s => s.trim()) : [];
             const lastName = nameParts[0] || '';
             const firstName = nameParts.slice(1).join(', ') || '';
@@ -1184,10 +1222,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }, 0);
         } else if (!isEditing) {
-            // Reset fields when adding manually
             resetTestimonyModal();
         }
-        // For editing, fields are populated via populateTestimonyModal before calling this
         testimonyModal.classList.add('active');
         console.log('Modal opened, isEditing:', isEditing, 'button text:', submitTestimonyButton.textContent);
     }
