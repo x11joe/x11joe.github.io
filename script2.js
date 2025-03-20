@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedDropdownIndex = -1;
     let lastAction = null;
     let lastMovedDetail = null;
+    let lastRereferCommittee = null;
+    let amendmentPassed = false;
     let editingTestimonyIndex = null; // Track if we're editing a testimony entry
+    
     
 
     const inputDiv = document.getElementById('input');
@@ -283,8 +286,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             options = suggestFailedReason();
         } else if (Array.isArray(stepConfig.options)) {
             options = stepConfig.options;
-            if (stepType === 'motionModifiers' || stepType === 'afterAmended') {
-                options = ['Take the Vote', ...options.filter(opt => opt !== 'Take the Vote')];
+            if (stepType === 'motionModifiers') {
+                if (amendmentPassed && lastRereferCommittee) {
+                    options = ['as Amended', 'and Rereferred', 'Take the Vote'].filter(opt => stepConfig.options.includes(opt));
+                } else if (amendmentPassed) {
+                    options = ['as Amended', 'Take the Vote', 'and Rereferred'].filter(opt => stepConfig.options.includes(opt));
+                } else if (lastRereferCommittee) {
+                    options = ['and Rereferred', 'Take the Vote', 'as Amended'].filter(opt => stepConfig.options.includes(opt));
+                } else {
+                    options = ['Take the Vote', 'as Amended', 'and Rereferred'];
+                }
+            } else if (stepType === 'afterAmended') {
+                if (lastRereferCommittee) {
+                    options = ['and Rereferred', 'Take the Vote'];
+                } else {
+                    options = ['Take the Vote', 'and Rereferred'];
+                }
             } else if (stepType === 'rollCallBaseMotionType' && lastMovedDetail && options.includes(lastMovedDetail)) {
                 options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
             }
@@ -336,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { firstName, lastName, role, organization, position, number, format, introducingBill, title } = testimonyDetails;
         const fullName = `${firstName} ${lastName}`.trim();
         
-        // Format time to 12-hour format without seconds (e.g., "8:52 a.m.")
+        // Format time to 12-hour format without seconds (e.g., "4:10 p.m.")
         const hours = time.getHours();
         const minutes = time.getMinutes().toString().padStart(2, '0');
         const period = hours >= 12 ? 'p.m.' : 'a.m.';
@@ -395,11 +412,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const detail = path.find(p => p.step === 'movedDetail')?.value || '';
         const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
         const amendmentText = path.find(p => p.step === 'amendmentModule')?.value || '';
-        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+        
+        // Format time to 12-hour format without seconds (e.g., "4:10 p.m.")
+        const hours = time.getHours();
+        const minutes = time.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'p.m.' : 'a.m.';
+        const formattedHours = hours % 12 || 12;
+        const formattedTime = `${formattedHours}:${minutes} ${period}`;
+        
         let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-    
+        
         let statement = `${formattedTime} ${memberText}`;
-    
+        
         if (action === 'Moved') {
             statement += ` moved ${detail}`;
             if (rerefer) statement += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
@@ -414,7 +438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             statement += ` performed action: ${action}`;
         }
-    
+        
         return statement;
     }
 
@@ -931,9 +955,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function finalizeStatement() {
         if (path.length === 0) return;
-    
+        
         const statementText = constructStatementText(path);
-    
+        
         if (currentFlow === jsonStructure.flows.committeeMemberFlow) {
             const actionPart = path.find(p => p.step === 'action');
             if (actionPart) {
@@ -945,12 +969,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                         lastMovedDetail = detailPart.value;
                         console.log('Updated lastMovedDetail to:', lastMovedDetail);
                     }
+                    const rereferPart = path.find(p => p.step === 'rereferOptional');
+                    if (rereferPart) {
+                        lastRereferCommittee = rereferPart.value;
+                        console.log('Updated lastRereferCommittee to:', lastRereferCommittee);
+                    } else {
+                        lastRereferCommittee = null;
+                    }
+                }
+            }
+        } else if (currentFlow === jsonStructure.flows.voteActionFlow) {
+            const voteType = path.find(p => p.step === 'voteType')?.value;
+            if (voteType === 'Voice Vote') {
+                const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value;
+                const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value;
+                if (onWhat === 'Amendment' && outcome === 'Passed') {
+                    amendmentPassed = true;
+                    console.log('Amendment passed, setting amendmentPassed to true');
                 }
             }
         }
-    
+        
         const startTime = statementStartTime || new Date();
-    
+        
         if (editingIndex !== null) {
             history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '' };
             console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
@@ -972,9 +1013,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 0);
             console.log('Added new history entry:', history[history.length - 1]);
         }
-    
+        
         localStorage.setItem('historyStatements', serializeHistory(history));
-    
+        
         editingIndex = null;
         path = [];
         currentFlow = null;
@@ -1118,13 +1159,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-    
+        
         let statementHtml = '';
         if (path[0].step === 'testimony') {
             const testimonyDetails = path[0].details;
             let techStatement = statementText; // Set by handleTestimonyPrompts
             let proceduralStatement;
-    
+        
             if (testimonyDetails.isIntroducingBill) {
                 proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
             } else if (testimonyDetails.isSenatorRepresentative) {
@@ -1134,16 +1175,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
-    
+        
             const link = testimonyDetails.link || '';
             const memberNo = testimonyDetails.memberNo || '';
             statementHtml = `
                 <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement}" 
+                     data-tech-statement="${techStatement.trim()}" 
                      data-link="${link}" 
                      data-memberno="${memberNo}" 
                      title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
-                    ${techStatement}
+                    ${techStatement.trim()}
                 </div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
@@ -1155,10 +1196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const proceduralStatement = constructProceduralStatement(time, { lastName, title, introducingBill: true });
             statementHtml = `
                 <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement}" 
+                     data-tech-statement="${techStatement.trim()}" 
                      data-memberno="${memberNo}" 
                      title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
-                    ${techStatement}
+                    ${techStatement.trim()}
                 </div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
@@ -1169,25 +1210,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const link = ''; // No link for committee member actions
             statementHtml = `
                 <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement}" 
+                     data-tech-statement="${techStatement.trim()}" 
                      data-link="${link}" 
                      data-memberno="${memberNo}" 
                      title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
-                    ${techStatement}
+                    ${techStatement.trim()}
                 </div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
         } else {
-            statementHtml = `<div class="statement-box">${statementText}</div>`;
+            statementHtml = `<div class="statement-box">${statementText.trim()}</div>`;
         }
-    
+        
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
-    
+        
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
             box.addEventListener('click', (e) => {
@@ -1212,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     box.classList.add('special-copied');
                     setTimeout(() => box.classList.remove('special-copied'), 500);
                 } else {
-                    textToCopy = box.textContent;
+                    textToCopy = box.textContent.trim(); // Ensure no extra whitespace
                     box.classList.add('copied');
                     setTimeout(() => box.classList.remove('copied'), 500);
                 }
@@ -1221,19 +1262,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
         });
-    
+        
         const editIcon = row.querySelector('.edit-icon');
         editIcon.addEventListener('click', (e) => {
             e.stopPropagation();
             console.log('Edit button clicked for index:', index);
             editHistoryEntry(index);
         });
-    
+        
         row.querySelector('.delete-icon').onclick = (e) => {
             e.stopPropagation();
             deleteHistoryEntry(index);
         };
-    
+        
         return row;
     }
 
