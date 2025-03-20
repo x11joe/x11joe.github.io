@@ -965,7 +965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let proceduralStatement;
         
             if (testimonyDetails.isIntroducingBill) {
-                const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
+                const title = testimonyDetails.title || (/representative/i.test(testimonyDetails.role) ? "Representative" : "Senator");
                 const lastName = testimonyDetails.lastName;
                 techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
                 proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
@@ -973,10 +973,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
         
-            if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && /Representative|Senator/.test(techStatement)) {
+            if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && testimonyDetails.role && /representative|senator/i.test(testimonyDetails.role)) {
                 showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
                     if (confirmation) {
-                        const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
+                        const title = /representative/i.test(testimonyDetails.role) ? "Representative" : "Senator";
                         const lastName = testimonyDetails.lastName;
                         const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
                         const memberNo = findMemberNo(lastName, title, firstInitial);
@@ -989,7 +989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
                         history[index].text = techStatement;
                         history[index].path[0].value = techStatement;
-                        history[index].path[0].details = { ...testimonyDetails, isIntroducingBill: true, memberNo };
+                        history[index].path[0].details = { ...testimonyDetails, isIntroducingBill: true, memberNo, title };
                         localStorage.setItem('historyStatements', serializeHistory(history));
                         updateHistoryTable();
                     } else {
@@ -1052,7 +1052,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         minute: '2-digit', 
                         second: '2-digit' 
                     });
-                    // Format memberNo as member-no:{memberNo};Mic: if present
                     let memberNoFormatted = memberNo ? `member-no:${memberNo};Mic:` : '';
                     let specialFormat = `${formattedTime} | ${techStatement} | ${memberNoFormatted} |`;
                     if (link) {
@@ -1398,23 +1397,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (number) parts.push(`Testimony#${number}`);
     
         const testimonyString = parts.join(' - ');
-        const testimonyObject = { 
-            firstName, 
-            lastName, 
-            role, 
-            organization, 
-            position, 
-            number, 
-            format, 
-            link,
-            isIntroducingBill: false,           // Initialize to false
-            promptedForBillIntroduction: false  // Initialize to false
-        };
     
         if (editingTestimonyIndex !== null) {
             const existingDetails = path[editingTestimonyIndex].details || {};
             const updatedDetails = {
-                ...existingDetails,             // Preserve existing flags
+                ...existingDetails,
                 firstName,
                 lastName,
                 role,
@@ -1422,7 +1409,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 position,
                 number,
                 format,
-                link
+                link,
+                isIntroducingBill: false,           // Reset to false on edit
+                promptedForBillIntroduction: false  // Reset to false on edit
             };
             path[editingTestimonyIndex].value = testimonyString;
             path[editingTestimonyIndex].details = updatedDetails;
@@ -1434,6 +1423,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showSuggestions('');
             }
         } else {
+            const testimonyObject = { 
+                firstName, 
+                lastName, 
+                role, 
+                organization, 
+                position, 
+                number, 
+                format, 
+                link,
+                isIntroducingBill: false,
+                promptedForBillIntroduction: false
+            };
             const startTime = new Date();
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
