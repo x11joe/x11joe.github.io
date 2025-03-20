@@ -932,23 +932,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         
             // Custom confirmation dialog for bill introduction
-            if (!testimonyDetails.isIntroducingBill && /Representative|Senator/.test(techStatement)) {
+            if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && /Representative|Senator/.test(techStatement)) {
                 showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
                     if (confirmation) {
                         const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
                         const lastName = testimonyDetails.lastName;
                         techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
                         proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
-        
-                        // Update the history entry
                         history[index].text = techStatement;
                         history[index].path[0].value = techStatement;
                         history[index].path[0].details.isIntroducingBill = true;
-                        localStorage.setItem('historyStatements', serializeHistory(history));
-        
-                        // Re-render the row with updated statements
-                        updateHistoryTable();
+                    } else {
+                        history[index].path[0].details.promptedForBillIntroduction = true; // Remember 'no' choice
                     }
+                    localStorage.setItem('historyStatements', serializeHistory(history)); // Save history
+                    updateHistoryTable(); // Update table to reflect changes
                 });
             }
         
@@ -1319,14 +1317,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (organization) parts.push(organization);
         parts.push(position);
         if (number) parts.push(`Testimony#${number}`);
-        // Exclude format from testimonyString (Tech Clerk version)
     
         const testimonyString = parts.join(' - ');
-        const testimonyObject = { firstName, lastName, role, organization, position, number, format, link };
+        const testimonyObject = { 
+            firstName, 
+            lastName, 
+            role, 
+            organization, 
+            position, 
+            number, 
+            format, 
+            link,
+            isIntroducingBill: false,           // Initialize to false
+            promptedForBillIntroduction: false  // Initialize to false
+        };
     
         if (editingTestimonyIndex !== null) {
+            const existingDetails = path[editingTestimonyIndex].details || {};
+            const updatedDetails = {
+                ...existingDetails,             // Preserve existing flags
+                firstName,
+                lastName,
+                role,
+                organization,
+                position,
+                number,
+                format,
+                link
+            };
             path[editingTestimonyIndex].value = testimonyString;
-            path[editingTestimonyIndex].details = testimonyObject;
+            path[editingTestimonyIndex].details = updatedDetails;
             closeTestimonyModal();
             if (editingIndex !== null) {
                 finalizeStatement();
