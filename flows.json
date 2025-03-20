@@ -25,7 +25,7 @@
                 { "step": "voteType", "type": "select", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "next": { "Roll Call Vote": "rollCallBaseMotionType", "Voice Vote": "voiceVoteOn", "Motion Failed": "motionFailedReason" } },
                 { "step": "rollCallBaseMotionType", "type": "select", "options": ["Do Pass", "Do Not Pass", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "motionModifiers", "Do Not Pass": "motionModifiers", "Reconsider": "voteModule", "Without Committee Recommendation": "motionModifiers" } },
                 { "step": "motionModifiers", "type": "select", "options": ["Take the Vote", "as Amended", "and Rereferred"], "next": { "Take the Vote": "voteModule", "as Amended": "afterAmended", "and Rereferred": "rereferCommittee" } },
-                { "step": "afterAmended", "type": "select", "options": ["Take the Vote", "and Rereferred"], "next": { "Take the Vote": "voteModule", "and Rereferred": "rereferCommittee" } },
+                { "step": "afterAmended", "type": "select", "options": ["Take the Vote", "and Rereferred"], "next": { "Take the Vote": "voteModule", "and Rereferred": "voteModule" } },
                 { "step": "rereferCommittee", "type": "select", "options": "otherCommittees", "next": "voteModule" },
                 { "step": "voteModule", "type": "module", "fields": [
                     { "name": "for", "type": "number" },
