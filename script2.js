@@ -210,13 +210,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to construct the Procedural Clerk statement
-    function constructProceduralStatement(testimonyDetails) {
+    function constructProceduralStatement(time, testimonyDetails) {
         const { firstName, lastName, role, organization, position, number, format } = testimonyDetails;
         const fullName = `${firstName} ${lastName}`.trim();
-        let statement = '';
-
+        
+        // Format time to 12-hour format without seconds
+        const hours = time.getHours();
+        const minutes = time.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'p.m.' : 'a.m.';
+        const formattedHours = hours % 12 || 12;
+        const formattedTime = `${formattedHours}:${minutes} ${period}`;
+        
+        let statement = `${formattedTime} ${fullName}`;
+        
         if (format === 'Written') {
-            statement = `${fullName}`;
             if (organization) statement += `, ${organization}`;
             statement += `, submitted testimony`;
             if (position === 'Neutral') {
@@ -227,7 +234,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (number) statement += ` #${number}`;
         } else {
             // In-Person or Online
-            statement = `${fullName}`;
             if (role) statement += `, ${role}`;
             if (organization) statement += `, ${organization}`;
             statement += `, testified`;
@@ -238,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             if (number) statement += ` and submitted testimony #${number}`;
         }
-
+        
         return statement;
     }
 
@@ -902,20 +908,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-    
+        
         let statementHtml = '';
         if (path[0].step === 'testimony') {
             const testimonyDetails = path[0].details;
             const techStatement = statementText; // Tech Clerk statement without format
-            const proceduralStatement = constructProceduralStatement(testimonyDetails);
+            const proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             statementHtml = `
-                <div class="statement-box tech-clerk" title="Copy Tech Clerk Statement">${techStatement}</div>
+                <div class="statement-box tech-clerk" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
         } else {
             statementHtml = `<div class="statement-box">${statementText}</div>`;
         }
-    
+        
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
@@ -925,19 +931,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path[0].step === 'testimony' && path[0].link) {
             row.dataset.fileLink = path[0].link;
         }
-    
+        
         // Add click listeners to statement boxes for copying
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
             box.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const textToCopy = box.textContent;
+                let textToCopy;
+                if (box.classList.contains('tech-clerk') && e.ctrlKey) {
+                    // Special format for Tech Clerk with Ctrl+Click
+                    const formattedTime = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${path[0].link || ''}`;
+                    textToCopy = specialFormat;
+                    box.classList.add('special-copied');
+                    setTimeout(() => box.classList.remove('special-copied'), 500);
+                } else {
+                    textToCopy = box.textContent;
+                    box.classList.add('copied');
+                    setTimeout(() => box.classList.remove('copied'), 500);
+                }
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     console.log('Copied to clipboard:', textToCopy);
                 });
             });
         });
-    
+        
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
             editHistoryEntry(index);
@@ -946,7 +964,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.stopPropagation();
             deleteHistoryEntry(index);
         };
-    
+        
         return row;
     }
 

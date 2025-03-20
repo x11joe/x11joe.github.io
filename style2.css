@@ -348,3 +348,25 @@ label {
 .procedural-clerk {
     border-color: #28a745; /* Green border for Procedural Clerk */
 }
+
+/* Glow effect for normal copy */
+.statement-box.copied {
+    animation: glow 0.5s ease-in-out;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 5px #007bff; }
+    50% { box-shadow: 0 0 20px #007bff; }
+    100% { box-shadow: 0 0 5px #007bff; }
+}
+
+/* Glow effect for special copy */
+.statement-box.special-copied {
+    animation: special-glow 0.5s ease-in-out;
+}
+
+@keyframes special-glow {
+    0% { box-shadow: 0 0 5px #28a745; }
+    50% { box-shadow: 0 0 20px #28a745; }
+    100% { box-shadow: 0 0 5px #28a745; }
+}
