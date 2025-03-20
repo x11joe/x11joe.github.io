@@ -35,7 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedSuggestionIndex = -1;
     let selectedDropdownIndex = -1;
     let lastAction = null;
+    let lastMovedDetail = null;
     let editingTestimonyIndex = null; // Track if we're editing a testimony entry
+    
 
     const inputDiv = document.getElementById('input');
     const modal = document.getElementById('modal');
@@ -283,6 +285,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             options = stepConfig.options;
             if (stepType === 'motionModifiers' || stepType === 'afterAmended') {
                 options = ['Take the Vote', ...options.filter(opt => opt !== 'Take the Vote')];
+            } else if (stepType === 'rollCallBaseMotionType' && lastMovedDetail && options.includes(lastMovedDetail)) {
+                options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
             }
         }
         return options;
@@ -935,6 +939,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (actionPart) {
                 lastAction = actionPart.value;
                 console.log('Updated lastAction to:', lastAction);
+                if (lastAction === 'Moved') {
+                    const detailPart = path.find(p => p.step === 'movedDetail');
+                    if (detailPart) {
+                        lastMovedDetail = detailPart.value;
+                        console.log('Updated lastMovedDetail to:', lastMovedDetail);
+                    }
+                }
             }
         }
     
@@ -1671,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
-        } else if (e.key === 'Tab') {
+        } else if (e.key === 'Tab' || e.key === 'ArrowRight') {
             e.preventDefault();
             if (modal.classList.contains('active')) {
                 const suggestions = modal.querySelectorAll('.option');
