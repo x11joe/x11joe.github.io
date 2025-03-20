@@ -108,6 +108,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const title = determineTitle(testimonyDetails.organization);
                         if (title) {
                             testimonyDetails.title = title;
+                            // Find memberNo for all senators/representatives
+                            const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
+                            const memberNo = findMemberNo(testimonyDetails.lastName, title, firstInitial);
+                            if (memberNo) {
+                                testimonyDetails.memberNo = memberNo;
+                            } else {
+                                console.warn('Could not find memberNo for', title, testimonyDetails.lastName);
+                            }
     
                             showCustomConfirm("Are they introducing a bill?").then((isIntroducing) => {
                                 testimonyDetails.isIntroducingBill = isIntroducing;
@@ -116,16 +124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 if (isIntroducing) {
                                     // Introducing a bill: standard format
                                     entry.text = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                                    // Find memberNo
-                                    const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
-                                    const memberNo = findMemberNo(lastName, title, firstInitial);
-                                    if (memberNo) {
-                                        testimonyDetails.memberNo = memberNo;
-                                    } else {
-                                        console.warn('Could not find memberNo for', title, lastName);
-                                    }
                                 } else {
-                                    // Not introducing a bill: custom format with last name only
+                                    // Not introducing a bill: custom format with position
                                     entry.text = `${title} ${lastName} - ${testimonyDetails.position} - Testimony#${testimonyDetails.number}`;
                                 }
     
