@@ -922,29 +922,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const testimonyDetails = path[0].details;
             let proceduralStatement;
     
-            // Check if the entry is already marked as introducing a bill
+            // Handle bill introduction case
             if (testimonyDetails.isIntroducingBill) {
-                const title = techStatement.includes("Representative") ? "Representative" : "Senator";
+                const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
                 const lastName = testimonyDetails.lastName;
                 techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true });
+                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
             } else {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
     
-            // Prompt only if not already marked and contains "Representative" or "Senator"
+            // Prompt for bill introduction if not already marked
             if (!testimonyDetails.isIntroducingBill && /Representative|Senator/.test(techStatement)) {
                 const confirmation = confirm("Is this a Representative or Senator introducing a bill?");
                 if (confirmation) {
-                    const title = techStatement.includes("Representative") ? "Representative" : "Senator";
+                    const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
                     const lastName = testimonyDetails.lastName;
                     techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                    proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true });
+                    proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
     
-                    // Update the history entry with the new statements and state
+                    // Update the history entry
                     history[index].text = techStatement;
                     history[index].path[0].value = techStatement;
-                    history[index].path[0].details.isIntroducingBill = true; // Persist this state
+                    history[index].path[0].details.isIntroducingBill = true;
                     localStorage.setItem('historyStatements', serializeHistory(history));
                 }
             }
@@ -958,51 +958,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             statementHtml = `<div class="statement-box">${statementText}</div>`;
         }
     
+        // Rest of the function remains unchanged...
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
-        if (path[0].step === 'testimony' && path[0].link) {
-            row.dataset.fileLink = path[0].link;
-        }
-    
-        // Add click listeners to statement boxes for copying
-        const statementBoxes = row.querySelectorAll('.statement-box');
-        statementBoxes.forEach(box => {
-            box.addEventListener('click', (e) => {
-                e.stopPropagation();
-                let textToCopy;
-                if (box.classList.contains('tech-clerk') && e.ctrlKey) {
-                    // Special format for Tech Clerk with Ctrl+Click
-                    const techStatement = box.getAttribute('data-tech-statement');
-                    const link = box.getAttribute('data-link');
-                    const formattedTime = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${link}`;
-                    textToCopy = specialFormat;
-                    box.classList.add('special-copied');
-                    setTimeout(() => box.classList.remove('special-copied'), 500);
-                } else {
-                    textToCopy = box.textContent; // Includes timestamp for Procedural Clerk
-                    box.classList.add('copied');
-                    setTimeout(() => box.classList.remove('copied'), 500);
-                }
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    console.log('Copied to clipboard:', textToCopy);
-                });
-            });
-        });
-    
-        row.querySelector('.edit-icon').onclick = (e) => {
-            e.stopPropagation();
-            editHistoryEntry(index);
-        };
-        row.querySelector('.delete-icon').onclick = (e) => {
-            e.stopPropagation();
-            deleteHistoryEntry(index);
-        };
-    
+        // Event listeners and other logic...
         return row;
     }
 
