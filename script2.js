@@ -68,6 +68,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Committee changed to:', currentCommittee);
     });
 
+    function determineTitle(org) {
+        const orgLower = org.toLowerCase();
+        if (/house/.test(orgLower)) {
+            return "Representative";
+        } else if (/senate/.test(orgLower)) {
+            return "Senator";
+        } else {
+            return null;
+        }
+    }
+
+    function handleTestimonyPrompts(index) {
+        return new Promise((resolve) => {
+            const entry = history[index];
+            if (entry.path[0].step !== 'testimony') {
+                resolve();
+                return;
+            }
+    
+            const testimonyDetails = entry.path[0].details;
+            const orgLower = testimonyDetails.org ? testimonyDetails.org.toLowerCase() : '';
+            const keywordsRegex = /representative|representatives|senator|senators/i;
+    
+            // Check if keywords are present and prompt hasn't been shown
+            if (keywordsRegex.test(orgLower) && !testimonyDetails.promptedForSenatorRepresentative) {
+                showCustomConfirm("Is this a senator or representative?").then((isSenRep) => {
+                    testimonyDetails.promptedForSenatorRepresentative = true;
+    
+                    if (isSenRep) {
+                        testimonyDetails.isSenatorRepresentative = true;
+                        const title = determineTitle(testimonyDetails.org);
+                        if (title) {
+                            testimonyDetails.title = title;
+    
+                            showCustomConfirm("Are they introducing a bill?").then((isIntroducing) => {
+                                testimonyDetails.isIntroducingBill = isIntroducing;
+                                const lastName = testimonyDetails.lastName;
+    
+                                if (isIntroducing) {
+                                    // Introducing a bill: standard format
+                                    entry.text = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+                                    // Find memberNo
+                                    const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
+                                    const memberNo = findMemberNo(lastName, title, firstInitial);
+                                    if (memberNo) {
+                                        testimonyDetails.memberNo = memberNo;
+                                    } else {
+                                        console.warn('Could not find memberNo for', title, lastName);
+                                    }
+                                } else {
+                                    // Not introducing a bill: custom format with last name only
+                                    entry.text = `${title} ${lastName} - ${testimonyDetails.position} - Testimony#${testimonyDetails.number}`;
+                                }
+    
+                                entry.path[0].value = entry.text;
+                                entry.path[0].details = { ...testimonyDetails };
+                                localStorage.setItem('historyStatements', serializeHistory(history));
+                                resolve();
+                            });
+                        } else {
+                            console.warn('Could not determine title from org:', testimonyDetails.org);
+                            resolve();
+                        }
+                    } else {
+                        testimonyDetails.isSenatorRepresentative = false;
+                        entry.path[0].details = { ...testimonyDetails };
+                        localStorage.setItem('historyStatements', serializeHistory(history));
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
+        });
+    }
+
     function resetTestimonyModal() {
         document.getElementById('testimonyFirstName').value = '';
         document.getElementById('testimonyLastName').value = '';
@@ -783,9 +859,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function finalizeStatement() {
         if (path.length === 0) return;
-        
+    
         const statementText = constructStatementText(path);
-
+    
         if (currentFlow === jsonStructure.flows.committeeMemberFlow) {
             const actionPart = path.find(p => p.step === 'action');
             if (actionPart) {
@@ -793,13 +869,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Updated lastAction to:', lastAction);
             }
         }
-
+    
         const startTime = statementStartTime || new Date();
-        
+    
         if (editingIndex !== null) {
             history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '' };
             console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
-            updateHistoryTable();
+            if (path[0].step === 'testimony') {
+                handleTestimonyPrompts(editingIndex).then(() => {
+                    updateHistoryTable();
+                });
+            } else {
+                updateHistoryTable();
+            }
         } else {
             history.push({ time: startTime, path: [...path], text: statementText, link: '' });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
@@ -811,9 +893,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 0);
             console.log('Added new history entry:', history[history.length - 1]);
         }
-        
+    
         localStorage.setItem('historyStatements', serializeHistory(history));
-        
+    
         editingIndex = null;
         path = [];
         currentFlow = null;
@@ -957,48 +1039,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-        
+    
         let statementHtml = '';
         if (path[0].step === 'testimony') {
-            let techStatement = statementText;
             const testimonyDetails = path[0].details;
+            let techStatement = statementText; // Set by handleTestimonyPrompts
             let proceduralStatement;
-        
+    
             if (testimonyDetails.isIntroducingBill) {
-                const title = testimonyDetails.title || (/representative/i.test(testimonyDetails.role) ? "Representative" : "Senator");
-                const lastName = testimonyDetails.lastName;
-                techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
+                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
+            } else if (testimonyDetails.isSenatorRepresentative) {
+                const positionLower = testimonyDetails.position.toLowerCase();
+                const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+                proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified in ${positionLower} and submitted testimony #${testimonyDetails.number}`;
             } else {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
-        
-            if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && testimonyDetails.role && /representative|senator/i.test(testimonyDetails.role)) {
-                showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
-                    if (confirmation) {
-                        const title = /representative/i.test(testimonyDetails.role) ? "Representative" : "Senator";
-                        const lastName = testimonyDetails.lastName;
-                        const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
-                        const memberNo = findMemberNo(lastName, title, firstInitial);
-                        if (memberNo) {
-                            testimonyDetails.memberNo = memberNo;
-                        } else {
-                            console.warn('Could not find memberNo for', title, lastName);
-                        }
-                        techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                        proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
-                        history[index].text = techStatement;
-                        history[index].path[0].value = techStatement;
-                        history[index].path[0].details = { ...testimonyDetails, isIntroducingBill: true, memberNo, title };
-                        localStorage.setItem('historyStatements', serializeHistory(history));
-                        updateHistoryTable();
-                    } else {
-                        history[index].path[0].details.promptedForBillIntroduction = true;
-                        localStorage.setItem('historyStatements', serializeHistory(history));
-                    }
-                });
-            }
-        
+    
             const link = testimonyDetails.link || '';
             const memberNo = testimonyDetails.memberNo || '';
             statementHtml = `
@@ -1029,14 +1086,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             statementHtml = `<div class="statement-box">${statementText}</div>`;
         }
-        
+    
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
-        
+    
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
             box.addEventListener('click', (e) => {
@@ -1046,11 +1103,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const techStatement = box.getAttribute('data-tech-statement');
                     const link = box.getAttribute('data-link') || '';
                     const memberNo = box.getAttribute('data-memberno') || '';
-                    const formattedTime = time.toLocaleTimeString('en-US', { 
-                        hour12: true, 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit' 
+                    const formattedTime = time.toLocaleTimeString('en-US', {
+                        hour12: true,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
                     });
                     let memberNoFormatted = memberNo ? `member-no:${memberNo};Mic:` : '';
                     let specialFormat = `${formattedTime} | ${techStatement} | ${memberNoFormatted} |`;
@@ -1070,19 +1127,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
         });
-        
+    
         const editIcon = row.querySelector('.edit-icon');
         editIcon.addEventListener('click', (e) => {
             e.stopPropagation();
             console.log('Edit button clicked for index:', index);
             editHistoryEntry(index);
         });
-        
+    
         row.querySelector('.delete-icon').onclick = (e) => {
             e.stopPropagation();
             deleteHistoryEntry(index);
         };
-        
+    
         return row;
     }
 
@@ -1410,8 +1467,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 number,
                 format,
                 link,
-                isIntroducingBill: false,           // Reset to false on edit
-                promptedForBillIntroduction: false  // Reset to false on edit
+                promptedForSenatorRepresentative: false,
+                isSenatorRepresentative: false,
+                isIntroducingBill: false,
+                title: null
             };
             path[editingTestimonyIndex].value = testimonyString;
             path[editingTestimonyIndex].details = updatedDetails;
@@ -1423,26 +1482,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showSuggestions('');
             }
         } else {
-            const testimonyObject = { 
-                firstName, 
-                lastName, 
-                role, 
-                organization, 
-                position, 
-                number, 
-                format, 
+            const testimonyObject = {
+                firstName,
+                lastName,
+                role,
+                organization,
+                position,
+                number,
+                format,
                 link,
+                promptedForSenatorRepresentative: false,
+                isSenatorRepresentative: false,
                 isIntroducingBill: false,
-                promptedForBillIntroduction: false
+                title: null
             };
             const startTime = new Date();
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
-            const row = createHistoryRow(startTime, testimonyString, [pathEntry], history.length - 1);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild);
-            localStorage.setItem('historyStatements', serializeHistory(history));
-            console.log('Added testimony to history:', testimonyString);
-            closeTestimonyModal();
+            const index = history.length - 1;
+            handleTestimonyPrompts(index).then(() => {
+                const row = createHistoryRow(startTime, history[index].text, history[index].path, index);
+                historyTableBody.insertBefore(row, historyTableBody.firstChild);
+                localStorage.setItem('historyStatements', serializeHistory(history));
+                console.log('Added testimony to history:', history[index].text);
+                closeTestimonyModal();
+            });
         }
     }
 
