@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to construct the Procedural Clerk statement
     function constructProceduralStatement(time, testimonyDetails) {
-        const { firstName, lastName, role, organization, position, number, format, introducingBill } = testimonyDetails;
+        const { firstName, lastName, role, organization, position, number, format, introducingBill, title } = testimonyDetails;
         const fullName = `${firstName} ${lastName}`.trim();
     
         // Format time to 12-hour format without seconds (e.g., "8:52 a.m.")
@@ -223,8 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         let statement;
     
-        if (introducingBill) {
-            const title = /Representative/.test(statementText) ? 'Representative' : 'Senator';
+        if (introducingBill && title) {
             statement = `${formattedTime} ${title} ${lastName} introduced the bill`;
             if (number) statement += ` and submitted testimony #${number}`;
         } else {
