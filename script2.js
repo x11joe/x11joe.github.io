@@ -209,6 +209,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text.trim();
     }
 
+    // Function to construct the Procedural Clerk statement
+    function constructProceduralStatement(testimonyDetails) {
+        const { firstName, lastName, role, organization, position, number, format } = testimonyDetails;
+        const fullName = `${firstName} ${lastName}`.trim();
+        let statement = '';
+
+        if (format === 'Written') {
+            statement = `${fullName}`;
+            if (organization) statement += `, ${organization}`;
+            statement += `, submitted testimony`;
+            if (position === 'Neutral') {
+                statement += ` as neutral`;
+            } else {
+                statement += ` in ${position.toLowerCase()}`;
+            }
+            if (number) statement += ` #${number}`;
+        } else {
+            // In-Person or Online
+            statement = `${fullName}`;
+            if (role) statement += `, ${role}`;
+            if (organization) statement += `, ${organization}`;
+            statement += `, testified`;
+            if (position === 'Neutral') {
+                statement += ` as neutral`;
+            } else {
+                statement += ` in ${position.toLowerCase()}`;
+            }
+            if (number) statement += ` and submitted testimony #${number}`;
+        }
+
+        return statement;
+    }
+
     // **New Function to Close Testimony Modal**
     function closeTestimonyModal() {
         testimonyModal.classList.remove('active');
@@ -869,15 +902,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
+    
+        let statementHtml = '';
+        if (path[0].step === 'testimony') {
+            const testimonyDetails = path[0].details;
+            const techStatement = statementText; // Tech Clerk statement without format
+            const proceduralStatement = constructProceduralStatement(testimonyDetails);
+            statementHtml = `
+                <div class="statement-box tech-clerk" title="Copy Tech Clerk Statement">${techStatement}</div>
+                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+            `;
+        } else {
+            statementHtml = `<div class="statement-box">${statementText}</div>`;
+        }
+    
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
-            <td><div class="tags">${tagsHtml}</div><div>${statementText}</div></td>
+            <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
         if (path[0].step === 'testimony' && path[0].link) {
             row.dataset.fileLink = path[0].link;
         }
+    
+        // Add click listeners to statement boxes for copying
+        const statementBoxes = row.querySelectorAll('.statement-box');
+        statementBoxes.forEach(box => {
+            box.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const textToCopy = box.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    console.log('Copied to clipboard:', textToCopy);
+                });
+            });
+        });
+    
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
             editHistoryEntry(index);
@@ -886,11 +946,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.stopPropagation();
             deleteHistoryEntry(index);
         };
-        row.onclick = () => {
-            navigator.clipboard.writeText(statementText).then(() => {
-                console.log('Copied to clipboard:', statementText);
-            });
-        };
+    
         return row;
     }
 
@@ -1126,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const position = document.getElementById('testimonyPosition').value;
         const number = document.getElementById('testimonyNumber').value.trim();
         const link = document.getElementById('testimonyLink').value.trim();
-        const format = document.getElementById('testimonyFormat').value; // New format field
+        const format = document.getElementById('testimonyFormat').value;
     
         if (!position) {
             alert('Position is required.');
@@ -1141,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (organization) parts.push(organization);
         parts.push(position);
         if (number) parts.push(`Testimony#${number}`);
-        if (format) parts.push(format); // Include format in testimony string
+        // Exclude format from testimonyString (Tech Clerk version)
     
         const testimonyString = parts.join(' - ');
         const testimonyObject = { firstName, lastName, role, organization, position, number, format, link };
@@ -1151,9 +1207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             path[editingTestimonyIndex].details = testimonyObject;
             closeTestimonyModal();
             if (editingIndex !== null) {
-                finalizeStatement(); // Finalize the statement when editing
+                finalizeStatement();
             } else {
-                updateInput(); // Update input if not finalizing (e.g., mid-flow edit)
+                updateInput();
                 showSuggestions('');
             }
         } else {

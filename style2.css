@@ -327,3 +327,24 @@ label {
 #testimonyModal button:hover {
     background-color: #0056b3;
 }
+
+/* Statement Box Styling */
+.statement-box {
+    padding: 5px;
+    margin: 2px 0;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    cursor: pointer;
+}
+
+.statement-box:hover {
+    background-color: #e0e0e0;
+}
+
+.tech-clerk {
+    border-color: #007bff; /* Blue border for Tech Clerk */
+}
+
+.procedural-clerk {
+    border-color: #28a745; /* Green border for Procedural Clerk */
+}
