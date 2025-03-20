@@ -211,40 +211,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to construct the Procedural Clerk statement
     function constructProceduralStatement(time, testimonyDetails) {
-        const { firstName, lastName, role, organization, position, number, format } = testimonyDetails;
+        const { firstName, lastName, role, organization, position, number, format, introducingBill } = testimonyDetails;
         const fullName = `${firstName} ${lastName}`.trim();
-        
-        // Format time to 12-hour format without seconds
+    
+        // Format time to 12-hour format without seconds (e.g., "8:52 a.m.")
         const hours = time.getHours();
         const minutes = time.getMinutes().toString().padStart(2, '0');
         const period = hours >= 12 ? 'p.m.' : 'a.m.';
         const formattedHours = hours % 12 || 12;
         const formattedTime = `${formattedHours}:${minutes} ${period}`;
-        
-        let statement = `${formattedTime} ${fullName}`;
-        
-        if (format === 'Written') {
-            if (organization) statement += `, ${organization}`;
-            statement += `, submitted testimony`;
-            if (position === 'Neutral') {
-                statement += ` as neutral`;
-            } else {
-                statement += ` in ${position.toLowerCase()}`;
-            }
-            if (number) statement += ` #${number}`;
-        } else {
-            // In-Person or Online
-            if (role) statement += `, ${role}`;
-            if (organization) statement += `, ${organization}`;
-            statement += `, testified`;
-            if (position === 'Neutral') {
-                statement += ` as neutral`;
-            } else {
-                statement += ` in ${position.toLowerCase()}`;
-            }
+    
+        let statement;
+    
+        if (introducingBill) {
+            const title = /Representative/.test(statementText) ? 'Representative' : 'Senator';
+            statement = `${formattedTime} ${title} ${lastName} introduced the bill`;
             if (number) statement += ` and submitted testimony #${number}`;
+        } else {
+            statement = `${formattedTime} ${fullName}`;
+            if (format === 'Written') {
+                if (organization) statement += `, ${organization}`;
+                statement += `, submitted testimony`;
+                if (position === 'Neutral') {
+                    statement += ` as neutral`;
+                } else {
+                    statement += ` in ${position.toLowerCase()}`;
+                }
+                if (number) statement += ` #${number}`;
+            } else {
+                // In-Person or Online
+                if (role) statement += `, ${role}`;
+                if (organization) statement += `, ${organization}`;
+                statement += `, testified`;
+                if (position === 'Neutral') {
+                    statement += ` as neutral`;
+                } else {
+                    statement += ` in ${position.toLowerCase()}`;
+                }
+                if (number) statement += ` and submitted testimony #${number}`;
+            }
         }
-        
+    
         return statement;
     }
 
@@ -913,26 +920,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path[0].step === 'testimony') {
             let techStatement = statementText; // Tech Clerk statement without format
             const testimonyDetails = path[0].details;
-            let proceduralStatement = constructProceduralStatement(time, testimonyDetails);
-            const link = path[0].link || '';
+            let proceduralStatement;
     
-            // Check if techStatement contains "Representative" or "Senator"
-            if (/Representative|Senator/.test(techStatement)) {
+            // Check if the entry is already marked as introducing a bill
+            if (testimonyDetails.isIntroducingBill) {
+                const title = techStatement.includes("Representative") ? "Representative" : "Senator";
+                const lastName = testimonyDetails.lastName;
+                techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true });
+            } else {
+                proceduralStatement = constructProceduralStatement(time, testimonyDetails);
+            }
+    
+            // Prompt only if not already marked and contains "Representative" or "Senator"
+            if (!testimonyDetails.isIntroducingBill && /Representative|Senator/.test(techStatement)) {
                 const confirmation = confirm("Is this a Representative or Senator introducing a bill?");
                 if (confirmation) {
                     const title = techStatement.includes("Representative") ? "Representative" : "Senator";
                     const lastName = testimonyDetails.lastName;
                     techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                    proceduralStatement = `${title} ${lastName} introduced the bill and submitted testimony #${testimonyDetails.number}`;
+                    proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true });
     
-                    // Update the history entry with the new statements
+                    // Update the history entry with the new statements and state
                     history[index].text = techStatement;
                     history[index].path[0].value = techStatement;
-                    history[index].path[0].details.introducingBill = true; // Optional: track this state
+                    history[index].path[0].details.isIntroducingBill = true; // Persist this state
                     localStorage.setItem('historyStatements', serializeHistory(history));
                 }
             }
     
+            const link = path[0].link || '';
             statementHtml = `
                 <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
@@ -967,7 +984,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     box.classList.add('special-copied');
                     setTimeout(() => box.classList.remove('special-copied'), 500);
                 } else {
-                    textToCopy = box.textContent;
+                    textToCopy = box.textContent; // Includes timestamp for Procedural Clerk
                     box.classList.add('copied');
                     setTimeout(() => box.classList.remove('copied'), 500);
                 }
