@@ -931,21 +931,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
         
-            // Prompt for bill introduction if not already marked
+            // Custom confirmation dialog for bill introduction
             if (!testimonyDetails.isIntroducingBill && /Representative|Senator/.test(techStatement)) {
-                const confirmation = confirm("Is this a Representative or Senator introducing a bill?");
-                if (confirmation) {
-                    const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
-                    const lastName = testimonyDetails.lastName;
-                    techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                    proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
+                showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
+                    if (confirmation) {
+                        const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
+                        const lastName = testimonyDetails.lastName;
+                        techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+                        proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
         
-                    // Update the history entry
-                    history[index].text = techStatement;
-                    history[index].path[0].value = techStatement;
-                    history[index].path[0].details.isIntroducingBill = true;
-                    localStorage.setItem('historyStatements', serializeHistory(history));
-                }
+                        // Update the history entry
+                        history[index].text = techStatement;
+                        history[index].path[0].value = techStatement;
+                        history[index].path[0].details.isIntroducingBill = true;
+                        localStorage.setItem('historyStatements', serializeHistory(history));
+        
+                        // Re-render the row with updated statements
+                        updateHistoryTable();
+                    }
+                });
             }
         
             const link = path[0].link || '';
@@ -1004,6 +1008,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         
         return row;
+    }
+
+    function showCustomConfirm(message) {
+        return new Promise((resolve) => {
+            // Create modal elements
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '10002';
+    
+            const dialog = document.createElement('div');
+            dialog.style.backgroundColor = 'white';
+            dialog.style.padding = '20px';
+            dialog.style.borderRadius = '5px';
+            dialog.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    
+            const messageText = document.createElement('p');
+            messageText.textContent = message;
+            dialog.appendChild(messageText);
+    
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'space-between';
+            buttonContainer.style.marginTop = '10px';
+    
+            const yesButton = document.createElement('button');
+            yesButton.textContent = 'Yes';
+            yesButton.style.padding = '5px 10px';
+            yesButton.style.backgroundColor = '#007bff';
+            yesButton.style.color = 'white';
+            yesButton.style.border = 'none';
+            yesButton.style.borderRadius = '4px';
+            yesButton.style.cursor = 'pointer';
+            yesButton.onclick = () => {
+                document.body.removeChild(modal);
+                resolve(true);
+            };
+    
+            const noButton = document.createElement('button');
+            noButton.textContent = 'No';
+            noButton.style.padding = '5px 10px';
+            noButton.style.backgroundColor = '#dc3545';
+            noButton.style.color = 'white';
+            noButton.style.border = 'none';
+            noButton.style.borderRadius = '4px';
+            noButton.style.cursor = 'pointer';
+            noButton.onclick = () => {
+                document.body.removeChild(modal);
+                resolve(false);
+            };
+    
+            buttonContainer.appendChild(yesButton);
+            buttonContainer.appendChild(noButton);
+            dialog.appendChild(buttonContainer);
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+        });
     }
 
     function deleteHistoryEntry(index) {
