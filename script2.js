@@ -911,10 +911,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         let statementHtml = '';
         if (path[0].step === 'testimony') {
+            let techStatement = statementText; // Tech Clerk statement without format
             const testimonyDetails = path[0].details;
-            const techStatement = statementText; // Tech Clerk statement without format
-            const proceduralStatement = constructProceduralStatement(time, testimonyDetails);
+            let proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             const link = path[0].link || '';
+    
+            // Check if techStatement contains "Representative" or "Senator"
+            if (/Representative|Senator/.test(techStatement)) {
+                const confirmation = confirm("Is this a Representative or Senator introducing a bill?");
+                if (confirmation) {
+                    const title = techStatement.includes("Representative") ? "Representative" : "Senator";
+                    const lastName = testimonyDetails.lastName;
+                    techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+                    proceduralStatement = `${title} ${lastName} introduced the bill and submitted testimony #${testimonyDetails.number}`;
+    
+                    // Update the history entry with the new statements
+                    history[index].text = techStatement;
+                    history[index].path[0].value = techStatement;
+                    history[index].path[0].details.introducingBill = true; // Optional: track this state
+                    localStorage.setItem('historyStatements', serializeHistory(history));
+                }
+            }
+    
             statementHtml = `
                 <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
