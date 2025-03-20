@@ -209,13 +209,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nameElem = hotKey.getElementsByTagName('Name')[0];
             const firstNameElem = hotKey.getElementsByTagName('FirstName')[0];
             const fields = hotKey.getElementsByTagName('Fields')[0];
-            if (nameElem && firstNameElem && fields) {
+            if (nameElem && fields) { // Removed firstNameElem requirement
                 const lastName = nameElem.textContent.trim();
-                const firstName = firstNameElem.textContent.trim();
-                const fullName = `${firstName} ${lastName}`;
+                const firstName = firstNameElem ? firstNameElem.textContent.trim() : '';
+                const fullName = firstName ? `${firstName} ${lastName}` : lastName;
                 const memberNoField = Array.from(fields.getElementsByTagName('Field')).find(f => f.getElementsByTagName('Key')[0].textContent === 'member-no');
                 const memberNo = memberNoField ? memberNoField.getElementsByTagName('Value')[0].textContent.trim() : null;
-                if (fullName.match(/^(Senator|Representative)\b/i) && memberNo) {
+                // Optionally adjust the title check if needed
+                if (memberNo) { // Removed fullName title check for flexibility
                     members.push({ lastName, firstName, fullName, memberNo });
                 }
             }
