@@ -213,19 +213,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     function constructProceduralStatement(time, testimonyDetails) {
         const { firstName, lastName, role, organization, position, number, format, introducingBill, title } = testimonyDetails;
         const fullName = `${firstName} ${lastName}`.trim();
-    
+        
         // Format time to 12-hour format without seconds (e.g., "8:52 a.m.")
         const hours = time.getHours();
         const minutes = time.getMinutes().toString().padStart(2, '0');
         const period = hours >= 12 ? 'p.m.' : 'a.m.';
         const formattedHours = hours % 12 || 12;
         const formattedTime = `${formattedHours}:${minutes} ${period}`;
-    
+        
         let statement;
-    
+        
         if (introducingBill && title) {
             statement = `${formattedTime} ${title} ${lastName} introduced the bill`;
-            if (number) statement += ` and submitted testimony #${number}`;
+            if (number) {
+                let positionPhrase;
+                if (position === 'Neutral') {
+                    positionPhrase = 'as neutral';
+                } else {
+                    positionPhrase = `in ${position.toLowerCase()}`;
+                }
+                statement += ` and submitted testimony ${positionPhrase} #${number}`;
+            }
         } else {
             statement = `${formattedTime} ${fullName}`;
             if (format === 'Written') {
@@ -250,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (number) statement += ` and submitted testimony #${number}`;
             }
         }
-    
+        
         return statement;
     }
 
