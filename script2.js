@@ -124,16 +124,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hotKey = hotKeys[i];
             const nameElem = hotKey.getElementsByTagName('Name')[0];
             const firstNameElem = hotKey.getElementsByTagName('FirstName')[0];
-            if (nameElem && firstNameElem) {
+            const fields = hotKey.getElementsByTagName('Fields')[0];
+            if (nameElem && firstNameElem && fields) {
                 const lastName = nameElem.textContent.trim();
                 const firstName = firstNameElem.textContent.trim();
                 const fullName = `${firstName} ${lastName}`;
-                if (fullName.match(/^(Senator|Representative)\b/i)) {
-                    members.push(fullName);
+                const memberNoField = Array.from(fields.getElementsByTagName('Field')).find(f => f.getElementsByTagName('Key')[0].textContent === 'member-no');
+                const memberNo = memberNoField ? memberNoField.getElementsByTagName('Value')[0].textContent.trim() : null;
+                if (fullName.match(/^(Senator|Representative)\b/i) && memberNo) {
+                    members.push({ lastName, firstName, fullName, memberNo });
                 }
             }
         }
         return members;
+    }
+
+    function findMemberNo(lastName, title, firstInitial = null) {
+        const candidates = allMembers.filter(member => 
+            member.lastName.toLowerCase() === lastName.toLowerCase() &&
+            member.firstName.startsWith(title)
+        );
+        if (candidates.length === 1) {
+            return candidates[0].memberNo;
+        } else if (candidates.length > 1 && firstInitial) {
+            const matchingMember = candidates.find(member => 
+                member.firstName.includes(firstInitial + '.')
+            );
+            return matchingMember ? matchingMember.memberNo : null;
+        }
+        return null;
     }
 
     function getCommitteeMembers() {
@@ -485,9 +504,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (startingPoint.type === 'voteAction') {
                     path.push({ step: 'voteType', value: option });
                     currentStep = jsonStructure.flows.voteActionFlow.steps.find(step => step.step === 'voteType').next[option];
+                } else if (startingPoint.type === 'introducedBill') {
+                    path.push({ step: 'introducedBill', value: option });
+                    currentStep = 'member';
                 } else {
                     const firstStep = currentFlow.steps[0];
-                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers : firstStep.options);
+                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers.map(m => m.fullName) : firstStep.options);
                     if (stepOptions.includes(option)) {
                         path.push({ step: firstStep.step, value: option });
                         currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
@@ -519,7 +541,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Selected committee:', option, 'transitioning to voteModule');
                 console.log('Current path after selection:', path);
             } else {
-                path.push({ step: currentStep, value: option });
+                if (currentFlow === jsonStructure.flows.introducedBillFlow && currentStep === 'member') {
+                    const member = allMembers.find(m => m.fullName === option);
+                    if (member) {
+                        path.push({ step: currentStep, value: option, memberNo: member.memberNo });
+                    } else {
+                        path.push({ step: currentStep, value: option });
+                    }
+                } else {
+                    path.push({ step: currentStep, value: option });
+                }
                 if (stepConfig.next) {
                     if (typeof stepConfig.next === 'string') {
                         currentStep = stepConfig.next;
@@ -923,110 +954,135 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function createHistoryRow(time, statementText, path, index) {
-        const row = document.createElement('tr');
-        const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
-        const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-        
-        let statementHtml = '';
-        if (path[0].step === 'testimony') {
-            let techStatement = statementText; // Tech Clerk statement without format
-            const testimonyDetails = path[0].details;
-            let proceduralStatement;
-        
-            // Handle bill introduction case
-            if (testimonyDetails.isIntroducingBill) {
-                const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
-                const lastName = testimonyDetails.lastName;
-                techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
-            } else {
-                proceduralStatement = constructProceduralStatement(time, testimonyDetails);
-            }
-        
-            // Custom confirmation dialog for bill introduction
-            if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && /Representative|Senator/.test(techStatement)) {
-                showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
-                    if (confirmation) {
-                        const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
-                        const lastName = testimonyDetails.lastName;
-                        techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
-                        proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
-                        history[index].text = techStatement;
-                        history[index].path[0].value = techStatement;
-                        history[index].path[0].details.isIntroducingBill = true;
-                    } else {
-                        history[index].path[0].details.promptedForBillIntroduction = true; // Remember 'no' choice
-                    }
-                    localStorage.setItem('historyStatements', serializeHistory(history)); // Save history
-                    updateHistoryTable(); // Update table to reflect changes
-                });
-            }
-        
-            // Correctly retrieve the link from testimonyDetails (path[0].details.link)
-            const link = path[0].details.link || '';
-            statementHtml = `
-                <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
-                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
-            `;
+    const row = document.createElement('tr');
+    const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
+    const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
+    
+    let statementHtml = '';
+    if (path[0].step === 'testimony') {
+        let techStatement = statementText;
+        const testimonyDetails = path[0].details;
+        let proceduralStatement;
+    
+        if (testimonyDetails.isIntroducingBill) {
+            const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
+            const lastName = testimonyDetails.lastName;
+            techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+            proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
         } else {
-            statementHtml = `<div class="statement-box">${statementText}</div>`;
+            proceduralStatement = constructProceduralStatement(time, testimonyDetails);
         }
-        
-        row.innerHTML = `
-            <td>${time.toLocaleTimeString()}</td>
-            <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
-            <td><span class="edit-icon" data-index="${index}">✏️</span></td>
-            <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
-        `;
-        
-        // Add click listeners to statement boxes for copying
-        const statementBoxes = row.querySelectorAll('.statement-box');
-        statementBoxes.forEach(box => {
-            box.addEventListener('click', (e) => {
-                e.stopPropagation();
-                let textToCopy;
-                if (box.classList.contains('tech-clerk') && e.ctrlKey) {
-                    // Special format for Tech Clerk with Ctrl+Click
-                    const techStatement = box.getAttribute('data-tech-statement');
-                    const link = box.getAttribute('data-link');
-                    
-                    // Format time to 12-hour format with AM/PM in uppercase, no periods
-                    const formattedTime = time.toLocaleTimeString('en-US', { 
-                        hour12: true, 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit' 
-                    });
-                    
-                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${link}`;
-                    textToCopy = specialFormat;
-                    box.classList.add('special-copied');
-                    setTimeout(() => box.classList.remove('special-copied'), 500);
+    
+        if (!testimonyDetails.isIntroducingBill && !testimonyDetails.promptedForBillIntroduction && /Representative|Senator/.test(techStatement)) {
+            showCustomConfirm("Is this a Representative or Senator introducing a bill?").then((confirmation) => {
+                if (confirmation) {
+                    const title = /Representative/.test(techStatement) ? "Representative" : "Senator";
+                    const lastName = testimonyDetails.lastName;
+                    const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
+                    const memberNo = findMemberNo(lastName, title, firstInitial);
+                    if (memberNo) {
+                        testimonyDetails.memberNo = memberNo;
+                    } else {
+                        console.warn('Could not find memberNo for', title, lastName);
+                    }
+                    techStatement = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
+                    proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title });
+                    history[index].text = techStatement;
+                    history[index].path[0].value = techStatement;
+                    history[index].path[0].details = { ...testimonyDetails, isIntroducingBill: true, memberNo };
+                    localStorage.setItem('historyStatements', serializeHistory(history));
+                    updateHistoryTable();
                 } else {
-                    textToCopy = box.textContent; // Includes timestamp for Procedural Clerk
-                    box.classList.add('copied');
-                    setTimeout(() => box.classList.remove('copied'), 500);
+                    history[index].path[0].details.promptedForBillIntroduction = true;
+                    localStorage.setItem('historyStatements', serializeHistory(history));
                 }
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    console.log('Copied to clipboard:', textToCopy);
+            });
+        }
+    
+        const link = testimonyDetails.link || '';
+        const memberNo = testimonyDetails.memberNo || '';
+        statementHtml = `
+            <div class="statement-box tech-clerk" 
+                 data-tech-statement="${techStatement}" 
+                 data-link="${link}" 
+                 data-memberno="${memberNo}" 
+                 title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                ${techStatement}
+            </div>
+            <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+        `;
+    } else if (path[0].step === 'introducedBill') {
+        const memberString = path.find(p => p.step === 'member')?.value || '';
+        const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
+        const { lastName, title } = parseMember(memberString);
+        const techStatement = `${title} ${lastName} - Introduced Bill`;
+        const proceduralStatement = constructProceduralStatement(time, { lastName, title, introducingBill: true });
+        statementHtml = `
+            <div class="statement-box tech-clerk" 
+                 data-tech-statement="${techStatement}" 
+                 data-memberno="${memberNo}" 
+                 title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                ${techStatement}
+            </div>
+            <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+        `;
+    } else {
+        statementHtml = `<div class="statement-box">${statementText}</div>`;
+    }
+    
+    row.innerHTML = `
+        <td>${time.toLocaleTimeString()}</td>
+        <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
+        <td><span class="edit-icon" data-index="${index}">✏️</span></td>
+        <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
+    `;
+    
+    const statementBoxes = row.querySelectorAll('.statement-box');
+    statementBoxes.forEach(box => {
+        box.addEventListener('click', (e) => {
+            e.stopPropagation();
+            let textToCopy;
+            if (box.classList.contains('tech-clerk') && e.ctrlKey) {
+                const techStatement = box.getAttribute('data-tech-statement');
+                const link = box.getAttribute('data-link') || '';
+                const memberNo = box.getAttribute('data-memberno') || '';
+                const formattedTime = time.toLocaleTimeString('en-US', { 
+                    hour12: true, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
                 });
+                let specialFormat = `${formattedTime} | ${techStatement} | ${memberNo} |`;
+                if (link) {
+                    specialFormat += ` ${link}`;
+                }
+                textToCopy = specialFormat;
+                box.classList.add('special-copied');
+                setTimeout(() => box.classList.remove('special-copied'), 500);
+            } else {
+                textToCopy = box.textContent;
+                box.classList.add('copied');
+                setTimeout(() => box.classList.remove('copied'), 500);
+            }
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                console.log('Copied to clipboard:', textToCopy);
             });
         });
-        
-        // Attach event listener for edit icon
-        const editIcon = row.querySelector('.edit-icon');
-        editIcon.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('Edit button clicked for index:', index);
-            editHistoryEntry(index);
-        });
-        
-        row.querySelector('.delete-icon').onclick = (e) => {
-            e.stopPropagation();
-            deleteHistoryEntry(index);
-        };
-        
-        return row;
+    });
+    
+    const editIcon = row.querySelector('.edit-icon');
+    editIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        console.log('Edit button clicked for index:', index);
+        editHistoryEntry(index);
+    });
+    
+    row.querySelector('.delete-icon').onclick = (e) => {
+        e.stopPropagation();
+        deleteHistoryEntry(index);
+    };
+    
+    return row;
     }
 
     function showCustomConfirm(message) {
