@@ -88,17 +88,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
     
             const testimonyDetails = entry.path[0].details;
-            const orgLower = testimonyDetails.org ? testimonyDetails.org.toLowerCase() : '';
-            const keywordsRegex = /representative|representatives|senator|senators/i;
+            const roleLower = testimonyDetails.role ? testimonyDetails.role.toLowerCase() : '';
+            const organizationLower = testimonyDetails.organization ? testimonyDetails.organization.toLowerCase() : '';
+            const keywordsRegex = /representative|representatives|senator|senators|house|senate/i;
     
-            // Check if keywords are present and prompt hasn't been shown
-            if (keywordsRegex.test(orgLower) && !testimonyDetails.promptedForSenatorRepresentative) {
+            console.log('Checking prompts for testimony:', testimonyDetails);
+            console.log('roleLower:', roleLower);
+            console.log('organizationLower:', organizationLower);
+            console.log('keywordsRegex.test(roleLower):', keywordsRegex.test(roleLower));
+            console.log('keywordsRegex.test(organizationLower):', keywordsRegex.test(organizationLower));
+            console.log('!testimonyDetails.promptedForSenatorRepresentative:', !testimonyDetails.promptedForSenatorRepresentative);
+    
+            if ((keywordsRegex.test(roleLower) || keywordsRegex.test(organizationLower)) && !testimonyDetails.promptedForSenatorRepresentative) {
                 showCustomConfirm("Is this a senator or representative?").then((isSenRep) => {
                     testimonyDetails.promptedForSenatorRepresentative = true;
     
                     if (isSenRep) {
                         testimonyDetails.isSenatorRepresentative = true;
-                        const title = determineTitle(testimonyDetails.org);
+                        const title = determineTitle(testimonyDetails.organization);
                         if (title) {
                             testimonyDetails.title = title;
     
@@ -128,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 resolve();
                             });
                         } else {
-                            console.warn('Could not determine title from org:', testimonyDetails.org);
+                            console.warn('Could not determine title from organization:', testimonyDetails.organization);
                             resolve();
                         }
                     } else {
@@ -1500,6 +1507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
             const index = history.length - 1;
+            console.log('Submitting testimony with details:', testimonyObject);
             handleTestimonyPrompts(index).then(() => {
                 const row = createHistoryRow(startTime, history[index].text, history[index].path, index);
                 historyTableBody.insertBefore(row, historyTableBody.firstChild);
