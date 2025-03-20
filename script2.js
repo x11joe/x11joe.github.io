@@ -908,20 +908,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
-        
+    
         let statementHtml = '';
         if (path[0].step === 'testimony') {
             const testimonyDetails = path[0].details;
             const techStatement = statementText; // Tech Clerk statement without format
             const proceduralStatement = constructProceduralStatement(time, testimonyDetails);
+            const link = path[0].link || '';
             statementHtml = `
-                <div class="statement-box tech-clerk" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
+                <div class="statement-box tech-clerk" data-tech-statement="${techStatement}" data-link="${link}" title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">${techStatement}</div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
         } else {
             statementHtml = `<div class="statement-box">${statementText}</div>`;
         }
-        
+    
         row.innerHTML = `
             <td>${time.toLocaleTimeString()}</td>
             <td><div class="tags">${tagsHtml}</div>${statementHtml}</td>
@@ -931,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (path[0].step === 'testimony' && path[0].link) {
             row.dataset.fileLink = path[0].link;
         }
-        
+    
         // Add click listeners to statement boxes for copying
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
@@ -940,8 +941,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let textToCopy;
                 if (box.classList.contains('tech-clerk') && e.ctrlKey) {
                     // Special format for Tech Clerk with Ctrl+Click
+                    const techStatement = box.getAttribute('data-tech-statement');
+                    const link = box.getAttribute('data-link');
                     const formattedTime = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${path[0].link || ''}`;
+                    const specialFormat = `${formattedTime} | ${techStatement} |   | ${link}`;
                     textToCopy = specialFormat;
                     box.classList.add('special-copied');
                     setTimeout(() => box.classList.remove('special-copied'), 500);
@@ -955,7 +958,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
         });
-        
+    
         row.querySelector('.edit-icon').onclick = (e) => {
             e.stopPropagation();
             editHistoryEntry(index);
@@ -964,7 +967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.stopPropagation();
             deleteHistoryEntry(index);
         };
-        
+    
         return row;
     }
 
