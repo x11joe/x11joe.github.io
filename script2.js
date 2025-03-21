@@ -1440,8 +1440,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             return acc;
         }, {});
         
-        // Create bill headers and entries
-        Object.keys(groupedHistory).forEach(bill => {
+        // Calculate the earliest time for each bill group
+        const billGroupsWithTimes = Object.keys(groupedHistory).map(bill => {
+            const earliestTime = Math.min(...groupedHistory[bill].map(entry => entry.time.getTime()));
+            return { bill, earliestTime };
+        });
+        
+        // Sort the bill groups by earliest time in descending order
+        billGroupsWithTimes.sort((a, b) => b.earliestTime - a.earliestTime);
+        
+        // Create bill headers and entries based on the sorted order
+        billGroupsWithTimes.forEach(({ bill }) => {
             // Create bill header row
             const headerRow = document.createElement('tr');
             headerRow.className = 'bill-header';
@@ -1453,6 +1462,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     nextRow = nextRow.nextElementSibling;
                 }
             });
+            headerRow.addEventListener('dblclick', () => {
+                editBillName(headerRow, bill);
+            });
             historyTableBody.appendChild(headerRow);
             
             // Append entries for this bill
@@ -1462,7 +1474,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
         
-        console.log('History table updated with bill grouping');
+        console.log('History table updated with bill grouping sorted by earliest time');
+    }
+
+    function editBillName(headerRow, oldBillName) {
+        // Create an input field for editing the bill name
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldBillName;
+        input.style.width = '100%';
+        
+        // Replace the header content with the input field
+        const td = headerRow.querySelector('td');
+        td.innerHTML = '';
+        td.appendChild(input);
+        input.focus();
+        
+        // Function to save the new bill name
+        const saveNewBillName = () => {
+            const newBillName = input.value.trim() || 'Uncategorized';
+            // Update the bill name for all entries in this group
+            history.forEach(entry => {
+                if (entry.bill === oldBillName) {
+                    entry.bill = newBillName;
+                }
+            });
+            // Save to localStorage
+            localStorage.setItem('historyStatements', serializeHistory(history));
+            // Refresh the history table
+            updateHistoryTable();
+        };
+        
+        // Save on Enter key press
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveNewBillName();
+            }
+        });
+        
+        // Save on blur (when the input loses focus)
+        input.addEventListener('blur', saveNewBillName);
     }
 
     function updateLegend() {
