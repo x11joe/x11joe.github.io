@@ -991,11 +991,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const startTime = markedTime || statementStartTime || new Date();
-        console.log('Finalizing statement with time:', startTime); // Debug log
+        console.log('Finalizing statement - markedTime is:', markedTime ? 'true' : 'false', 'value:', markedTime, 'startTime used:', startTime);
         if (markedTime) {
             markedTime = null;
             document.querySelector('.page-wrapper').classList.remove('marking-time');
-            console.log('Used markedTime for event, reset marking');
+            console.log('Used markedTime for event, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
         }
         
         if (editingIndex !== null) {
@@ -1639,11 +1639,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: null
             };
             const startTime = markedTime || new Date();
-            console.log('Adding testimony with time:', startTime); // Debug log
+            console.log('Adding testimony - markedTime is:', markedTime ? 'true' : 'false', 'value:', markedTime, 'startTime used:', startTime);
             if (markedTime) {
                 markedTime = null;
                 document.querySelector('.page-wrapper').classList.remove('marking-time');
-                console.log('Used markedTime for testimony, reset marking');
+                console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
@@ -1916,11 +1916,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add keydown listener for marking time with tilde (~)
     document.addEventListener('keydown', (e) => {
         console.log('Keydown event detected - code:', e.code, 'key:', e.key, 'shiftKey:', e.shiftKey); // Debug log
-        if (e.code === 'Backquote' && e.shiftKey) {
-            console.log('Tilde key pressed'); // Debug log
+        if (e.key === '~') {
+            console.log('Tilde key pressed'); // Confirm tilde detection
             e.preventDefault();
             const pageWrapper = document.querySelector('.page-wrapper');
-            console.log('pageWrapper element:', pageWrapper); // Debug log to ensure element exists
+            console.log('pageWrapper element:', pageWrapper); // Verify element exists
             if (!pageWrapper) {
                 console.error('Error: .page-wrapper not found');
                 return;
@@ -1928,11 +1928,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (markedTime) {
                 markedTime = null;
                 pageWrapper.classList.remove('marking-time');
-                console.log('Marking time turned off - markedTime:', markedTime);
+                console.log('Marking time turned off - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             } else {
                 markedTime = new Date();
                 pageWrapper.classList.add('marking-time');
-                console.log('Marking time turned on - markedTime:', markedTime);
+                console.log('Marking time turned on - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
         }
     });
