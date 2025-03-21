@@ -1052,14 +1052,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('historyStatements', serializeHistory(history));
             }
         } else {
-            history.push({ time: startTime, path: [...path], text: statementText, link: '', bill: currentBill });
-            updateHistoryTable();
+            const newEntry = { time: startTime, path: [...path], text: statementText, link: '', bill: currentBill };
+            history.push(newEntry);
+            updateHistoryTable(newEntry);
             setTimeout(() => {
                 const historyWrapper = document.getElementById('historyWrapper');
                 historyWrapper.scrollTop = 0;
                 console.log('Scrolled to top after adding new entry');
             }, 0);
-            console.log('Added new history entry:', history[history.length - 1]);
+            console.log('Added new history entry:', newEntry);
             localStorage.setItem('historyStatements', serializeHistory(history));
         }
         
@@ -1202,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return value;
     }
 
-    function createHistoryRow(time, statementText, path, index) {
+    function createHistoryRow(time, statementText, path, index, isNew = false) {
         const row = document.createElement('tr');
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
@@ -1276,6 +1277,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
         row.setAttribute('data-index', index); // Add data-index to the row for time editing
+        
+        if (isNew) {
+            row.classList.add('new-entry');
+        }
         
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
@@ -1448,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function updateHistoryTable() {
+    function updateHistoryTable(newEntry = null) {
         // Sort history by time in descending order (newest first)
         history.sort((a, b) => b.time - a.time);
         
@@ -1493,11 +1498,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             historyTableBody.appendChild(headerRow);
             
             // Append entries for this bill
-            groupedHistory[bill].forEach((entry, index) => {
-                const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry));
+            groupedHistory[bill].forEach((entry) => {
+                const isNew = (entry === newEntry);
+                const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry), isNew);
                 historyTableBody.appendChild(row);
             });
         });
+        
+        // Handle automatic copy and highlight for new entries
+        if (newEntry !== null) {
+            const newRow = historyTableBody.querySelector('tr.new-entry');
+            if (newRow) {
+                const techBox = newRow.querySelector('.statement-box.tech-clerk');
+                if (techBox) {
+                    const time = newEntry.time;
+                    const formattedTime = time.toLocaleTimeString('en-US', {
+                        hour12: true,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    const techStatement = techBox.getAttribute('data-tech-statement');
+                    const link = techBox.getAttribute('data-link') || '';
+                    const memberNo = techBox.getAttribute('data-memberno') || '';
+                    let memberNoFormatted = memberNo ? `member-no:${memberNo};Mic:` : '';
+                    let specialFormat = `${formattedTime} | ${techStatement} | ${memberNoFormatted} |`;
+                    if (link) {
+                        specialFormat += ` ${link}`;
+                    }
+                    navigator.clipboard.writeText(specialFormat).then(() => {
+                        console.log('Automatically copied to clipboard:', specialFormat);
+                        techBox.classList.add('special-copied');
+                        setTimeout(() => {
+                            techBox.classList.remove('special-copied');
+                            newRow.classList.remove('new-entry');
+                        }, 500);
+                    });
+                } else {
+                    newRow.classList.remove('new-entry');
+                }
+            }
+        }
         
         console.log('History table updated with bill grouping sorted by earliest time');
     }
@@ -1772,18 +1813,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
-            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill });
-            const index = history.length - 1;
-            console.log('Submitting testimony with details:', testimonyObject);
-            handleTestimonyPrompts(index).then(() => {
-                updateHistoryTable();
+            const newEntry = { time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill };
+            history.push(newEntry);
+            handleTestimonyPrompts(history.length - 1).then(() => {
+                updateHistoryTable(newEntry);
                 setTimeout(() => {
                     const historyWrapper = document.getElementById('historyWrapper');
                     historyWrapper.scrollTop = 0;
                     console.log('Scrolled to top after adding new testimony');
                 }, 0);
                 localStorage.setItem('historyStatements', serializeHistory(history));
-                console.log('Added testimony to history:', history[index].text);
+                console.log('Added testimony to history:', newEntry.text);
                 closeTestimonyModal();
             });
         }
