@@ -468,8 +468,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return statement;
     }
 
-    // **New Function to Close Testimony Modal**
     function closeTestimonyModal() {
+        if (editingTestimonyIndex !== null) {
+            path = [];
+            currentFlow = null;
+            currentStep = null;
+            statementStartTime = null;
+            editingIndex = null;
+            inputDiv.innerHTML = '';
+            inputDiv.appendChild(document.createTextNode(' '));
+            inputDiv.focus();
+            showSuggestions('');
+        }
         testimonyModal.classList.remove('active');
         editingTestimonyIndex = null;
         submitTestimonyButton.textContent = 'Add Testimony';
