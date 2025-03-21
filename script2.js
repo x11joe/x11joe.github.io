@@ -41,6 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let editingTestimonyIndex = null; // Track if we're editing a testimony entry
     let currentBill = localStorage.getItem('currentBill') || 'Uncategorized';
     
+    // Set input field: empty if 'Uncategorized', otherwise show the bill
+    document.getElementById('billInput').value = currentBill === 'Uncategorized' ? '' : currentBill;
+    // Display the current bill
+    document.getElementById('currentBillDisplay').textContent = 'Current Bill: ' + currentBill;
     
 
     const inputDiv = document.getElementById('input');
@@ -2009,11 +2013,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const billInput = document.getElementById('billInput').value.trim();
         if (billInput) {
             currentBill = billInput;
-            localStorage.setItem('currentBill', currentBill);
-            console.log('Current bill set to:', currentBill);
         } else {
-            console.warn('Bill input is empty');
+            currentBill = 'Uncategorized';
         }
+        localStorage.setItem('currentBill', currentBill);
+        document.getElementById('currentBillDisplay').textContent = 'Current Bill: ' + currentBill;
+        console.log('Current bill set to:', currentBill);
     });
 
     updateMeetingActionsLegend();
