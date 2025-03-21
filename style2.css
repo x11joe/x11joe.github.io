@@ -1,3 +1,4 @@
+/* Base Styles */
 body {
     font-family: Arial, sans-serif;
     height: 100vh;
@@ -7,6 +8,7 @@ body {
     position: relative;
 }
 
+/* Main Container */
 .page-wrapper {
     position: relative;
     height: 100vh;
@@ -14,10 +16,12 @@ body {
     display: block;
 }
 
+/* Spacers */
 .top-spacer, .bottom-spacer {
     height: 0;
 }
 
+/* Committee Select */
 #committeeSelectWrapper {
     position: absolute;
     top: 0;
@@ -34,6 +38,7 @@ body {
     width: 100%;
 }
 
+/* Entry Input Area */
 .entry-wrapper {
     position: absolute;
     top: 50vh;
@@ -62,6 +67,7 @@ body {
     z-index: 1000;
 }
 
+/* History Section */
 #history {
     position: absolute;
     left: 50vw;
@@ -97,6 +103,7 @@ body {
     background-color: #f0f0f0;
 }
 
+/* Modal (Suggestions) */
 .modal {
     position: absolute;
     background: white;
@@ -124,6 +131,11 @@ body {
     background-color: #f0f0f0;
 }
 
+.option.highlighted {
+    background-color: #e0e0e0;
+}
+
+/* Tokens */
 .token {
     display: inline-flex;
     align-items: center;
@@ -142,6 +154,11 @@ body {
     color: #007bff;
 }
 
+.tags .token {
+    margin-right: 5px;
+}
+
+/* Dropdown */
 .dropdown {
     position: absolute;
     background: white;
@@ -165,14 +182,7 @@ body {
     background-color: #e0e0e0;
 }
 
-.option.highlighted {
-    background-color: #e0e0e0;
-}
-
-.tags .token {
-    margin-right: 5px;
-}
-
+/* Icons */
 .edit-icon {
     cursor: pointer;
     padding: 2px 5px;
@@ -191,10 +201,12 @@ body {
     background-color: #e0e0e0;
 }
 
+/* Labels */
 label {
     margin-right: 10px;
 }
 
+/* Legend */
 .legend {
     position: fixed;
     top: 10px;
@@ -349,7 +361,7 @@ label {
     border-color: #28a745; /* Green border for Procedural Clerk */
 }
 
-/* Glow effect for normal copy */
+/* Glow Effects for Copy Actions */
 .statement-box.copied {
     animation: glow 0.5s ease-in-out;
 }
@@ -360,7 +372,6 @@ label {
     100% { box-shadow: 0 0 5px #007bff; }
 }
 
-/* Glow effect for special copy */
 .statement-box.special-copied {
     animation: special-glow 0.5s ease-in-out;
 }
@@ -405,5 +416,7 @@ label {
 
 /* Marking Time Glow Effect */
 .page-wrapper.marking-time {
-    background-color: #e6ffe6; /* Light green glow */
+    background-color: #e6ffe6; /* Light green background */
+    box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.5); /* Enhanced glow effect */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
 }

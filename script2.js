@@ -991,6 +991,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const startTime = markedTime || statementStartTime || new Date();
+        console.log('Finalizing statement with time:', startTime); // Debug log
         if (markedTime) {
             markedTime = null;
             document.querySelector('.page-wrapper').classList.remove('marking-time');
@@ -1638,6 +1639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: null
             };
             const startTime = markedTime || new Date();
+            console.log('Adding testimony with time:', startTime); // Debug log
             if (markedTime) {
                 markedTime = null;
                 document.querySelector('.page-wrapper').classList.remove('marking-time');
@@ -1913,17 +1915,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Add keydown listener for marking time with tilde (~)
     document.addEventListener('keydown', (e) => {
-        if (e.key === '~') {
+        console.log('Keydown event detected - code:', e.code, 'key:', e.key, 'shiftKey:', e.shiftKey); // Debug log
+        if (e.code === 'Backquote' && e.shiftKey) {
+            console.log('Tilde key pressed'); // Debug log
             e.preventDefault();
             const pageWrapper = document.querySelector('.page-wrapper');
+            console.log('pageWrapper element:', pageWrapper); // Debug log to ensure element exists
+            if (!pageWrapper) {
+                console.error('Error: .page-wrapper not found');
+                return;
+            }
             if (markedTime) {
                 markedTime = null;
                 pageWrapper.classList.remove('marking-time');
-                console.log('Marking time turned off');
+                console.log('Marking time turned off - markedTime:', markedTime);
             } else {
                 markedTime = new Date();
                 pageWrapper.classList.add('marking-time');
-                console.log('Marking time turned on, markedTime:', markedTime);
+                console.log('Marking time turned on - markedTime:', markedTime);
             }
         }
     });
