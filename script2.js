@@ -1036,8 +1036,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else {
             history.push({ time: startTime, path: [...path], text: statementText, link: '', bill: currentBill });
-            const row = createHistoryRow(startTime, statementText, path, history.length - 1);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild);
+            updateHistoryTable();
             setTimeout(() => {
                 const historyWrapper = document.getElementById('historyWrapper');
                 historyWrapper.scrollTop = 0;
@@ -1756,12 +1755,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
-            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill });
+            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: personallyBill });
             const index = history.length - 1;
             console.log('Submitting testimony with details:', testimonyObject);
             handleTestimonyPrompts(index).then(() => {
-                const row = createHistoryRow(startTime, history[index].text, history[index].path, index);
-                historyTableBody.insertBefore(row, historyTableBody.firstChild);
+                updateHistoryTable();
+                setTimeout(() => {
+                    const historyWrapper = document.getElementById('historyWrapper');
+                    historyWrapper.scrollTop = 0;
+                    console.log('Scrolled to top after adding new testimony');
+                }, 0);
                 localStorage.setItem('historyStatements', serializeHistory(history));
                 console.log('Added testimony to history:', history[index].text);
                 closeTestimonyModal();
