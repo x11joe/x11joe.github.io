@@ -1,1 +1,1 @@
-As usual, please provide the ENTIRE function that changed so I can easily copy and paste, thank you
+As usual, please provide the ENTIRE function that changed so I can easily copy and paste.  I don't need the entire source code just the functions that were modified, thank you!

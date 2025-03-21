@@ -438,24 +438,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         const detail = path.find(p => p.step === 'movedDetail')?.value || '';
         const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
         const amendmentText = path.find(p => p.step === 'amendmentModule')?.value || '';
-        
-        // Format time to 12-hour format without seconds (e.g., "4:10 p.m.")
+    
         const hours = time.getHours();
         const minutes = time.getMinutes().toString().padStart(2, '0');
         const period = hours >= 12 ? 'p.m.' : 'a.m.';
         const formattedHours = hours % 12 || 12;
         const formattedTime = `${formattedHours}:${minutes} ${period}`;
-        
+    
         let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-        
         let statement = `${formattedTime} ${memberText}`;
-        
+    
         if (action === 'Moved') {
-            const motionTypesRequiringArticle = suggestMotionType();
-            if (motionTypesRequiringArticle.includes(detail)) {
-                statement += ` moved a ${detail}`;
+            if (detail === 'Amendment') {
+                const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
+                if (amendmentType === 'Verbal') {
+                    statement += ` moved verbal amendment`;
+                } else if (amendmentType === 'LC#') {
+                    const lcNumberStep = path.find(p => p.step === 'lcNumber');
+                    const lcNumber = lcNumberStep ? JSON.parse(lcNumberStep.value).lcNumber : '.00000';
+                    statement += ` moved Amendment LC# ${lcNumber}`;
+                }
             } else {
-                statement += ` moved ${detail}`;
+                const motionTypesRequiringArticle = suggestMotionType();
+                if (motionTypesRequiringArticle.includes(detail)) {
+                    statement += ` moved a ${detail}`;
+                } else {
+                    statement += ` moved ${detail}`;
+                }
             }
             if (rerefer) statement += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
         } else if (action === 'Seconded') {
@@ -469,7 +478,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             statement += ` performed action: ${action}`;
         }
-        
         return statement;
     }
 
@@ -527,10 +535,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
-        if (stepType === 'voteModule') {
-            const voteResult = JSON.parse(path[pathIndex].value);
-            const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
-            handleModule(stepConfig, voteResult);
+        const stepConfig = currentFlow.steps.find(step => step.step === stepType);
+        if (stepConfig && stepConfig.type === 'module') {
+            const moduleResult = JSON.parse(path[pathIndex].value);
+            handleModule(stepConfig, moduleResult);
         } else if (stepType === 'testimony') {
             const part = path[pathIndex];
             populateTestimonyModal(part);
@@ -539,18 +547,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
             const options = getOptionsForStep(stepType, flow);
-            
+    
             console.log('Tag options:', options);
             modal.classList.remove('active');
-            
+    
             const existingDropdown = document.querySelector('.dropdown');
             if (existingDropdown) {
                 existingDropdown.remove();
             }
-        
+    
             const dropdown = document.createElement('div');
             dropdown.className = 'dropdown';
-            
+    
             options.forEach((opt, idx) => {
                 const div = document.createElement('div');
                 div.className = 'dropdown-option';
@@ -568,7 +576,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 dropdown.appendChild(div);
             });
-            
+    
             document.body.appendChild(dropdown);
             const tagRect = tagElement.getBoundingClientRect();
             dropdown.style.position = 'absolute';
@@ -577,7 +585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             dropdown.style.zIndex = '10001';
             dropdownActive = true;
             selectedDropdownIndex = -1;
-        
+    
             const closeDropdown = (e) => {
                 if (!dropdown.contains(e.target) && e.target !== tagElement.querySelector('.chevron')) {
                     dropdown.remove();
@@ -734,13 +742,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
             if (stepConfig.type === 'module') {
                 const moduleResult = JSON.parse(option);
-                const displayText = constructVoteTagText(moduleResult);
+                const displayText = getModuleDisplayText(currentStep, moduleResult);
                 path.push({ step: currentStep, value: option, display: displayText });
-                const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                if (motionType === 'Reconsider') {
-                    currentStep = null;
+                if (currentStep === 'voteModule') {
+                    const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                    if (motionType === 'Reconsider') {
+                        currentStep = null;
+                    } else {
+                        currentStep = 'carryBillPrompt';
+                    }
                 } else {
-                    currentStep = 'carryBillPrompt';
+                    currentStep = stepConfig.next;
                 }
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
@@ -788,66 +800,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
     }
 
-    function handleModule(stepConfig, existingVotes = null) {
-        console.log('handleModule called for stepConfig:', stepConfig, 'existingVotes:', existingVotes);
+    function handleModule(stepConfig, existingValues = null) {
         modal.innerHTML = '';
         const form = document.createElement('div');
-        form.className = 'vote-form';
-        
-        const voteCounts = existingVotes ? { ...existingVotes } : { for: 0, against: 0, neutral: 0 };
-        
+        form.className = 'module-form';
+        const moduleValues = existingValues ? { ...existingValues } : {};
+    
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = `${field.name}: `;
-        
-            const decrement = document.createElement('button');
-            decrement.textContent = '-';
-            decrement.onclick = () => {
-                if (voteCounts[field.name] > 0) {
-                    voteCounts[field.name]--;
-                    input.value = voteCounts[field.name];
-                }
-            };
-        
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.id = `module-${field.name}`;
-            input.value = voteCounts[field.name];
-            input.min = '0';
-            input.onchange = () => {
-                voteCounts[field.name] = parseInt(input.value) || 0;
-            };
-        
-            const increment = document.createElement('button');
-            increment.textContent = '+';
-            increment.onclick = () => {
-                voteCounts[field.name]++;
-                input.value = voteCounts[field.name];
-            };
-        
-            container.appendChild(label);
-            container.appendChild(decrement);
-            container.appendChild(input);
-            container.appendChild(increment);
+    
+            if (field.type === 'number') {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `module-${field.name}`;
+                input.value = moduleValues[field.name] || 0;
+                input.min = '0';
+                const decrement = document.createElement('button');
+                decrement.textContent = '-';
+                decrement.onclick = () => {
+                    if (moduleValues[field.name] > 0) {
+                        moduleValues[field.name]--;
+                        input.value = moduleValues[field.name];
+                    }
+                };
+                const increment = document.createElement('button');
+                increment.textContent = '+';
+                increment.onclick = () => {
+                    moduleValues[field.name]++;
+                    input.value = moduleValues[field.name];
+                };
+                container.appendChild(label);
+                container.appendChild(decrement);
+                container.appendChild(input);
+                container.appendChild(increment);
+            } else if (field.type === 'text') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `module-${field.name}`;
+                input.value = moduleValues[field.name] || field.default || '';
+                container.appendChild(label);
+                container.appendChild(input);
+            }
             form.appendChild(container);
         });
-        
+    
         const submit = document.createElement('button');
         submit.textContent = 'Submit';
         submit.onclick = () => {
             const moduleResult = {};
             stepConfig.fields.forEach(field => {
-                moduleResult[field.name] = voteCounts[field.name];
+                const input = document.getElementById(`module-${field.name}`);
+                if (field.type === 'number') {
+                    moduleResult[field.name] = parseInt(input.value) || 0;
+                } else if (field.type === 'text') {
+                    moduleResult[field.name] = input.value;
+                }
             });
             const resultStr = JSON.stringify(moduleResult);
-            if (currentStep === 'voteModule') {
+            if (currentStep === stepConfig.step) {
                 selectOption(resultStr);
             } else {
-                const voteIndex = path.findIndex(p => p.step === 'voteModule');
-                if (voteIndex !== -1) {
-                    path[voteIndex].value = resultStr;
-                    path[voteIndex].display = constructVoteTagText(moduleResult);
+                const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
+                if (moduleIndex !== -1) {
+                    path[moduleIndex].value = resultStr;
+                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, moduleResult);
                     updateInput();
                     showSuggestions('');
                 }
@@ -858,7 +876,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
-        console.log('Vote module modal should now be visible');
+    }
+
+    function getModuleDisplayText(step, moduleResult) {
+        if (step === 'voteModule') {
+            return constructVoteTagText(moduleResult);
+        } else if (step === 'lcNumber') {
+            const lcNumber = moduleResult.lcNumber || '.00000';
+            return `LC# ${lcNumber}`;
+        } else if (step === 'amendmentModule') {
+            const amendmentText = moduleResult.amendmentText || '';
+            return `Amendment: ${amendmentText}`;
+        }
+        return JSON.stringify(moduleResult);
     }
 
     function updateInput() {
@@ -1142,9 +1172,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const detail = path.find(p => p.step === 'movedDetail')?.value || '';
             const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
             let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-            let text = `${memberText} - ${action}`;
-            if (detail) text += ` ${detail}`;
-            if (rerefer) text += ` and Rereferred to ${getShortCommitteeName(rerefer)}`;
+            let text = `${memberText} ${action.toLowerCase()}`;
+            if (detail) {
+                if (detail === 'Amendment') {
+                    const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
+                    if (amendmentType === 'Verbal') {
+                        text += ' verbal amendment';
+                    } else if (amendmentType === 'LC#') {
+                        const lcNumberStep = path.find(p => p.step === 'lcNumber');
+                        const lcNumber = lcNumberStep ? JSON.parse(lcNumberStep.value).lcNumber : '.00000';
+                        text += ` amendment LC# ${lcNumber}`;
+                    }
+                } else {
+                    text += ` ${detail}`;
+                }
+            }
+            if (rerefer) text += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
             return text;
         } else if (flowType === 'meetingAction') {
             const action = path.find(p => p.step === 'meetingAction')?.value || '';
