@@ -370,3 +370,40 @@ label {
     50% { box-shadow: 0 0 20px #28a745; }
     100% { box-shadow: 0 0 5px #28a745; }
 }
+
+/* Time Editor Styling */
+.time-editor {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.time-editor label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.time-editor input, .time-editor select {
+    width: 50px;
+    margin-right: 10px;
+}
+
+.time-editor button {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.time-editor button:hover {
+    background-color: #0056b3;
+}
+
+/* Marking Time Glow Effect */
+.page-wrapper.marking-time {
+    background-color: #e6ffe6; /* Light green glow */
+}

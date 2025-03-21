@@ -1,5 +1,5 @@
-//script2.js
 let allMembers = []; // Global array to store all members from XML
+let markedTime = null; // Global variable to store the marked time
 
 document.addEventListener('DOMContentLoaded', async () => {
     const committees = window.DEFAULT_COMMITTEES || {};
@@ -990,7 +990,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        const startTime = statementStartTime || new Date();
+        const startTime = markedTime || statementStartTime || new Date();
+        if (markedTime) {
+            markedTime = null;
+            document.querySelector('.page-wrapper').classList.remove('marking-time');
+            console.log('Used markedTime for event, reset marking');
+        }
         
         if (editingIndex !== null) {
             history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '' };
@@ -1228,6 +1233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td><span class="edit-icon" data-index="${index}">✏️</span></td>
             <td><span class="delete-icon" data-index="${index}">🗑️</span></td>
         `;
+        row.setAttribute('data-index', index); // Add data-index to the row for time editing
         
         const statementBoxes = row.querySelectorAll('.statement-box');
         statementBoxes.forEach(box => {
@@ -1631,7 +1637,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 isIntroducingBill: false,
                 title: null
             };
-            const startTime = new Date();
+            const startTime = markedTime || new Date();
+            if (markedTime) {
+                markedTime = null;
+                document.querySelector('.page-wrapper').classList.remove('marking-time');
+                console.log('Used markedTime for testimony, reset marking');
+            }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
             history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
             const index = history.length - 1;
@@ -1700,6 +1711,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         historyDiv.style.top = `${historyTop}px`;
         const maxHistoryHeight = viewportHeight - historyTop - 10;
         historyDiv.style.height = `${maxHistoryHeight}px`;
+    }
+
+    // Function to show the time editor UI
+    function showTimeEditor(entry, timeCell) {
+        const editor = document.createElement('div');
+        editor.className = 'time-editor';
+        const hour = entry.time.getHours() % 12 || 12;
+        const minute = entry.time.getMinutes().toString().padStart(2, '0');
+        const second = entry.time.getSeconds().toString().padStart(2, '0');
+        const period = entry.time.getHours() >= 12 ? 'PM' : 'AM';
+
+        editor.innerHTML = `
+            <label>Hour: <input type="number" id="edit-hour" min="1" max="12" value="${hour}"></label>
+            <label>Minute: <input type="number" id="edit-minute" min="0" max="59" value="${minute}"></label>
+            <label>Second: <input type="number" id="edit-second" min="0" max="59" value="${second}"></label>
+            <label>Period: <select id="edit-period">
+                <option value="AM" ${period === 'AM' ? 'selected' : ''}>AM</option>
+                <option value="PM" ${period === 'PM' ? 'selected' : ''}>PM</option>
+            </select></label>
+            <button id="save-time">Save</button>
+        `;
+
+        document.body.appendChild(editor);
+        const rect = timeCell.getBoundingClientRect();
+        editor.style.position = 'absolute';
+        editor.style.left = `${rect.left}px`;
+        editor.style.top = `${rect.bottom}px`;
+        editor.style.zIndex = '10002';
+
+        document.getElementById('edit-hour').focus();
+
+        document.getElementById('save-time').addEventListener('click', () => {
+            let hour = parseInt(document.getElementById('edit-hour').value);
+            const period = document.getElementById('edit-period').value;
+            if (period === 'PM' && hour < 12) hour += 12;
+            else if (period === 'AM' && hour === 12) hour = 0;
+            const minute = parseInt(document.getElementById('edit-minute').value);
+            const second = parseInt(document.getElementById('edit-second').value);
+
+            const newTime = new Date(entry.time);
+            newTime.setHours(hour, minute, second);
+            entry.time = newTime;
+
+            updateHistoryTable();
+            localStorage.setItem('historyStatements', serializeHistory(history));
+            editor.remove();
+        });
+
+        const closeEditor = (e) => {
+            if (!editor.contains(e.target)) {
+                editor.remove();
+                document.removeEventListener('click', closeEditor);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeEditor), 0);
     }
 
     inputDiv.addEventListener('input', () => {
@@ -1830,9 +1896,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('submitTestimonyButton').addEventListener('click', submitTestimonyModal);
 
-            // **New Event Listener for Cancel Testimony Button**
+    // **New Event Listener for Cancel Testimony Button**
     cancelTestimonyButton.addEventListener('click', () => {
         closeTestimonyModal();
+    });
+
+    // Add double-click listener for editing time
+    historyTableBody.addEventListener('dblclick', (e) => {
+        const target = e.target;
+        if (target.tagName === 'TD' && target.cellIndex === 0) { // Time cell
+            const row = target.closest('tr');
+            const index = parseInt(row.getAttribute('data-index'), 10);
+            showTimeEditor(history[index], target);
+        }
+    });
+
+    // Add keydown listener for marking time with tilde (~)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '~') {
+            e.preventDefault();
+            const pageWrapper = document.querySelector('.page-wrapper');
+            if (markedTime) {
+                markedTime = null;
+                pageWrapper.classList.remove('marking-time');
+                console.log('Marking time turned off');
+            } else {
+                markedTime = new Date();
+                pageWrapper.classList.add('marking-time');
+                console.log('Marking time turned on, markedTime:', markedTime);
+            }
+        }
     });
 
     updateMeetingActionsLegend();
