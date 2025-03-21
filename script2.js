@@ -401,7 +401,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let action;
             if (format === 'Written') {
-                action = 'submitted testimony';
+                if (number) {
+                    action = `submitted testimony #${number}`;
+                } else {
+                    action = 'testified';
+                }
             } else {
                 action = 'testified';
             }
@@ -419,10 +423,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statement = `${formattedTime} ${nameSection} ${action} ${positionPhrase}`;
             }
             
-            if (number && format !== 'Written') {
+            if (format !== 'Written' && number) {
                 statement += ` and submitted testimony #${number}`;
-            } else if (number) {
-                statement += ` #${number}`;
             }
         }
         
