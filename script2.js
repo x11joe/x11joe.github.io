@@ -1040,9 +1040,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (path[0].step === 'testimony') {
                 handleTestimonyPrompts(editingIndex).then(() => {
                     updateHistoryTable();
+                    localStorage.setItem('historyStatements', serializeHistory(history));
                 });
             } else {
                 updateHistoryTable();
+                localStorage.setItem('historyStatements', serializeHistory(history));
             }
         } else {
             history.push({ time: startTime, path: [...path], text: statementText, link: '', bill: currentBill });
@@ -1053,9 +1055,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Scrolled to top after adding new entry');
             }, 0);
             console.log('Added new history entry:', history[history.length - 1]);
+            localStorage.setItem('historyStatements', serializeHistory(history));
         }
-        
-        localStorage.setItem('historyStatements', serializeHistory(history));
         
         editingIndex = null;
         path = [];
