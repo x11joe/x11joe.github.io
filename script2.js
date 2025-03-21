@@ -125,10 +125,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     
                     if (isSenRep) {
                         testimonyDetails.isSenatorRepresentative = true;
-                        const title = determineTitle(testimonyDetails.organization);
+                        let title;
+                        // Check role first
+                        if (/representative/.test(roleLower)) {
+                            title = "Representative";
+                        } else if (/senator/.test(roleLower)) {
+                            title = "Senator";
+                        } else {
+                            // Fall back to organization if role doesn't match
+                            title = determineTitle(testimonyDetails.organization);
+                        }
+    
                         if (title) {
                             testimonyDetails.title = title;
-                            // Find memberNo for all senators/representatives
+                            // Find memberNo for senators/representatives
                             const firstInitial = testimonyDetails.firstName ? testimonyDetails.firstName.charAt(0) : null;
                             const memberNo = findMemberNo(testimonyDetails.lastName, title, firstInitial);
                             if (memberNo) {
@@ -142,10 +152,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const lastName = testimonyDetails.lastName;
     
                                 if (isIntroducing) {
-                                    // Introducing a bill: standard format
                                     entry.text = `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}`;
                                 } else {
-                                    // Not introducing a bill: custom format with position
                                     entry.text = `${title} ${lastName} - ${testimonyDetails.position} - Testimony#${testimonyDetails.number}`;
                                 }
     
@@ -155,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 resolve();
                             });
                         } else {
-                            console.warn('Could not determine title from organization:', testimonyDetails.organization);
+                            console.warn('Could not determine title from role or organization:', testimonyDetails.role, testimonyDetails.organization);
                             resolve();
                         }
                     } else {
