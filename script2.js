@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastRereferCommittee = null;
     let amendmentPassed = false;
     let editingTestimonyIndex = null; // Track if we're editing a testimony entry
+    let currentBill = localStorage.getItem('currentBill') || 'Uncategorized';
     
     
 
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const historyDiv = document.getElementById('history');
     const entryWrapper = document.querySelector('.entry-wrapper');
     const submitTestimonyButton = document.getElementById('submitTestimonyButton');
+   
 
     // **New Variables Added for Testimony Modal**
     const testimonyModal = document.getElementById('testimonyModal');
@@ -196,7 +198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             time: entry.time.toISOString(),
             path: entry.path,
             text: entry.text,
-            link: entry.link || ''
+            link: entry.link || '',
+            bill: entry.bill || 'Uncategorized'
         })));
     }
 
@@ -206,7 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             time: new Date(entry.time),
             path: entry.path,
             text: entry.text,
-            link: entry.link || ''
+            link: entry.link || '',
+            bill: entry.bill || 'Uncategorized'
         }));
     }
 
@@ -1007,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         if (editingIndex !== null) {
-            history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '' };
+            history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '', bill: history[editingIndex].bill };
             console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
             if (path[0].step === 'testimony') {
                 handleTestimonyPrompts(editingIndex).then(() => {
@@ -1017,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateHistoryTable();
             }
         } else {
-            history.push({ time: startTime, path: [...path], text: statementText, link: '' });
+            history.push({ time: startTime, path: [...path], text: statementText, link: '', bill: currentBill });
             const row = createHistoryRow(startTime, statementText, path, history.length - 1);
             historyTableBody.insertBefore(row, historyTableBody.firstChild);
             setTimeout(() => {
@@ -1422,13 +1426,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Clear the existing table content
         historyTableBody.innerHTML = '';
         
-        // Append rows in the sorted order
-        history.forEach((entry, index) => {
-            const row = createHistoryRow(entry.time, entry.text, entry.path, index);
-            historyTableBody.appendChild(row);
+        // Group entries by bill
+        const groupedHistory = history.reduce((acc, entry) => {
+            const bill = entry.bill || 'Uncategorized';
+            if (!acc[bill]) {
+                acc[bill] = [];
+            }
+            acc[bill].push(entry);
+            return acc;
+        }, {});
+        
+        // Create bill headers and entries
+        Object.keys(groupedHistory).forEach(bill => {
+            // Create bill header row
+            const headerRow = document.createElement('tr');
+            headerRow.className = 'bill-header';
+            headerRow.innerHTML = `<td colspan="4">${bill} [click to collapse/expand]</td>`;
+            headerRow.addEventListener('click', () => {
+                let nextRow = headerRow.nextElementSibling;
+                while (nextRow && !nextRow.classList.contains('bill-header')) {
+                    nextRow.style.display = nextRow.style.display === 'none' ? '' : 'none';
+                    nextRow = nextRow.nextElementSibling;
+                }
+            });
+            historyTableBody.appendChild(headerRow);
+            
+            // Append entries for this bill
+            groupedHistory[bill].forEach((entry, index) => {
+                const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry));
+                historyTableBody.appendChild(row);
+            });
         });
         
-        console.log('History table updated and sorted by time (newest first)');
+        console.log('History table updated with bill grouping');
     }
 
     function updateLegend() {
@@ -1595,12 +1625,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const number = document.getElementById('testimonyNumber').value.trim();
         const link = document.getElementById('testimonyLink').value.trim();
         const format = document.getElementById('testimonyFormat').value;
-    
+        
         if (!position) {
             alert('Position is required.');
             return;
         }
-    
+        
         const parts = [];
         if (firstName || lastName) {
             parts.push(`${firstName} ${lastName}`.trim());
@@ -1609,9 +1639,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (organization) parts.push(organization);
         parts.push(position);
         if (number) parts.push(`Testimony#${number}`);
-    
+        
         const testimonyString = parts.join(' - ');
-    
+        
         if (editingTestimonyIndex !== null) {
             const existingDetails = path[editingTestimonyIndex].details || {};
             const updatedDetails = {
@@ -1661,7 +1691,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
-            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link });
+            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill });
             const index = history.length - 1;
             console.log('Submitting testimony with details:', testimonyObject);
             handleTestimonyPrompts(index).then(() => {
@@ -1972,6 +2002,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 pageWrapper.classList.add('marking-time');
                 console.log('Marking time turned on - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
+        }
+    });
+
+    document.getElementById('setBillBtn').addEventListener('click', () => {
+        const billInput = document.getElementById('billInput').value.trim();
+        if (billInput) {
+            currentBill = billInput;
+            localStorage.setItem('currentBill', currentBill);
+            console.log('Current bill set to:', currentBill);
+        } else {
+            console.warn('Bill input is empty');
         }
     });
 
