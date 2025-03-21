@@ -1736,13 +1736,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             path[editingTestimonyIndex].value = testimonyString;
             path[editingTestimonyIndex].details = updatedDetails;
-            closeTestimonyModal();
+            
             if (editingIndex !== null) {
                 finalizeStatement();
             } else {
                 updateInput();
                 showSuggestions('');
             }
+            closeTestimonyModal();
         } else {
             const testimonyObject = {
                 firstName,
