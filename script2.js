@@ -1515,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Save on blur (when the input loses focus)
         input.addEventListener('blur', saveNewBillName);
     }
-
+    
     function updateLegend() {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = '';
