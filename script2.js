@@ -451,7 +451,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         let statement = `${formattedTime} ${memberText}`;
         
         if (action === 'Moved') {
-            statement += ` moved ${detail}`;
+            const motionTypesRequiringArticle = suggestMotionType();
+            if (motionTypesRequiringArticle.includes(detail)) {
+                statement += ` moved a ${detail}`;
+            } else {
+                statement += ` moved ${detail}`;
+            }
             if (rerefer) statement += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
         } else if (action === 'Seconded') {
             statement += ` seconded the motion`;
