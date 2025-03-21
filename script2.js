@@ -1408,12 +1408,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateHistoryTable() {
+        // Sort history by time in ascending order
+        history.sort((a, b) => a.time - b.time);
+        
         historyTableBody.innerHTML = '';
         history.forEach((entry, index) => {
             const row = createHistoryRow(entry.time, entry.text, entry.path, index);
-            historyTableBody.insertBefore(row, historyTableBody.firstChild);
+            historyTableBody.appendChild(row); // Append rows in sorted order
         });
-        console.log('History table updated');
+        console.log('History table updated and sorted by time');
     }
 
     function updateLegend() {
@@ -1723,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const minute = entry.time.getMinutes().toString().padStart(2, '0');
         const second = entry.time.getSeconds().toString().padStart(2, '0');
         const period = entry.time.getHours() >= 12 ? 'PM' : 'AM';
-
+    
         editor.innerHTML = `
             <label>Hour: <input type="number" id="edit-hour" min="1" max="12" value="${hour}"></label>
             <label>Minute: <input type="number" id="edit-minute" min="0" max="59" value="${minute}"></label>
@@ -1734,16 +1737,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             </select></label>
             <button id="save-time">Save</button>
         `;
-
+    
         document.body.appendChild(editor);
         const rect = timeCell.getBoundingClientRect();
+        const editorHeight = 150; // Approximate height of the editor
+        const editorWidth = 250; // Approximate width of the editor
+    
+        let top = rect.bottom + window.scrollY;
+        let left = rect.left + window.scrollX;
+    
+        // Check if there's enough space below
+        if (top + editorHeight > window.innerHeight + window.scrollY) {
+            // Not enough space below, try above
+            top = rect.top - editorHeight + window.scrollY;
+            if (top < window.scrollY) {
+                // Not enough space above, position to the right
+                left = rect.right + window.scrollX;
+                top = rect.top + window.scrollY;
+                if (left + editorWidth > window.innerWidth + window.scrollX) {
+                    // Not enough space to the right, position to the left
+                    left = rect.left - editorWidth + window.scrollX;
+                }
+            }
+        }
+    
         editor.style.position = 'absolute';
-        editor.style.left = `${rect.left}px`;
-        editor.style.top = `${rect.bottom}px`;
+        editor.style.left = `${left}px`;
+        editor.style.top = `${top}px`;
         editor.style.zIndex = '10002';
-
+    
         document.getElementById('edit-hour').focus();
-
+    
         document.getElementById('save-time').addEventListener('click', () => {
             let hour = parseInt(document.getElementById('edit-hour').value);
             const period = document.getElementById('edit-period').value;
@@ -1751,16 +1775,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (period === 'AM' && hour === 12) hour = 0;
             const minute = parseInt(document.getElementById('edit-minute').value);
             const second = parseInt(document.getElementById('edit-second').value);
-
+    
             const newTime = new Date(entry.time);
             newTime.setHours(hour, minute, second);
             entry.time = newTime;
-
+    
+            // Sort history after updating time
+            history.sort((a, b) => a.time - b.time);
             updateHistoryTable();
             localStorage.setItem('historyStatements', serializeHistory(history));
             editor.remove();
         });
-
+    
         const closeEditor = (e) => {
             if (!editor.contains(e.target)) {
                 editor.remove();
