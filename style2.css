@@ -29,7 +29,9 @@ body {
     top: 0;
     left: 50vw;
     transform: translateX(-50%);
-    width: 600px;
+    width: 50%; /* Responsive width */
+    min-width: 250px; /* Minimum width to ensure readability */
+    max-width: 600px; /* Optional: maximum width to prevent it from becoming too wide */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
@@ -63,6 +65,7 @@ body {
 .input-button-wrapper {
     display: flex;
     align-items: center;
+    width: 100%; /* Ensure it takes full width of the form-group */
 }
 
 .input-button-wrapper input {
@@ -77,6 +80,7 @@ body {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    white-space: nowrap; /* Prevent button text from wrapping */
 }
 
 .input-button-wrapper button:hover {
@@ -88,6 +92,7 @@ body {
     font-weight: bold;
     color: #007bff;
     text-align: center;
+    width: 100%; /* Ensure it spans the full width */
 }
 
 /* Entry Input Area */
