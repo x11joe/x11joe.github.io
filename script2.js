@@ -390,31 +390,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statement += ` and submitted testimony ${positionPhrase} #${number}`;
             }
         } else {
-            statement = `${formattedTime} ${fullName}`;
+            let nameSection = fullName;
+            let descriptors = [];
+            if (role) descriptors.push(role);
+            if (organization) descriptors.push(organization);
+            
+            if (descriptors.length > 0) {
+                nameSection += ', ' + descriptors.join(', ');
+            }
+            
+            let action;
             if (format === 'Written') {
-                if (organization) statement += `, ${organization}`;
-                statement += `, submitted testimony`;
-                let positionPhrase;
-                if (position === 'Neutral') {
-                    positionPhrase = 'as neutral';
-                } else {
-                    positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
-                }
-                statement += ` ${positionPhrase}`;
-                if (number) statement += ` #${number}`;
+                action = 'submitted testimony';
             } else {
-                // In-Person or Online
-                if (role) statement += `, ${role}`;
-                if (organization) statement += `, ${organization}`;
-                statement += `, testified`;
-                let positionPhrase;
-                if (position === 'Neutral') {
-                    positionPhrase = 'as neutral';
-                } else {
-                    positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
-                }
-                statement += ` ${positionPhrase}`;
-                if (number) statement += ` and submitted testimony #${number}`;
+                action = 'testified';
+            }
+            
+            let positionPhrase;
+            if (position === 'Neutral') {
+                positionPhrase = 'as neutral';
+            } else {
+                positionPhrase = position.toLowerCase(); // "in favor" or "in opposition"
+            }
+            
+            if (descriptors.length > 0) {
+                statement = `${formattedTime} ${nameSection}, ${action} ${positionPhrase}`;
+            } else {
+                statement = `${formattedTime} ${nameSection} ${action} ${positionPhrase}`;
+            }
+            
+            if (number && format !== 'Written') {
+                statement += ` and submitted testimony #${number}`;
+            } else if (number) {
+                statement += ` #${number}`;
             }
         }
         
@@ -1515,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Save on blur (when the input loses focus)
         input.addEventListener('blur', saveNewBillName);
     }
-    
+
     function updateLegend() {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = '';
