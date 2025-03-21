@@ -1408,15 +1408,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateHistoryTable() {
-        // Sort history by time in ascending order
-        history.sort((a, b) => a.time - b.time);
+        // Sort history by time in descending order (newest first)
+        history.sort((a, b) => b.time - a.time);
         
+        // Clear the existing table content
         historyTableBody.innerHTML = '';
+        
+        // Append rows in the sorted order
         history.forEach((entry, index) => {
             const row = createHistoryRow(entry.time, entry.text, entry.path, index);
-            historyTableBody.appendChild(row); // Append rows in sorted order
+            historyTableBody.appendChild(row);
         });
-        console.log('History table updated and sorted by time');
+        
+        console.log('History table updated and sorted by time (newest first)');
     }
 
     function updateLegend() {
