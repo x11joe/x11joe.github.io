@@ -1755,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
-            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: personallyBill });
+            history.push({ time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill });
             const index = history.length - 1;
             console.log('Submitting testimony with details:', testimonyObject);
             handleTestimonyPrompts(index).then(() => {
