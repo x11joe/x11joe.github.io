@@ -1913,11 +1913,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Add keydown listener for marking time with tilde (~)
+    // Add keydown listener for marking time with backtick (`)
     document.addEventListener('keydown', (e) => {
         console.log('Keydown event detected - code:', e.code, 'key:', e.key, 'shiftKey:', e.shiftKey); // Debug log
-        if (e.key === '~') {
-            console.log('Tilde key pressed'); // Confirm tilde detection
+        if (e.key === '`') {
+            console.log('Backtick key pressed'); // Confirm backtick detection
             e.preventDefault();
             const pageWrapper = document.querySelector('.page-wrapper');
             console.log('pageWrapper element:', pageWrapper); // Verify element exists
