@@ -1275,6 +1275,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             console.log('Roll Call Vote on Amendment failed, setting amendmentPassed to false');
                         }
                     }
+                } else {
+                    // Reset amendment and rerefer tracking for non-Amendment motions
+                    amendmentPassed = false;
+                    lastRereferCommittee = null;
+                    console.log('Non-Amendment motion finalized, reset amendmentPassed and lastRereferCommittee');
                 }
             }
         }
