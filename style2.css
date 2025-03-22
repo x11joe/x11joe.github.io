@@ -121,7 +121,15 @@ body {
 }
 
 .radio-item input[type="radio"] {
-    margin-right: 5px;
+    margin: 0 5px 0 0; /* Reset default margins, set right margin to 5px */
+    vertical-align: middle; /* Ensure consistent vertical alignment */
+}
+
+.radio-item label {
+    margin: 0; /* Remove any default margins */
+    padding: 0; /* Remove any default padding */
+    line-height: 1; /* Standardize line height for consistent height */
+    vertical-align: middle; /* Match radio button alignment */
 }
 
 /* Entry Input Area */
