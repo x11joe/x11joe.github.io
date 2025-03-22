@@ -689,7 +689,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.id = `module-${field.name}`;
-                // Initialize moduleValues[field.name] if undefined
                 if (moduleValues[field.name] === undefined) {
                     moduleValues[field.name] = 0;
                 }
@@ -699,7 +698,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const decrement = document.createElement('button');
                 decrement.textContent = '-';
                 decrement.onclick = () => {
-                    // Ensure value is a number and decrement only if > 0
                     if (moduleValues[field.name] === undefined) {
                         moduleValues[field.name] = 0;
                     }
@@ -712,7 +710,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const increment = document.createElement('button');
                 increment.textContent = '+';
                 increment.onclick = () => {
-                    // Ensure value is a number before incrementing
                     if (moduleValues[field.name] === undefined) {
                         moduleValues[field.name] = 0;
                     }
@@ -720,7 +717,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     input.value = moduleValues[field.name];
                 };
     
-                // Handle manual input to prevent NaN
                 input.addEventListener('input', () => {
                     const value = parseInt(input.value, 10);
                     if (isNaN(value) || value < 0) {
@@ -747,6 +743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     
         const submit = document.createElement('button');
+        submit.id = 'module-submit'; // Added ID for selection
         submit.textContent = 'Submit';
         submit.onclick = () => {
             const moduleResult = {};
@@ -1965,6 +1962,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         targetInput.value = currentValue + 1;
                     }
+                }
+            }
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Prevent default tab behavior
+                const submitButton = document.getElementById('module-submit');
+                if (submitButton) {
+                    submitButton.click(); // Simulate click on submit button
                 }
             }
         }
