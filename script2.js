@@ -1111,6 +1111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const lcNumber = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '.00000';
                     statement += ` moved Amendment LC# ${lcNumber}`;
                 }
+            } else if (detail === 'Reconsider') {
+                statement += ` moved to reconsider`;
             } else {
                 const motionTypesRequiringArticle = suggestMotionType();
                 statement += motionTypesRequiringArticle.includes(detail) ? ` moved a ${detail}` : ` moved ${detail}`;
