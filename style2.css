@@ -117,19 +117,21 @@ body {
 
 .radio-item {
     display: flex;
-    align-items: center;
+    align-items: baseline; /* Aligns the baseline of the label text with the radio button */
 }
 
 .radio-item input[type="radio"] {
-    margin: 0 5px 0 0; /* Reset default margins, set right margin to 5px */
-    vertical-align: middle; /* Ensure consistent vertical alignment */
+    margin: 0 5px 0 0; /* Consistent spacing between radio button and label */
+    width: 16px !important; /* Fixed width */
+    height: 16px; /* Fixed height */
+    vertical-align: middle;
 }
 
 .radio-item label {
-    margin: 0; /* Remove any default margins */
-    padding: 0; /* Remove any default padding */
-    line-height: 1; /* Standardize line height for consistent height */
-    vertical-align: middle; /* Match radio button alignment */
+    margin: 0;
+    padding: 0;
+    line-height: 16px; /* Matches the radio button height for vertical alignment */
+    vertical-align: middle;
 }
 
 /* Entry Input Area */
