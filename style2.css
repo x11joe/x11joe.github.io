@@ -532,3 +532,9 @@ label {
     background-color: rgba(0, 255, 0, 0.1); /* Slight green tint for visibility */
     box-shadow: 0 0 30px 10px rgba(0, 255, 0, 0.7); /* Strong glow effect */
 }
+
+.editing-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}

@@ -1583,10 +1583,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     function editBillName(headerRow, oldBillName) {
         const firstEntry = history.find(entry => entry.bill.name === oldBillName);
         const oldType = firstEntry ? firstEntry.bill.type : 'Hearing';
+        
+        // Create input for bill name
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
         nameInput.value = oldBillName;
         nameInput.style.width = '60%'; // Adjust width to fit alongside select
+        
+        // Create select dropdown for bill type
         const typeSelect = document.createElement('select');
         const options = ['Hearing', 'Committee Work', 'Conference Committee'];
         options.forEach(opt => {
@@ -1598,11 +1602,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         typeSelect.style.width = '35%'; // Adjust width
         typeSelect.style.marginLeft = '5px';
+        
+        // Create a wrapper div to contain editing elements
+        const editingWrapper = document.createElement('div');
+        editingWrapper.className = 'editing-wrapper';
+        editingWrapper.appendChild(nameInput);
+        editingWrapper.appendChild(typeSelect);
+        
+        // Append wrapper to the table cell and clear existing content
         const td = headerRow.querySelector('td');
         td.innerHTML = '';
-        td.appendChild(nameInput);
-        td.appendChild(typeSelect);
+        td.appendChild(editingWrapper);
+        
+        // Stop click event propagation from the wrapper
+        editingWrapper.addEventListener('click', (e) => e.stopPropagation());
+        
+        // Focus on the input field
         nameInput.focus();
+        
+        // Save function to update bill name and type
         const saveNewBill = () => {
             const newBillName = nameInput.value.trim() || 'Uncategorized';
             const newType = typeSelect.value;
@@ -1615,6 +1633,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('historyStatements', serializeHistory(history));
             updateHistoryTable();
         };
+        
+        // Event listeners for saving changes
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveNewBill();
         });
