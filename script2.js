@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let amendmentPassed = false;
     let editingTestimonyIndex = null; // Track if we're editing a testimony entry
     let currentBill = localStorage.getItem('currentBill') || 'Uncategorized';
+    let currentBillType = "Hearing"; // Default to "Hearing" for the bill type, possible values are "Committee work", "Hearing", "Conference Committee"
     
     // Set input field: empty if 'Uncategorized', otherwise show the bill
     document.getElementById('billInput').value = currentBill === 'Uncategorized' ? '' : currentBill;
@@ -72,6 +73,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCommittee = savedCommittee;
     }
     committeeSelect.value = currentCommittee;
+
+    currentBillType = localStorage.getItem('billType') || currentBillType;
+    document.querySelector(`input[name="billType"][value="${currentBillType}"]`).checked = true;
+
+    // Add event listener for bill type radio buttons
+    document.querySelectorAll('input[name="billType"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            currentBillType = document.querySelector('input[name="billType"]:checked').value;
+            localStorage.setItem('billType', currentBillType);
+            console.log('Bill type changed to:', currentBillType);
+        });
+    });
 
     committeeSelect.addEventListener('change', () => {
         currentCommittee = committeeSelect.value;

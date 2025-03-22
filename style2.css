@@ -29,9 +29,9 @@ body {
     top: 0;
     left: 50vw;
     transform: translateX(-50%);
-    width: 50%; /* Responsive width */
-    min-width: 250px; /* Minimum width to ensure readability */
-    max-width: 600px; /* Optional: maximum width to prevent it from becoming too wide */
+    width: 80%; /* Responsive width */
+    max-width: 600px; /* Maximum width */
+    min-width: 300px; /* Minimum width */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
@@ -65,7 +65,7 @@ body {
 .input-button-wrapper {
     display: flex;
     align-items: center;
-    width: 100%; /* Ensure it takes full width of the form-group */
+    width: 100%;
 }
 
 .input-button-wrapper input {
@@ -80,7 +80,7 @@ body {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    white-space: nowrap; /* Prevent button text from wrapping */
+    white-space: nowrap;
 }
 
 .input-button-wrapper button:hover {
@@ -92,7 +92,14 @@ body {
     font-weight: bold;
     color: #007bff;
     text-align: center;
-    width: 100%; /* Ensure it spans the full width */
+    width: 100%;
+}
+
+/* Bill Type Radio Buttons */
+.form-group div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* Entry Input Area */
@@ -101,7 +108,8 @@ body {
     top: 50vh;
     left: 50vw;
     transform: translate(-50%, -50%);
-    width: 600px;
+    width: 80%; /* Responsive width */
+    max-width: 800px; /* Maximum width */
     overflow: visible;
 }
 
@@ -129,7 +137,8 @@ body {
     position: absolute;
     left: 50vw;
     transform: translateX(-50%);
-    width: 600px;
+    width: 80%; /* Responsive width */
+    max-width: 800px; /* Maximum width */
     display: flex;
     flex-direction: column;
     z-index: 1;
@@ -139,6 +148,7 @@ body {
     flex-grow: 1;
     overflow-y: auto;
     border: 1px solid #ccc;
+    width: 100%;
 }
 
 #historyTable {
@@ -177,7 +187,8 @@ body {
     border: 1px solid #ccc;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     max-height: 200px;
-    width: 600px;
+    width: 100%; /* Take full width of container */
+    max-width: 600px; /* Maximum width */
     overflow-y: auto;
     display: none;
     z-index: 10000;
