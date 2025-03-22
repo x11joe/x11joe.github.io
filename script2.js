@@ -987,9 +987,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                             showCustomConfirm("Are they introducing a bill?").then((isIntroducing) => {
                                 testimonyDetails.isIntroducingBill = isIntroducing;
                                 const lastName = testimonyDetails.lastName;
-                                entry.text = isIntroducing ? 
-                                    `${title} ${lastName} - Introduced Bill - Testimony#${testimonyDetails.number}` : 
-                                    `${title} ${lastName} - ${testimonyDetails.position} - Testimony#${testimonyDetails.number}`;
+                                if (isIntroducing) {
+                                    entry.text = `${title} ${lastName} - Introduced Bill`;
+                                    if (testimonyDetails.number) {
+                                        entry.text += ` - Testimony#${testimonyDetails.number}`;
+                                    }
+                                } else {
+                                    entry.text = `${title} ${lastName} - ${testimonyDetails.position}`;
+                                    if (testimonyDetails.number) {
+                                        entry.text += ` - Testimony#${testimonyDetails.number}`;
+                                    }
+                                }
                                 entry.path[0].value = entry.text;
                                 entry.path[0].details = { ...testimonyDetails };
                                 localStorage.setItem('historyStatements', serializeHistory(history));
@@ -1318,7 +1326,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (testimonyDetails.isSenatorRepresentative) {
                 const positionLower = testimonyDetails.position.toLowerCase();
                 const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
-                proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified in ${positionLower} and submitted testimony #${testimonyDetails.number}`;
+                proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified in ${positionLower}`;
+                if (testimonyDetails.number) {
+                    proceduralStatement += ` and submitted testimony #${testimonyDetails.number}`;
+                }
             } else {
                 proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
