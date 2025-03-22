@@ -101,10 +101,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // === Utility Functions ===
 
     // Suggest motion types for voting actions
-    const suggestMotionType = () => ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
+    function suggestMotionType() {
+        return ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
+    }
 
     // Suggest reasons a motion failed
-    const suggestFailedReason = () => ["for lack of a second"];
+    function suggestFailedReason() {
+        return ["for lack of a second"];
+    }
 
     // Determine legislative title (Senator/Representative) based on organization
     function determineTitle(org) {
