@@ -84,6 +84,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedHistory = localStorage.getItem('historyStatements');
     if (savedHistory) {
         history = deserializeHistory(savedHistory);
+        // Ensure bill is an object for backward compatibility
+        history.forEach(entry => {
+            if (typeof entry.bill === 'string') {
+                entry.bill = { name: entry.bill, type: 'Hearing' }; // Default to 'Hearing' for old data
+            }
+        });
         updateHistoryTable();
         console.log('History loaded from local storage:', history);
     }
@@ -239,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             path: entry.path,
             text: entry.text,
             link: entry.link || '',
-            bill: entry.bill || 'Uncategorized'
+            bill: entry.bill ? { name: entry.bill.name, type: entry.bill.type } : { name: 'Uncategorized', type: 'Hearing' }
         })));
     }
 
@@ -251,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             path: entry.path,
             text: entry.text,
             link: entry.link || '',
-            bill: entry.bill || 'Uncategorized'
+            bill: entry.bill ? { name: entry.bill.name, type: entry.bill.type } : { name: 'Uncategorized', type: 'Hearing' }
         }));
     }
 
@@ -936,7 +942,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Used markedTime for testimony, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
             }
             const pathEntry = { step: 'testimony', value: testimonyString, details: testimonyObject };
-            const newEntry = { time: startTime, path: [pathEntry], text: testimonyString, link: link, bill: currentBill };
+            const newEntry = { 
+                time: startTime, 
+                path: [pathEntry], 
+                text: testimonyString, 
+                link: link, 
+                bill: { name: currentBill, type: currentBillType } 
+            };
             history.push(newEntry);
             handleTestimonyPrompts(history.length - 1).then(() => {
                 updateHistoryTable(newEntry);
@@ -1288,7 +1300,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Used markedTime for event, reset marking - markedTime is now:', markedTime ? 'true' : 'false', 'value:', markedTime);
         }
         if (editingIndex !== null) {
-            history[editingIndex] = { time: startTime, path: [...path], text: statementText, link: history[editingIndex].link || '', bill: history[editingIndex].bill };
+            history[editingIndex] = { 
+                time: startTime, 
+                path: [...path], 
+                text: statementText, 
+                link: history[editingIndex].link || '', 
+                bill: history[editingIndex].bill // Preserve existing bill object
+            };
             console.log('Edited history entry at index', editingIndex, ':', history[editingIndex]);
             if (path[0].step === 'testimony') {
                 handleTestimonyPrompts(editingIndex).then(() => {
@@ -1300,7 +1318,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('historyStatements', serializeHistory(history));
             }
         } else {
-            const newEntry = { time: startTime, path: [...path], text: statementText, link: '', bill: currentBill };
+            const newEntry = { 
+                time: startTime, 
+                path: [...path], 
+                text: statementText, 
+                link: '', 
+                bill: { name: currentBill, type: currentBillType } 
+            };
             history.push(newEntry);
             updateHistoryTable(newEntry);
             setTimeout(() => {
@@ -1494,20 +1518,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         history.sort((a, b) => b.time - a.time);
         historyTableBody.innerHTML = '';
         const groupedHistory = history.reduce((acc, entry) => {
-            const bill = entry.bill || 'Uncategorized';
-            if (!acc[bill]) acc[bill] = [];
-            acc[bill].push(entry);
+            const billName = entry.bill.name || 'Uncategorized';
+            if (!acc[billName]) acc[billName] = [];
+            acc[billName].push(entry);
             return acc;
         }, {});
-        const billGroupsWithTimes = Object.keys(groupedHistory).map(bill => ({
-            bill,
-            earliestTime: Math.min(...groupedHistory[bill].map(entry => entry.time.getTime()))
+        const billGroupsWithTimes = Object.keys(groupedHistory).map(billName => ({
+            billName,
+            earliestTime: Math.min(...groupedHistory[billName].map(entry => entry.time.getTime()))
         }));
         billGroupsWithTimes.sort((a, b) => b.earliestTime - a.earliestTime);
-        billGroupsWithTimes.forEach(({ bill }) => {
+        billGroupsWithTimes.forEach(({ billName }) => {
+            const firstEntry = groupedHistory[billName][0];
+            const billType = firstEntry.bill.type;
             const headerRow = document.createElement('tr');
             headerRow.className = 'bill-header';
-            headerRow.innerHTML = `<td colspan="4">${bill} [click to collapse/expand]</td>`;
+            headerRow.innerHTML = `<td colspan="4">${billName} - ${billType} [click to collapse/expand]</td>`;
+            headerRow.setAttribute('data-bill-name', billName);
             headerRow.addEventListener('click', () => {
                 let nextRow = headerRow.nextElementSibling;
                 while (nextRow && !nextRow.classList.contains('bill-header')) {
@@ -1515,9 +1542,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     nextRow = nextRow.nextElementSibling;
                 }
             });
-            headerRow.addEventListener('dblclick', () => editBillName(headerRow, bill));
+            headerRow.addEventListener('dblclick', () => editBillName(headerRow, billName));
             historyTableBody.appendChild(headerRow);
-            groupedHistory[bill].forEach((entry) => {
+            groupedHistory[billName].forEach((entry) => {
                 const isNew = (entry === newEntry);
                 const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry), isNew);
                 historyTableBody.appendChild(row);
@@ -1554,26 +1581,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit the name of a bill in the history table
     function editBillName(headerRow, oldBillName) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = oldBillName;
-        input.style.width = '100%';
+        const firstEntry = history.find(entry => entry.bill.name === oldBillName);
+        const oldType = firstEntry ? firstEntry.bill.type : 'Hearing';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = oldBillName;
+        nameInput.style.width = '60%'; // Adjust width to fit alongside select
+        const typeSelect = document.createElement('select');
+        const options = ['Hearing', 'Committee Work', 'Conference Committee'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            if (opt === oldType) option.selected = true;
+            typeSelect.appendChild(option);
+        });
+        typeSelect.style.width = '35%'; // Adjust width
+        typeSelect.style.marginLeft = '5px';
         const td = headerRow.querySelector('td');
         td.innerHTML = '';
-        td.appendChild(input);
-        input.focus();
-        const saveNewBillName = () => {
-            const newBillName = input.value.trim() || 'Uncategorized';
+        td.appendChild(nameInput);
+        td.appendChild(typeSelect);
+        nameInput.focus();
+        const saveNewBill = () => {
+            const newBillName = nameInput.value.trim() || 'Uncategorized';
+            const newType = typeSelect.value;
             history.forEach(entry => {
-                if (entry.bill === oldBillName) entry.bill = newBillName;
+                if (entry.bill.name === oldBillName) {
+                    entry.bill.name = newBillName;
+                    entry.bill.type = newType;
+                }
             });
             localStorage.setItem('historyStatements', serializeHistory(history));
             updateHistoryTable();
         };
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') saveNewBillName();
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveNewBill();
         });
-        input.addEventListener('blur', saveNewBillName);
+        typeSelect.addEventListener('change', saveNewBill);
+        nameInput.addEventListener('blur', saveNewBill);
     }
 
     // Delete a history entry
