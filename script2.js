@@ -603,14 +603,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inputRect = inputDiv.getBoundingClientRect();
         const containerRect = document.querySelector('.container').getBoundingClientRect();
         const modalHeight = modal.offsetHeight;
-        const spaceBelow = window.innerHeight - inputRect.bottom;
-        if (spaceBelow >= modalHeight) {
-            // Place below the input
-            modal.style.top = (inputRect.bottom - containerRect.top) + 'px';
-        } else {
+    
+        // Check if there's enough space above the input field in the viewport
+        if (inputRect.top >= modalHeight) {
             // Place above the input
             modal.style.top = (inputRect.top - containerRect.top - modalHeight) + 'px';
+        } else {
+            // Place below the input
+            modal.style.top = (inputRect.bottom - containerRect.top) + 'px';
         }
+    
+        // Align modal with the input field's left edge and match its width
         modal.style.left = '0';
         modal.style.width = inputRect.width + 'px';
     }
