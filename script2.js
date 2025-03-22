@@ -25,9 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastMovedDetail = null; // Last motion detail moved
     let lastRereferCommittee = null; // Last committee a bill was rereferred to
     let amendmentPassed = false; // Tracks if an amendment has passed
+    let pendingAmendment = false; // Tracks if an amendment is moved but not yet voted on
     let editingTestimonyIndex = null; // Index of testimony being edited
     let currentBill = localStorage.getItem('currentBill') || 'Uncategorized'; // Current bill identifier
     let currentBillType = localStorage.getItem('billType') || "Hearing"; // Type of bill (e.g., Hearing, Committee work)
+    
 
     // DOM element references
     const inputDiv = document.getElementById('input');
@@ -191,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (stepConfig.options === "suggestMotionType") options = suggestMotionType();
         else if (stepConfig.options === "suggestFailedReason") options = suggestFailedReason();
         else if (Array.isArray(stepConfig.options)) {
-            options = stepConfig.options;
+            options = stepConfig.options.slice(); // Copy the array to avoid mutating the original
             if (stepType === 'motionModifiers') {
                 if (amendmentPassed && lastRereferCommittee) options = ['as Amended', 'and Rereferred', 'Take the Vote'].filter(opt => stepConfig.options.includes(opt));
                 else if (amendmentPassed) options = ['as Amended', 'Take the Vote', 'and Rereferred'].filter(opt => stepConfig.options.includes(opt));
@@ -199,8 +201,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else options = ['Take the Vote', 'as Amended', 'and Rereferred'];
             } else if (stepType === 'afterAmended') {
                 options = lastRereferCommittee ? ['and Rereferred', 'Take the Vote'] : ['Take the Vote', 'and Rereferred'];
-            } else if (stepType === 'rollCallBaseMotionType' && lastMovedDetail && options.includes(lastMovedDetail)) {
-                options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
+            } else if (stepType === 'rollCallBaseMotionType') {
+                if (pendingAmendment) {
+                    options.unshift('Amendment'); // Add "Amendment" first if there's a pending amendment
+                }
+                if (lastMovedDetail && options.includes(lastMovedDetail)) {
+                    options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
+                }
             }
         }
         return options;
@@ -373,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 path.push({ step: currentStep, value: option, display: displayText });
                 if (currentStep === 'voteModule') {
                     const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                    currentStep = (motionType === 'Reconsider') ? null : 'carryBillPrompt';
+                    currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
                 } else {
                     currentStep = stepConfig.next;
                 }
@@ -400,7 +407,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     path.push({ step: currentStep, value: option });
                 }
                 if (stepConfig.next) {
-                    currentStep = typeof stepConfig.next === 'string' ? stepConfig.next : stepConfig.next[option] || stepConfig.next.default;
+                    if (typeof stepConfig.next === 'string') {
+                        currentStep = stepConfig.next;
+                    } else {
+                        currentStep = stepConfig.next[option] || (option === 'Amendment' ? 'voteModule' : stepConfig.next.default);
+                    }
                 } else {
                     currentStep = null;
                 }
@@ -588,9 +599,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedSuggestionIndex = -1;
     }
 
-    // Position the suggestion modal (handled via CSS in this implementation)
+    // Position the suggestion modal dynamically
     function positionModal() {
-        // Positioned via CSS
+        const inputRect = inputDiv.getBoundingClientRect();
+        const containerRect = document.querySelector('.container').getBoundingClientRect();
+        const modalHeight = modal.offsetHeight;
+        const spaceBelow = window.innerHeight - inputRect.bottom;
+        if (spaceBelow >= modalHeight) {
+            // Place below the input
+            modal.style.top = (inputRect.bottom - containerRect.top) + 'px';
+        } else {
+            // Place above the input
+            modal.style.top = (inputRect.top - containerRect.top - modalHeight) + 'px';
+        }
+        modal.style.left = '0';
+        modal.style.width = inputRect.width + 'px';
     }
 
     // Update highlighting for suggestion options
@@ -1202,6 +1225,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (detailPart) {
                         lastMovedDetail = detailPart.value;
                         console.log('Updated lastMovedDetail to:', lastMovedDetail);
+                        if (lastMovedDetail === 'Amendment') {
+                            pendingAmendment = true;
+                            console.log('Set pendingAmendment to true');
+                        }
                     }
                     const rereferPart = path.find(p => p.step === 'rereferOptional');
                     if (rereferPart) {
@@ -1220,6 +1247,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (onWhat === 'Amendment' && outcome === 'Passed') {
                     amendmentPassed = true;
                     console.log('Amendment passed, setting amendmentPassed to true');
+                }
+            } else if (voteType === 'Roll Call Vote') {
+                const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                if (motionType === 'Amendment') {
+                    pendingAmendment = false;
+                    console.log('Vote on Amendment finalized, set pendingAmendment to false');
+                    const voteResultPart = path.find(p => p.step === 'voteModule');
+                    if (voteResultPart) {
+                        const result = JSON.parse(voteResultPart.value);
+                        const forVotes = result.for || 0;
+                        const againstVotes = result.against || 0;
+                        if (forVotes > againstVotes) {
+                            amendmentPassed = true;
+                            console.log('Roll Call Vote on Amendment passed, setting amendmentPassed to true');
+                        } else {
+                            amendmentPassed = false;
+                            console.log('Roll Call Vote on Amendment failed, setting amendmentPassed to false');
+                        }
+                    }
                 }
             }
         }

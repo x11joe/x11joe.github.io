@@ -223,8 +223,7 @@ body {
     overflow-y: auto;
     display: none;
     z-index: 10000;
-    top: -210px;
-    left: 0;
+    /* top and left are set by JavaScript */
 }
 
 .modal.active {
