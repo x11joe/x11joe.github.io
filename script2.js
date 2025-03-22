@@ -1382,29 +1382,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             let techStatement = statementText;
             let proceduralStatement;
             if (testimonyDetails.isIntroducingBill) {
-            proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
+                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
             } else if (testimonyDetails.isSenatorRepresentative) {
-            const positionLower = testimonyDetails.position.toLowerCase();
-            const positionPhrase = positionLower === "neutral" ? "as neutral" : positionLower;
-            const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
-            proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified ${positionPhrase}`;
-            if (testimonyDetails.number) {
-                proceduralStatement += ` and submitted testimony #${testimonyDetails.number}`;
-            }
+                const positionLower = testimonyDetails.position.toLowerCase();
+                const positionPhrase = positionLower === "neutral" ? "as neutral" : positionLower;
+                const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+                proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified ${positionPhrase}`;
+                if (testimonyDetails.number) {
+                    proceduralStatement += ` and submitted testimony #${testimonyDetails.number}`;
+                }
             } else {
-            proceduralStatement = constructProceduralStatement(time, testimonyDetails);
+                proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
             const link = testimonyDetails.link || '';
             const memberNo = testimonyDetails.memberNo || '';
             statementHtml = `
-            <div class="statement-box tech-clerk" 
-                data-tech-statement="${techStatement.trim()}" 
-                data-link="${link}" 
-                data-memberno="${memberNo}" 
-                title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
-                ${techStatement.trim()}
-            </div>
-            <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+                <div class="statement-box tech-clerk" 
+                    data-tech-statement="${techStatement.trim()}" 
+                    data-link="${link}" 
+                    data-memberno="${memberNo}" 
+                    title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                    ${techStatement.trim()}
+                </div>
+                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
         } else if (path[0].step === 'introducedBill') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
@@ -1414,9 +1414,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const proceduralStatement = constructProceduralStatement(time, { lastName, title, introducingBill: true });
             statementHtml = `
                 <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement.trim()}" 
-                     data-memberno="${memberNo}" 
-                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                    data-tech-statement="${techStatement.trim()}" 
+                    data-memberno="${memberNo}" 
+                    title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement.trim()}
                 </div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
@@ -1428,10 +1428,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const link = '';
             statementHtml = `
                 <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement.trim()}" 
-                     data-link="${link}" 
-                     data-memberno="${memberNo}" 
-                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                    data-tech-statement="${techStatement.trim()}" 
+                    data-link="${link}" 
+                    data-memberno="${memberNo}" 
+                    title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement.trim()}
                 </div>
                 <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
@@ -1473,6 +1473,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
         });
+        const techClerkBox = row.querySelector('.statement-box.tech-clerk');
+        if (techClerkBox) {
+            techClerkBox.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+        }
         const editIcon = row.querySelector('.edit-icon');
         editIcon.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1938,6 +1944,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = target.closest('tr');
             const index = parseInt(row.getAttribute('data-index'), 10);
             showTimeEditor(history[index], target);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (modal.classList.contains('active') && currentStep === 'voteModule') {
+            const inputFor = document.getElementById('module-for');
+            const inputAgainst = document.getElementById('module-against');
+            const inputNeutral = document.getElementById('module-neutral');
+            if (inputFor && inputAgainst && inputNeutral) {
+                let targetInput;
+                if (e.key === '1') targetInput = inputFor;
+                else if (e.key === '2') targetInput = inputAgainst;
+                else if (e.key === '3') targetInput = inputNeutral;
+                if (targetInput) {
+                    e.preventDefault(); // Prevent default behavior of the key press
+                    const currentValue = parseInt(targetInput.value, 10) || 0;
+                    if (e.ctrlKey) {
+                        if (currentValue > 0) targetInput.value = currentValue - 1;
+                    } else {
+                        targetInput.value = currentValue + 1;
+                    }
+                }
+            }
         }
     });
 
