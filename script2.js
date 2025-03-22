@@ -567,18 +567,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Suggestions skipped: dropdown is active');
             return;
         }
-        const options = getCurrentOptions();
-        if (currentStep === 'voteModule') {
-            console.log('Attempting to show voteModule');
-            const stepConfig = currentFlow.steps.find(step => step.step === 'voteModule');
-            if (stepConfig) {
-                console.log('Found voteModule stepConfig:', stepConfig);
-                handleModule(stepConfig, null);
-            } else {
-                console.error('voteModule step config not found in currentFlow:', currentFlow);
+        if (currentFlow && currentStep) {
+            const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+            if (stepConfig && stepConfig.type === 'module') {
+                console.log('Opening module for step:', currentStep);
+                // Check if editing an existing module value
+                const currentPathStep = path.find(p => p.step === currentStep);
+                const existingValues = currentPathStep ? JSON.parse(currentPathStep.value) : null;
+                handleModule(stepConfig, existingValues);
+                return;
             }
-            return;
         }
+        const options = getCurrentOptions();
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
         modal.innerHTML = '';
         if (filtered.length > 0) {
