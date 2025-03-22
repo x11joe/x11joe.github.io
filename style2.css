@@ -95,11 +95,33 @@ body {
     width: 100%;
 }
 
-/* Bill Type Radio Buttons */
-.form-group div {
+/* Bill Type Group */
+.bill-type-group {
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.bill-type-group label {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.radio-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.radio-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+}
+
+.radio-item input[type="radio"] {
+    margin-right: 5px;
 }
 
 /* Entry Input Area */
