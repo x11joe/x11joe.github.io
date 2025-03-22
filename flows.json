@@ -10,10 +10,11 @@
             "steps": [
                 { "step": "member", "type": "select", "options": "committeeMembers", "next": "action" },
                 { "step": "action", "type": "select", "options": ["Moved", "Seconded", "Withdrew", "Proposed Amendment", "Introduced Bill"], "next": { "Moved": "movedDetail", "Proposed Amendment": "amendmentModule", "default": null } },
-                { "step": "movedDetail", "type": "select", "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "rereferOptional", "Do Not Pass": "rereferOptional", "Amendment": "amendmentType", "default": null } },
+                { "step": "movedDetail", "type": "select", "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "rereferQuestion", "Do Not Pass": "rereferQuestion", "Amendment": "amendmentType", "default": null } },
+                { "step": "rereferQuestion", "type": "select", "options": ["No Rerefer", "Rerefer"], "next": { "Rerefer": "rereferOptional", "No Rerefer": null } },
+                { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "next": null },
                 { "step": "amendmentType", "type": "select", "options": ["Verbal", "LC#"], "next": { "Verbal": null, "LC#": "lcNumber" } },
                 { "step": "lcNumber", "type": "module", "fields": [{ "name": "lcNumber", "type": "text", "default": ".00000" }], "next": null },
-                { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "optional": true, "next": null },
                 { "step": "amendmentModule", "type": "module", "fields": [{ "name": "amendmentText", "type": "text" }], "next": null }
             ]
         },
