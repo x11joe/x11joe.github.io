@@ -2004,8 +2004,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const target = e.target;
         if (target.tagName === 'TD' && target.cellIndex === 0) {
             const row = target.closest('tr');
-            const index = parseInt(row.getAttribute('data-index'), 10);
-            showTimeEditor(history[index], target);
+            const indexAttr = row.getAttribute('data-index');
+            if (indexAttr !== null) {
+                const index = parseInt(indexAttr, 10);
+                if (!isNaN(index) && history[index]) {
+                    showTimeEditor(history[index], target);
+                }
+            }
         }
     });
 
