@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Define character encoding -->
+    <meta charset="UTF-8">
+    <!-- Ensure responsive viewport scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title -->
+    <title>Predictive Statement System V.1.0.3</title>
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="style3.css">
+</head>
+<body>
+    <!-- Main wrapper for layout and marking time effect -->
+    <div class="page-wrapper">
+        <!-- Spacer for layout adjustment -->
+        <div class="top-spacer"></div>
+        <!-- Container for committee selection and bill settings -->
+        <div id="committeeSelectWrapper">
+            <!-- Committee selection dropdown -->
+            <div class="form-group">
+                <label for="committeeSelect">Select Committee:</label>
+                <select id="committeeSelect"></select>
+            </div>
+            <!-- Bill input and set button -->
+            <div class="form-group">
+                <label for="billInput">Set Bill:</label>
+                <div class="input-button-wrapper">
+                    <input type="text" id="billInput" placeholder="e.g., SB 2001">
+                    <button id="setBillBtn">Set Bill</button>
+                </div>
+            </div>
+            <!-- Bill type radio buttons -->
+            <div class="form-group bill-type-group">
+                <label>Bill Type:</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="hearing" name="billType" value="Hearing">
+                        <label for="hearing">Hearing</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="committeeWork" name="billType" value="Committee Work">
+                        <label for="committeeWork">Committee Work</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="conferenceCommittee" name="billType" value="Conference Committee">
+                        <label for="conferenceCommittee">Conference Committee</label>
+                    </div>
+                </div>
+            </div>
+            <!-- Display current bill -->
+            <span id="currentBillDisplay"></span>
+        </div>
+        <!-- Wrapper for input area -->
+        <div class="entry-wrapper">
+            <div class="container">
+                <!-- Modal for showing suggestions -->
+                <div id="modal" class="modal"></div>
+                <!-- Editable div for user input and tags -->
+                <div id="input" class="input" contenteditable="true" spellcheck="false"></div>
+            </div>
+        </div>
+        <!-- History section -->
+        <div id="history">
+            <h3>History <button id="clearHistoryBtn">Clear All History</button></h3>
+            <!-- Scrollable wrapper for history table -->
+            <div id="historyWrapper">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Statement</th>
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Spacer for layout adjustment -->
+        <div class="bottom-spacer"></div>
+    </div>
+    <!-- Legend for committee members -->
+    <div id="legend" class="legend">
+        <h4>Committee Members</h4>
+        <ul id="memberList"></ul>
+    </div>
+    <!-- Legend for meeting and vote actions -->
+    <div id="meetingActionsLegend" class="legend left-legend">
+        <h4>Meeting Actions</h4>
+        <ul id="meetingActionsList"></ul>
+        <h4>Vote Actions</h4>
+        <ul id="voteActionsList"></ul>
+        <h4>External Actions</h4>
+        <ul id="externalActionsList"></ul>
+    </div>
+    <!-- Modal for adding/editing testimony -->
+    <div id="testimonyModal" class="modal">
+        <h3>Add Testimony</h3>
+        <label>First Name: <input type="text" id="testimonyFirstName"></label><br>
+        <label>Last Name: <input type="text" id="testimonyLastName"></label><br>
+        <label>Role: <input type="text" id="testimonyRole"></label><br>
+        <label>Organization: <input type="text" id="testimonyOrganization"></label><br>
+        <label>Position: <select id="testimonyPosition">
+            <option value="In Favor">In Favor</option>
+            <option value="In Opposition">In Opposition</option>
+            <option value="Neutral">Neutral</option>
+        </select></label><br>
+        <label>Testimony Number: <input type="text" id="testimonyNumber"></label><br>
+        <label>Link: <input type="text" id="testimonyLink"></label><br>
+        <label>Format: <select id="testimonyFormat">
+            <option value="Online">Online</option>
+            <option value="In-Person">In-Person</option>
+            <option value="Written">Written</option>
+        </select></label><br>
+        <button id="submitTestimonyButton">Add Testimony</button>
+        <button id="cancelTestimonyButton">Cancel</button>
+    </div>
+    <!-- Load external scripts -->
+    <script src="defaultCommittees.js"></script>
+    <script src="utils.js"></script>
+    <script src="data.js"></script>
+    <script src="flows.js"></script>
+    <script src="ui.js"></script>
+    <script src="testimony.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

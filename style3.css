@@ -1,0 +1,542 @@
+/* Base Styles */
+body {
+    font-family: Arial, sans-serif; /* Default font */
+    height: 100vh; /* Full viewport height */
+    margin: 0; /* No default margin */
+    background-color: #f5f5f5; /* Light gray background */
+    overflow: hidden; /* Prevent scrolling */
+    position: relative; /* For absolute positioning of children */
+}
+
+/* Main Container */
+.page-wrapper {
+    position: relative; /* For absolute positioning of children */
+    height: 100vh; /* Full viewport height */
+    width: 100%; /* Full width */
+    display: block; /* Block-level element */
+    border: 5px solid transparent; /* Transparent border to avoid layout shift */
+    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions for marking time effect */
+}
+
+/* Spacers */
+.top-spacer, .bottom-spacer {
+    height: 0; /* Invisible spacers for layout flexibility */
+}
+
+/* Committee Select */
+#committeeSelectWrapper {
+    position: absolute; /* Positioned at top center */
+    top: 0;
+    left: 50vw;
+    transform: translateX(-50%);
+    width: 80%; /* Responsive width */
+    max-width: 600px; /* Max width for larger screens */
+    min-width: 300px; /* Min width for smaller screens */
+    padding: 10px; /* Internal spacing */
+    background-color: #fff; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    z-index: 10; /* Above other elements */
+    display: flex; /* Flexbox for layout */
+    flex-direction: column; /* Vertical stacking */
+    align-items: center; /* Center contents */
+}
+
+.form-group {
+    margin-bottom: 10px; /* Space between form groups */
+    width: 100%; /* Full width */
+}
+
+.form-group label {
+    display: block; /* Block-level for stacking */
+    margin-bottom: 5px; /* Space below label */
+    font-weight: bold; /* Bold text */
+}
+
+.form-group select,
+.form-group input {
+    width: 100%; /* Full width of container */
+    padding: 5px; /* Internal padding */
+    box-sizing: border-box; /* Include padding in width */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Rounded corners */
+}
+
+.input-button-wrapper {
+    display: flex; /* Flexbox for input and button */
+    align-items: center; /* Vertically align */
+    width: 100%; /* Full width */
+}
+
+.input-button-wrapper input {
+    flex: 1; /* Take available space */
+    margin-right: 10px; /* Space before button */
+}
+
+.input-button-wrapper button {
+    padding: 5px 10px; /* Padding for comfort */
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Hand cursor */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.input-button-wrapper button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+#currentBillDisplay {
+    margin-top: 10px; /* Space above */
+    font-weight: bold; /* Bold text */
+    color: #007bff; /* Blue text */
+    text-align: center; /* Centered text */
+    width: 100%; /* Full width */
+}
+
+/* Bill Type Group */
+.bill-type-group {
+    border: 1px solid #ccc; /* Light gray border */
+    padding: 10px; /* Internal padding */
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.bill-type-group label {
+    text-align: center; /* Centered text */
+    width: 100%; /* Full width */
+    margin-bottom: 10px; /* Space below */
+    font-weight: bold; /* Bold text */
+}
+
+.radio-group {
+    display: flex; /* Flexbox for radio buttons */
+    justify-content: center; /* Center horizontally */
+    gap: 20px; /* Space between items */
+}
+
+.radio-item {
+    display: flex; /* Flexbox for radio and label */
+    align-items: center; /* Vertically align */
+}
+
+.radio-item input[type="radio"] {
+    margin: 0 5px 0 0; /* Spacing around radio */
+    width: 16px !important; /* Fixed width */
+    height: 16px; /* Fixed height */
+    vertical-align: middle; /* Align with label */
+}
+
+.radio-item label {
+    margin: 0; /* No extra margin */
+    padding: 0; /* No padding */
+    line-height: 16px; /* Match radio height */
+    vertical-align: middle; /* Align with radio */
+}
+
+/* Entry Input Area */
+.entry-wrapper {
+    position: absolute; /* Centered vertically and horizontally */
+    top: 50vh;
+    left: 50vw;
+    transform: translate(-50%, -50%);
+    width: 80%; /* Responsive width */
+    max-width: 800px; /* Max width */
+    overflow: visible; /* Allow overflow */
+}
+
+.container {
+    position: relative; /* For modal positioning */
+    width: 100%; /* Full width */
+    overflow: visible; /* Allow overflow */
+}
+
+.input {
+    border: 1px solid #ccc; /* Light gray border */
+    padding: 10px; /* Internal padding */
+    min-height: 50px; /* Minimum height */
+    width: 100%; /* Full width */
+    box-sizing: border-box; /* Include padding */
+    background-color: white; /* White background */
+    outline: none; /* No outline on focus */
+    white-space: pre-wrap; /* Preserve whitespace */
+    position: relative; /* For z-index */
+    z-index: 1000; /* Above history */
+}
+
+/* History Section */
+#history {
+    position: absolute; /* Positioned below entry-wrapper */
+    left: 50vw;
+    transform: translateX(-50%);
+    width: 80%; /* Responsive width */
+    max-width: 800px; /* Max width */
+    display: flex; /* Flexbox for layout */
+    flex-direction: column; /* Vertical stacking */
+    z-index: 1; /* Below input */
+}
+
+#historyWrapper {
+    flex-grow: 1; /* Grow to fill space */
+    overflow-y: auto; /* Scrollable */
+    border: 1px solid #ccc; /* Light gray border */
+    width: 100%; /* Full width */
+}
+
+#historyTable {
+    width: 100%; /* Full width */
+    border-collapse: collapse; /* No gaps between cells */
+}
+
+#historyTable th, #historyTable td {
+    border: 1px solid #ccc; /* Light gray border */
+    padding: 5px; /* Internal padding */
+    text-align: left; /* Left-aligned text */
+}
+
+#historyTable tr {
+    cursor: pointer; /* Hand cursor */
+}
+
+#historyTable tr:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+
+.bill-header {
+    background-color: #e0e0e0; /* Gray background */
+    font-weight: bold; /* Bold text */
+    cursor: pointer; /* Hand cursor */
+}
+
+.bill-header:hover {
+    background-color: #d0d0d0; /* Darker gray on hover */
+}
+
+/* Modal (Suggestions) */
+.modal {
+    position: absolute; /* Positioned above input */
+    background: white; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    max-height: 200px; /* Max height */
+    width: 100%; /* Full width of container */
+    max-width: 600px; /* Max width */
+    overflow-y: auto; /* Scrollable */
+    display: none; /* Hidden by default */
+    z-index: 10000; /* High z-index */
+    top: -210px; /* Position above input */
+    left: 0; /* Aligned with input */
+}
+
+.modal.active {
+    display: block; /* Visible when active */
+}
+
+.option {
+    padding: 5px 10px; /* Padding for comfort */
+    cursor: pointer; /* Hand cursor */
+}
+
+.option:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+
+.option.highlighted {
+    background-color: #e0e0e0; /* Gray when highlighted */
+}
+
+/* Tokens */
+.token {
+    display: inline-flex; /* Flexbox for alignment */
+    align-items: center; /* Center vertically */
+    background-color: #e0f7fa; /* Light blue background */
+    border: 1px solid #007bff; /* Blue border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 2px 6px; /* Internal padding */
+    margin: 2px; /* External spacing */
+    color: #007bff; /* Blue text */
+    cursor: pointer; /* Hand cursor */
+}
+
+.chevron {
+    margin-left: 4px; /* Space before chevron */
+    font-size: 0.8em; /* Smaller size */
+    color: #007bff; /* Blue color */
+}
+
+.tags .token {
+    margin-right: 5px; /* Space between tags */
+}
+
+/* Dropdown */
+.dropdown {
+    position: absolute; /* Positioned below tag */
+    background: white; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    z-index: 10001; /* Above modal */
+    display: block; /* Visible */
+    overflow: visible; /* Allow overflow */
+}
+
+.dropdown-option {
+    padding: 5px 10px; /* Padding for comfort */
+    cursor: pointer; /* Hand cursor */
+}
+
+.dropdown-option:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+
+.dropdown-option.highlighted {
+    background-color: #e0e0e0; /* Gray when highlighted */
+}
+
+/* Icons */
+.edit-icon {
+    cursor: pointer; /* Hand cursor */
+    padding: 2px 5px; /* Padding for click area */
+}
+
+.edit-icon:hover {
+    background-color: #e0e0e0; /* Gray on hover */
+}
+
+.delete-icon {
+    cursor: pointer; /* Hand cursor */
+    padding: 2px 5px; /* Padding for click area */
+}
+
+.delete-icon:hover {
+    background-color: #e0e0e0; /* Gray on hover */
+}
+
+/* Labels */
+label {
+    margin-right: 10px; /* Space after label */
+}
+
+/* Legend */
+.legend {
+    position: fixed; /* Fixed position on right */
+    top: 10px;
+    right: 10px;
+    background: white; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    padding: 10px; /* Internal padding */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    max-height: 375px; /* Max height */
+    overflow-y: auto; /* Scrollable */
+    width: 225px; /* Fixed width */
+    z-index: 10; /* Above page content */
+}
+
+.legend h4 {
+    margin: 10px 0 5px 0; /* Spacing around heading */
+}
+
+.legend ul {
+    list-style: none; /* No bullets */
+    padding: 0; /* No padding */
+    margin: 0; /* No margin */
+}
+
+.legend li {
+    padding: 5px; /* Padding for comfort */
+    cursor: pointer; /* Hand cursor */
+}
+
+.legend li:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+
+.left-legend {
+    right: auto; /* Override right positioning */
+    left: 10px; /* Position on left */
+}
+
+#clearHistoryBtn {
+    z-index: 1; /* Ensure above table */
+}
+
+/* Vote Module Styling */
+.vote-form {
+    display: flex; /* Flexbox for layout */
+    flex-direction: column; /* Vertical stacking */
+    gap: 10px; /* Space between items */
+    padding: 10px; /* Internal padding */
+}
+
+.vote-form div {
+    display: flex; /* Flexbox for fields */
+    align-items: center; /* Center vertically */
+    gap: 5px; /* Space between elements */
+}
+
+.vote-form label {
+    width: 60px; /* Fixed width */
+    font-weight: bold; /* Bold text */
+    margin-right: 0; /* Override default */
+}
+
+.vote-form input[type="number"] {
+    width: 50px; /* Fixed width */
+    padding: 5px; /* Internal padding */
+    text-align: center; /* Centered text */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Rounded corners */
+}
+
+.vote-form button {
+    padding: 5px 10px; /* Padding for comfort */
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Hand cursor */
+}
+
+.vote-form button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Testimony Modal Styling */
+#testimonyModal {
+    position: fixed; /* Centered on screen */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white; /* White background */
+    padding: 20px; /* Internal padding */
+    border: 1px solid #ccc; /* Light gray border */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    z-index: 10002; /* Above all else */
+    display: none; /* Hidden by default */
+    width: 400px; /* Fixed width */
+    min-height: 720px; /* Minimum height */
+}
+
+#testimonyModal.active {
+    display: block; /* Visible when active */
+}
+
+#testimonyModal h3 {
+    margin-top: 0; /* No top margin */
+}
+
+#testimonyModal label {
+    display: block; /* Block-level for stacking */
+    margin-bottom: 10px; /* Space below */
+}
+
+#testimonyModal input, #testimonyModal select {
+    width: 100%; /* Full width */
+    padding: 5px; /* Internal padding */
+    margin-top: 5px; /* Space above input */
+    box-sizing: border-box; /* Include padding */
+}
+
+#testimonyModal button {
+    margin-top: 10px; /* Space above */
+    padding: 5px 10px; /* Padding for comfort */
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Hand cursor */
+}
+
+#testimonyModal button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Statement Box Styling */
+.statement-box {
+    padding: 5px; /* Internal padding */
+    margin: 2px 0; /* Vertical spacing */
+    border: 1px solid #ccc; /* Light gray border */
+    background-color: #f9f9f9; /* Light gray background */
+    cursor: pointer; /* Hand cursor */
+}
+
+.statement-box:hover {
+    background-color: #e0e0e0; /* Gray on hover */
+}
+
+/* Statement Box Styling (continued) */
+.tech-clerk {
+    border-color: #007bff; /* Blue border for Tech Clerk */
+    background-color: #e0f7fa; /* Light blue background to match theme */
+}
+
+.procedural-clerk {
+    border-color: #28a745; /* Green border for Procedural Clerk */
+    background-color: #e6ffe6; /* Light green background for contrast */
+}
+
+/* Glow Effects for Copy Actions */
+.statement-box.copied {
+    animation: glow 0.5s ease-in-out; /* Blue glow when copied */
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 5px #007bff; }
+    50% { box-shadow: 0 0 20px #007bff; }
+    100% { box-shadow: 0 0 5px #007bff; }
+}
+
+.statement-box.special-copied {
+    animation: special-glow 0.5s ease-in-out; /* Green glow for special copy */
+}
+
+@keyframes special-glow {
+    0% { box-shadow: 0 0 5px #28a745; }
+    50% { box-shadow: 0 0 20px #28a745; }
+    100% { box-shadow: 0 0 5px #28a745; }
+}
+
+/* Time Editor Styling */
+.time-editor {
+    background: white; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    padding: 10px; /* Internal padding */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow */
+    position: absolute; /* Positioned relative to parent */
+    z-index: 1000; /* Above other elements */
+}
+
+.time-editor label {
+    display: block; /* Stack labels vertically */
+    margin-bottom: 5px; /* Space below label */
+    font-weight: bold; /* Bold text */
+}
+
+.time-editor input, .time-editor select {
+    width: 50px; /* Fixed width for inputs */
+    padding: 5px; /* Internal padding */
+    margin-right: 10px; /* Space after input */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Rounded corners */
+}
+
+.time-editor button {
+    margin-top: 10px; /* Space above button */
+    padding: 5px 10px; /* Comfortable padding */
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Hand cursor */
+}
+
+.time-editor button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Marking Time Glow Effect */
+.page-wrapper.marking-time {
+    border-color: #00ff00; /* Green border when marking time */
+    background-color: rgba(0, 255, 0, 0.1); /* Slight green tint */
+    box-shadow: 0 0 30px 10px rgba(0, 255, 0, 0.7); /* Strong green glow */
+}
+   
