@@ -1639,7 +1639,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (e.key === 'Enter') saveNewBill();
         });
         typeSelect.addEventListener('change', saveNewBill);
-        nameInput.addEventListener('blur', saveNewBill);
     }
 
     // Delete a history entry
