@@ -1113,6 +1113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else if (detail === 'Reconsider') {
                 statement += ` moved to reconsider`;
+            } else if (detail === 'Without Committee Recommendation') {
+                statement += ` moved without committee recommendation`;
             } else {
                 const motionTypesRequiringArticle = suggestMotionType();
                 statement += motionTypesRequiringArticle.includes(detail) ? ` moved a ${detail}` : ` moved ${detail}`;
