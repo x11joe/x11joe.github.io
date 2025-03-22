@@ -1322,28 +1322,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             let techStatement = statementText;
             let proceduralStatement;
             if (testimonyDetails.isIntroducingBill) {
-                proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
+            proceduralStatement = constructProceduralStatement(time, { ...testimonyDetails, introducingBill: true, title: testimonyDetails.title });
             } else if (testimonyDetails.isSenatorRepresentative) {
-                const positionLower = testimonyDetails.position.toLowerCase();
-                const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
-                proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified in ${positionLower}`;
-                if (testimonyDetails.number) {
-                    proceduralStatement += ` and submitted testimony #${testimonyDetails.number}`;
-                }
+            const positionLower = testimonyDetails.position.toLowerCase();
+            const positionPhrase = positionLower === "neutral" ? "as neutral" : positionLower;
+            const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+            proceduralStatement = `${formattedTime} ${testimonyDetails.title} ${testimonyDetails.lastName} testified ${positionPhrase}`;
+            if (testimonyDetails.number) {
+                proceduralStatement += ` and submitted testimony #${testimonyDetails.number}`;
+            }
             } else {
-                proceduralStatement = constructProceduralStatement(time, testimonyDetails);
+            proceduralStatement = constructProceduralStatement(time, testimonyDetails);
             }
             const link = testimonyDetails.link || '';
             const memberNo = testimonyDetails.memberNo || '';
             statementHtml = `
-                <div class="statement-box tech-clerk" 
-                     data-tech-statement="${techStatement.trim()}" 
-                     data-link="${link}" 
-                     data-memberno="${memberNo}" 
-                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
-                    ${techStatement.trim()}
-                </div>
-                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+            <div class="statement-box tech-clerk" 
+                data-tech-statement="${techStatement.trim()}" 
+                data-link="${link}" 
+                data-memberno="${memberNo}" 
+                title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                ${techStatement.trim()}
+            </div>
+            <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
             `;
         } else if (path[0].step === 'introducedBill') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
