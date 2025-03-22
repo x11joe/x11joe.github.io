@@ -202,10 +202,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (stepType === 'afterAmended') {
                 options = lastRereferCommittee ? ['and Rereferred', 'Take the Vote'] : ['Take the Vote', 'and Rereferred'];
             } else if (stepType === 'rollCallBaseMotionType') {
-                if (pendingAmendment) {
-                    options.unshift('Amendment'); // Add "Amendment" first if there's a pending amendment
-                }
-                if (lastMovedDetail && options.includes(lastMovedDetail)) {
+                if (pendingAmendment && options.includes('Amendment')) {
+                    options = ['Amendment', ...options.filter(opt => opt !== 'Amendment')];
+                } else if (lastMovedDetail && options.includes(lastMovedDetail)) {
                     options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
                 }
             }
@@ -410,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (typeof stepConfig.next === 'string') {
                         currentStep = stepConfig.next;
                     } else {
-                        currentStep = stepConfig.next[option] || (option === 'Amendment' ? 'voteModule' : stepConfig.next.default);
+                        currentStep = stepConfig.next[option];
                     }
                 } else {
                     currentStep = null;
@@ -1244,9 +1243,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value;
                 const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value;
-                if (onWhat === 'Amendment' && outcome === 'Passed') {
-                    amendmentPassed = true;
-                    console.log('Amendment passed, setting amendmentPassed to true');
+                if (onWhat === 'Amendment') {
+                    pendingAmendment = false;
+                    console.log('Voice Vote on Amendment finalized, set pendingAmendment to false');
+                    if (outcome === 'Passed') {
+                        amendmentPassed = true;
+                        console.log('Amendment passed, setting amendmentPassed to true');
+                    } else {
+                        amendmentPassed = false;
+                        console.log('Amendment failed, setting amendmentPassed to false');
+                    }
                 }
             } else if (voteType === 'Roll Call Vote') {
                 const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
