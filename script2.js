@@ -654,30 +654,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.createElement('div');
         form.className = 'module-form';
         const moduleValues = existingValues ? { ...existingValues } : {};
+    
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = `${field.name}: `;
+    
             if (field.type === 'number') {
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.id = `module-${field.name}`;
-                input.value = moduleValues[field.name] || 0;
+                // Initialize moduleValues[field.name] if undefined
+                if (moduleValues[field.name] === undefined) {
+                    moduleValues[field.name] = 0;
+                }
+                input.value = moduleValues[field.name];
                 input.min = '0';
+    
                 const decrement = document.createElement('button');
                 decrement.textContent = '-';
                 decrement.onclick = () => {
+                    // Ensure value is a number and decrement only if > 0
+                    if (moduleValues[field.name] === undefined) {
+                        moduleValues[field.name] = 0;
+                    }
                     if (moduleValues[field.name] > 0) {
                         moduleValues[field.name]--;
                         input.value = moduleValues[field.name];
                     }
                 };
+    
                 const increment = document.createElement('button');
                 increment.textContent = '+';
                 increment.onclick = () => {
+                    // Ensure value is a number before incrementing
+                    if (moduleValues[field.name] === undefined) {
+                        moduleValues[field.name] = 0;
+                    }
                     moduleValues[field.name]++;
                     input.value = moduleValues[field.name];
                 };
+    
+                // Handle manual input to prevent NaN
+                input.addEventListener('input', () => {
+                    const value = parseInt(input.value, 10);
+                    if (isNaN(value) || value < 0) {
+                        input.value = 0;
+                        moduleValues[field.name] = 0;
+                    } else {
+                        moduleValues[field.name] = value;
+                    }
+                });
+    
                 container.appendChild(label);
                 container.appendChild(decrement);
                 container.appendChild(input);
@@ -692,14 +720,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             form.appendChild(container);
         });
+    
         const submit = document.createElement('button');
         submit.textContent = 'Submit';
         submit.onclick = () => {
             const moduleResult = {};
             stepConfig.fields.forEach(field => {
                 const input = document.getElementById(`module-${field.name}`);
-                if (field.type === 'number') moduleResult[field.name] = parseInt(input.value) || 0;
-                else if (field.type === 'text') moduleResult[field.name] = input.value;
+                if (field.type === 'number') {
+                    const value = parseInt(input.value, 10);
+                    moduleResult[field.name] = isNaN(value) ? 0 : value;
+                } else if (field.type === 'text') {
+                    moduleResult[field.name] = input.value;
+                }
             });
             const resultStr = JSON.stringify(moduleResult);
             if (currentStep === stepConfig.step) {
