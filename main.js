@@ -5,6 +5,20 @@ let allMembers = [];
 // Global variable to track a marked time for events (e.g., via backtick key)
 let markedTime = null;
 
+// In main.js
+let history = [];
+window.appState = { history }; // Attach history to window.appState for global access
+
+// Load history from local storage
+const savedHistory = localStorage.getItem('historyStatements');
+if (savedHistory) {
+    const loadedHistory = deserializeHistory(savedHistory);
+    history.length = 0; // Clear the existing array
+    history.push(...loadedHistory); // Refill with loaded data
+    updateHistoryTable();
+    console.log('History loaded from local storage:', history);
+}
+
 // Main initialization function, runs when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', async () => {
     // Load default committees from window.DEFAULT_COMMITTEES (assumed from defaultCommittees.js)

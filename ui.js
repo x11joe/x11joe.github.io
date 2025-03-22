@@ -285,7 +285,7 @@ function createHistoryRow(time, statementText, path, index, isNew = false) {
 // Update the history table with grouped entries by bill
 function updateHistoryTable(newEntry = null) {
     const historyTableBody = document.querySelector('#historyTable tbody');
-    const history = window.history; // From main.js scope
+    const history = window.appState.history; // Use the shared history array
     history.sort((a, b) => b.time - a.time);
     historyTableBody.innerHTML = '';
 
