@@ -21,6 +21,9 @@ if (savedHistory) {
 
 // Main initialization function, runs when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize window.appState if not already done
+    window.appState = window.appState || {};
+    
     // Load default committees from window.DEFAULT_COMMITTEES (assumed from defaultCommittees.js)
     const committees = window.DEFAULT_COMMITTEES || {};
     // Default committee; can be overridden by saved selection
