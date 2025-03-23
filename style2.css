@@ -644,9 +644,10 @@ label {
 }
 
 .vote-table td:first-child {
-    text-align: left;
-    width: auto; /* Allow member name column to expand */
-    min-width: 150px; /* Ensure enough space for names */
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .vote-table th:first-child {

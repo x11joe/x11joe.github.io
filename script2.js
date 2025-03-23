@@ -1,12 +1,22 @@
 // === Global Variables and Initialization ===
 let allMembers = []; // Global array to store all members parsed from allMember.xml
 let markedTime = null; // Global variable to store a marked time for timestamping events
+let fullNames = new Set();
 
 // DOMContentLoaded event listener to initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     // Load default committees from window object
     const committees = window.DEFAULT_COMMITTEES || {};
     
+    // Populate fullNames set
+    fullNames = new Set();
+    Object.values(committees).forEach(committee => {
+        committee.forEach(member => {
+            const fullName = member.split(' - ')[0].trim();
+            fullNames.add(fullName);
+        });
+    });
+
     // Set default committee and initialize JSON structure
     let currentCommittee = "Senate Judiciary Committee";
     let jsonStructure;
@@ -1184,9 +1194,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const row = document.createElement('tr');
                 row.className = 'member-row';
                 row.tabIndex = 0;
-                const nameCell = document.createElement('td');
                 const parsed = parseMember(member.fullName);
-                nameCell.textContent = parsed.name;
+                const originalName = parsed.name;
+                const fullName = getFullName(originalName);
+                const nameCell = document.createElement('td');
+                nameCell.textContent = originalName;
+                nameCell.title = fullName;
+                row.addEventListener('mouseenter', () => {
+                    nameCell.textContent = fullName;
+                    if (fullName.length > 15) {
+                        nameCell.style.fontSize = '0.9em';
+                    }
+                });
+                row.addEventListener('mouseleave', () => {
+                    nameCell.textContent = originalName;
+                    nameCell.style.fontSize = '';
+                });
+                row.addEventListener('focus', () => {
+                    nameCell.textContent = fullName;
+                    if (fullName.length > 15) {
+                        nameCell.style.fontSize = '0.9em';
+                    }
+                });
+                row.addEventListener('blur', () => {
+                    nameCell.textContent = originalName;
+                    nameCell.style.fontSize = '';
+                });
                 row.appendChild(nameCell);
                 const options = ['For', 'Against', 'Neutral'];
                 options.forEach(opt => {
@@ -1195,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     radio.type = 'radio';
                     radio.name = `vote-${member.fullName}`;
                     radio.value = opt;
-                    radio.tabIndex = -1; // Remove from tab order
+                    radio.tabIndex = -1;
                     const memberVote = existingValues?.votes?.[member.fullName];
                     if (memberVote === opt) {
                         radio.checked = true;
@@ -1248,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             voteResults.neutral = totalNeutral;
             voteResults.senateFor = senateFor;
             voteResults.houseFor = houseFor;
-            voteResults.votes = allVotes; // Store individual votes for editing
+            voteResults.votes = allVotes;
             
             const resultStr = JSON.stringify(voteResults);
             if (currentStep === stepConfig.step) {
@@ -1296,9 +1329,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         // Focus the first member row
-        if (memberRows.length > 0) {
-            memberRows[0].focus();
-        }
+        setTimeout(() => {
+            if (memberRows.length > 0) {
+                memberRows[0].focus();
+            }
+        }, 0);
     }
 
     // Adjust the layout of the history section based on window size
@@ -1971,6 +2006,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { name, lastName, title: null };
     }
 
+    function getFullName(abbreviatedName) {
+        if (!abbreviatedName.includes('.')) {
+            return abbreviatedName;
+        }
+        const [initial, lastName] = abbreviatedName.split(' ').map(s => s.trim());
+        const possibleNames = Array.from(fullNames).filter(fullName => {
+            const [first, last] = fullName.split(' ');
+            return last === lastName && first.startsWith(initial[0]);
+        });
+        if (possibleNames.length === 1) {
+            return possibleNames[0];
+        } else {
+            return abbreviatedName;
+        }
+    }
+    
     // Get a shortened version of a committee name
     function getShortCommitteeName(fullName) {
         const match = fullName.match(/(\w+)\s+Committee$/);
@@ -2740,7 +2791,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (modal.classList.contains('active') && currentFlow && currentStep) {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
             if (stepConfig && stepConfig.type === 'module') {
-                if (currentStep === 'voteModule') {
+                if (currentStep === 'voteModule' && !modal.querySelector('.conference-vote-form')) {
                     const inputFor = document.getElementById('module-for');
                     const inputAgainst = document.getElementById('module-against');
                     const inputNeutral = document.getElementById('module-neutral');
@@ -2760,7 +2811,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
                 }
-                if (e.key === 'Tab' && currentStep !== 'lcNumber') {
+                if (e.key === 'Tab' && currentStep !== 'lcNumber' && !modal.querySelector('.conference-vote-form')) {
                     e.preventDefault();
                     const submitButton = document.getElementById('module-submit');
                     if (submitButton) {
