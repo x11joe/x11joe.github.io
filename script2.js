@@ -1195,49 +1195,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.className = 'member-row';
                 row.tabIndex = 0;
                 const parsed = parseMember(member.fullName);
-                const originalName = parsed.name;
-                const fullName = getFullName(originalName);
+                // Use parsed.name if it has an initial, else use lastName
+                const originalName = parsed.name.includes('.') ? parsed.name : parsed.lastName;
+                const fullName = getFullName(parsed.name); // Pass full parsed.name to getFullName
                 const nameCell = document.createElement('td');
                 nameCell.textContent = originalName;
                 nameCell.title = fullName;
                 row.addEventListener('mouseenter', () => {
+                    console.log('Hover on', originalName, 'showing', fullName);
                     nameCell.textContent = fullName;
                     if (fullName.length > 15) {
                         nameCell.style.fontSize = '0.9em';
                     }
                 });
                 row.addEventListener('mouseleave', () => {
+                    console.log('Hover off', fullName, 'back to', originalName);
                     nameCell.textContent = originalName;
                     nameCell.style.fontSize = '';
                 });
                 row.addEventListener('focus', () => {
+                    console.log('Focus on', originalName, 'showing', fullName);
                     nameCell.textContent = fullName;
                     if (fullName.length > 15) {
                         nameCell.style.fontSize = '0.9em';
                     }
                 });
                 row.addEventListener('blur', () => {
+                    console.log('Blur from', fullName, 'back to', originalName);
                     nameCell.textContent = originalName;
                     nameCell.style.fontSize = '';
                 });
+                const forCell = document.createElement('td');
+                const forRadio = document.createElement('input');
+                forRadio.type = 'radio';
+                forRadio.name = `vote-${member.fullName}`;
+                forRadio.value = 'for';
+                forCell.appendChild(forRadio);
+                const againstCell = document.createElement('td');
+                const againstRadio = document.createElement('input');
+                againstRadio.type = 'radio';
+                againstRadio.name = `vote-${member.fullName}`;
+                againstRadio.value = 'against';
+                againstCell.appendChild(againstRadio);
+                const neutralCell = document.createElement('td');
+                const neutralRadio = document.createElement('input');
+                neutralRadio.type = 'radio';
+                neutralRadio.name = `vote-${member.fullName}`;
+                neutralRadio.value = 'neutral';
+                neutralRadio.checked = true;
+                neutralCell.appendChild(neutralRadio);
+                if (existingValues && existingValues.members && existingValues.members[member.fullName]) {
+                    const vote = existingValues.members[member.fullName];
+                    if (vote === 'for') forRadio.checked = true;
+                    else if (vote === 'against') againstRadio.checked = true;
+                    else if (vote === 'neutral') neutralRadio.checked = true;
+                }
                 row.appendChild(nameCell);
-                const options = ['For', 'Against', 'Neutral'];
-                options.forEach(opt => {
-                    const cell = document.createElement('td');
-                    const radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = `vote-${member.fullName}`;
-                    radio.value = opt;
-                    radio.tabIndex = -1;
-                    const memberVote = existingValues?.votes?.[member.fullName];
-                    if (memberVote === opt) {
-                        radio.checked = true;
-                    } else if (!memberVote && opt === "Neutral") {
-                        radio.checked = true;
-                    }
-                    cell.appendChild(radio);
-                    row.appendChild(cell);
-                });
+                row.appendChild(forCell);
+                row.appendChild(againstCell);
+                row.appendChild(neutralCell);
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
@@ -1245,52 +1261,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             return section;
         };
         
-        const voteContainer = document.createElement('div');
-        voteContainer.className = 'vote-container';
-        const senatorsSection = createMemberVoteSection('Senators', senators);
-        const repsSection = createMemberVoteSection('Representatives', representatives);
-        voteContainer.appendChild(senatorsSection);
-        voteContainer.appendChild(repsSection);
-        form.appendChild(voteContainer);
+        if (senators.length > 0) {
+            form.appendChild(createMemberVoteSection('Senators', senators));
+        }
+        if (representatives.length > 0) {
+            form.appendChild(createMemberVoteSection('Representatives', representatives));
+        }
         
         const submit = document.createElement('button');
         submit.id = 'module-submit';
         submit.textContent = 'Submit';
         submit.onclick = () => {
-            const voteResults = {};
-            const allVotes = {};
-            let totalFor = 0, totalAgainst = 0, totalNeutral = 0;
-            let senateFor = 0, houseFor = 0;
-            
+            const memberVotes = {};
+            let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
+            let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
             members.forEach(member => {
-                const vote = form.querySelector(`input[name="vote-${member.fullName}"]:checked`)?.value || 'Neutral';
-                allVotes[member.fullName] = vote;
-                if (vote === 'For') {
-                    totalFor++;
-                    if (getMemberSide(member.fullName) === "Senate") senateFor++;
-                    else if (getMemberSide(member.fullName) === "House") houseFor++;
-                } else if (vote === 'Against') {
-                    totalAgainst++;
-                } else {
-                    totalNeutral++;
+                const selectedVote = form.querySelector(`input[name="vote-${member.fullName}"]:checked`);
+                memberVotes[member.fullName] = selectedVote ? selectedVote.value : 'neutral';
+                const side = getMemberSide(member.fullName);
+                if (side === 'Senate') {
+                    if (memberVotes[member.fullName] === 'for') senateFor++;
+                    else if (memberVotes[member.fullName] === 'against') senateAgainst++;
+                    else senateNeutral++;
+                } else if (side === 'House') {
+                    if (memberVotes[member.fullName] === 'for') houseFor++;
+                    else if (memberVotes[member.fullName] === 'against') houseAgainst++;
+                    else houseNeutral++;
                 }
             });
-            
-            voteResults.for = totalFor;
-            voteResults.against = totalAgainst;
-            voteResults.neutral = totalNeutral;
-            voteResults.senateFor = senateFor;
-            voteResults.houseFor = houseFor;
-            voteResults.votes = allVotes;
-            
-            const resultStr = JSON.stringify(voteResults);
+            const result = {
+                members: memberVotes,
+                senateFor, senateAgainst, senateNeutral,
+                houseFor, houseAgainst, houseNeutral,
+                for: senateFor + houseFor,
+                against: senateAgainst + houseAgainst,
+                neutral: senateNeutral + houseNeutral
+            };
+            const resultStr = JSON.stringify(result);
             if (currentStep === stepConfig.step) {
                 selectOption(resultStr);
             } else {
                 const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
                 if (moduleIndex !== -1) {
                     path[moduleIndex].value = resultStr;
-                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, voteResults);
+                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, result);
                     updateInput();
                     showSuggestions('');
                 }
@@ -1301,39 +1315,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
-        
-        // Add event listeners for member rows
-        const memberRows = form.querySelectorAll('.member-row');
-        memberRows.forEach((row, index) => {
-            row.addEventListener('focus', () => {
-                row.classList.add('focused');
-            });
-            row.addEventListener('blur', () => {
-                row.classList.remove('focused');
-            });
-            row.addEventListener('keydown', (e) => {
-                if (e.key === '1') {
-                    const radio = row.querySelector('input[value="For"]');
-                    if (radio) radio.checked = true;
-                } else if (e.key === '2') {
-                    const radio = row.querySelector('input[value="Against"]');
-                    if (radio) radio.checked = true;
-                } else if (e.key === '3') {
-                    const radio = row.querySelector('input[value="Neutral"]');
-                    if (radio) radio.checked = true;
-                } else if (e.key === 'Tab' && !e.shiftKey && index === memberRows.length - 1) {
-                    e.preventDefault();
-                    submit.click();
-                }
-            });
-        });
-        
-        // Focus the first member row
-        setTimeout(() => {
-            if (memberRows.length > 0) {
-                memberRows[0].focus();
-            }
-        }, 0);
     }
 
     // Adjust the layout of the history section based on window size
@@ -2006,22 +1987,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { name, lastName, title: null };
     }
 
-    function getFullName(abbreviatedName) {
-        if (!abbreviatedName.includes('.')) {
-            return abbreviatedName;
-        }
-        const [initial, lastName] = abbreviatedName.split(' ').map(s => s.trim());
-        const possibleNames = Array.from(fullNames).filter(fullName => {
-            const [first, last] = fullName.split(' ');
-            return last === lastName && first.startsWith(initial[0]);
-        });
-        if (possibleNames.length === 1) {
-            return possibleNames[0];
+    function getFullName(name) {
+        console.log('getFullName called with:', name);
+        const parts = name.split(' ').map(s => s.trim());
+        if (parts.length === 1) {
+            // Just last name, e.g., "Dever"
+            const lastName = parts[0];
+            const possibleNames = Array.from(fullNames).filter(fullName => {
+                const fullParts = fullName.split(' ');
+                const fullLast = fullParts[fullParts.length - 1];
+                return fullLast === lastName;
+            });
+            console.log('Possible names for last name', lastName, ':', possibleNames);
+            if (possibleNames.length === 1) {
+                return possibleNames[0];
+            } else {
+                console.log('Multiple or no matches for', lastName, ', returning:', name);
+                return name;
+            }
+        } else if (parts.length === 2 && parts[0].includes('.')) {
+            // Initial and last name, e.g., "B. Anderson"
+            const initial = parts[0][0];
+            const lastName = parts[1];
+            const possibleNames = Array.from(fullNames).filter(fullName => {
+                const fullParts = fullName.split(' ');
+                const first = fullParts[0];
+                const last = fullParts[fullParts.length - 1];
+                return last === lastName && first.startsWith(initial);
+            });
+            console.log('Possible names for', initial, lastName, ':', possibleNames);
+            if (possibleNames.length === 1) {
+                return possibleNames[0];
+            } else {
+                console.log('Multiple or no matches for', initial, lastName, ', returning:', name);
+                return name;
+            }
         } else {
-            return abbreviatedName;
+            // Full name, e.g., "Dick Dever", return as is
+            console.log('Name assumed full:', name);
+            return name;
         }
     }
-    
+
     // Get a shortened version of a committee name
     function getShortCommitteeName(fullName) {
         const match = fullName.match(/(\w+)\s+Committee$/);
