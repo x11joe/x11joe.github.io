@@ -509,11 +509,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if a name is in the list of female names
     function isFemale(fullName) {
         const parsed = parseMember(fullName);
-        const lastName = parsed.lastName;
-        console.log('isFemale - Checking last name:', lastName, 'against FEMALE_NAMES:', window.FEMALE_NAMES);
-        const isFemaleResult = window.FEMALE_NAMES.some(fullName => fullName.endsWith(lastName));
-        console.log('isFemale - Result for', lastName, ':', isFemaleResult);
-        return isFemaleResult;
+        const nameParts = parsed.name.split(' ');
+        if (nameParts.length === 2 && nameParts[0].length === 2 && nameParts[0][1] === '.') {
+            // Has initial, e.g., "B. Anderson"
+            const initial = nameParts[0][0];
+            const lastName = nameParts[1];
+            const isFemaleResult = window.FEMALE_NAMES.some(fullName => {
+                const femaleParts = fullName.split(' ');
+                const femaleFirst = femaleParts[0];
+                const femaleLast = femaleParts[femaleParts.length - 1];
+                return femaleFirst.startsWith(initial) && femaleLast === lastName;
+            });
+            console.log('isFemale - Checking initial:', initial, 'lastName:', lastName, 'Result:', isFemaleResult);
+            return isFemaleResult;
+        } else {
+            // No initial, check if full name is in FEMALE_NAMES
+            const isFemaleResult = window.FEMALE_NAMES.includes(parsed.name);
+            console.log('isFemale - Checking full name:', parsed.name, 'Result:', isFemaleResult);
+            return isFemaleResult;
+        }
     }
 
     // Map testimony format to a simplified category
