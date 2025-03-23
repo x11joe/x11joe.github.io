@@ -698,3 +698,7 @@ label {
     font-weight: bold;
     color: #333;
 }
+
+#module-submit{
+    align-self: flex-start;
+}
