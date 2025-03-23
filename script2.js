@@ -1020,14 +1020,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             modal.innerHTML = '';
             const form = document.createElement('div');
-            form.className = 'module-form';
+            form.className = 'module-form regular-vote-form'; // Added specific class
             const moduleValues = existingValues ? { ...existingValues } : {};
-        
+            
             stepConfig.fields.forEach(field => {
                 const container = document.createElement('div');
                 const label = document.createElement('label');
                 label.textContent = field.label || `${field.name}: `;
-        
+                
                 if (field.type === 'text') {
                     const input = document.createElement('input');
                     input.type = 'text';
@@ -1043,8 +1043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (field.name === 'lcNumber') {
                         input.classList.add('lc-number-input');
                         input.addEventListener('input', formatLcNumber);
-                        label.style.width = 'auto'; // Ensure the full label is visible
-                        // Set initial cursor position after the first period
+                        label.style.width = 'auto';
                         setTimeout(() => {
                             const firstPeriodIndex = input.value.indexOf('.');
                             if (firstPeriodIndex !== -1) {
@@ -1054,39 +1053,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             input.focus();
                         }, 0);
-                        // Add keydown listener for Tab and Shift+Tab navigation
                         input.addEventListener('keydown', (e) => {
                             if (e.key === 'Tab' && !e.shiftKey) {
                                 e.preventDefault();
                                 const currentPos = input.selectionStart;
-                                const periods = [];
-                                let index = -1;
-                                while ((index = input.value.indexOf('.', index + 1)) !== -1) {
-                                    periods.push(index);
-                                }
-                                const nextPeriod = periods.find(p => p > currentPos - 1);
-                                if (nextPeriod !== undefined) {
+                                const periods = input.value.split('.').length - 1;
+                                const nextPeriod = input.value.indexOf('.', currentPos);
+                                if (nextPeriod !== -1) {
                                     input.setSelectionRange(nextPeriod + 1, nextPeriod + 1);
                                 } else {
-                                    // In the last section, submit the form
                                     const submitButton = document.getElementById('module-submit');
-                                    if (submitButton) {
-                                        submitButton.click();
-                                    }
+                                    if (submitButton) submitButton.click();
                                 }
                             } else if (e.key === 'Tab' && e.shiftKey) {
                                 e.preventDefault();
                                 const currentPos = input.selectionStart;
-                                const periods = [];
-                                let index = -1;
-                                while ((index = input.value.indexOf('.', index + 1)) !== -1) {
-                                    periods.push(index);
-                                }
-                                const previousPeriod = periods.reverse().find(p => p < currentPos - 1);
-                                if (previousPeriod !== undefined) {
+                                const periods = input.value.split('.').length - 1;
+                                const previousPeriod = input.value.lastIndexOf('.', currentPos - 2);
+                                if (previousPeriod !== -1) {
                                     input.setSelectionRange(previousPeriod + 1, previousPeriod + 1);
                                 } else {
-                                    // No previous period, move to start
                                     input.setSelectionRange(0, 0);
                                 }
                             }
@@ -1098,9 +1084,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const input = document.createElement('input');
                     input.type = 'number';
                     input.id = `module-${field.name}`;
-                    if (moduleValues[field.name] === undefined) {
-                        moduleValues[field.name] = 0;
-                    }
+                    if (moduleValues[field.name] === undefined) moduleValues[field.name] = 0;
                     input.value = moduleValues[field.name];
                     input.min = '0';
                     const decrement = document.createElement('button');
@@ -1133,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 form.appendChild(container);
             });
-        
+            
             const submit = document.createElement('button');
             submit.id = 'module-submit';
             submit.textContent = 'Submit';
@@ -1219,6 +1203,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.addEventListener('blur', () => {
                     nameCell.textContent = originalName;
                     nameCell.style.fontSize = '';
+                });
+                row.addEventListener('click', () => {
+                    row.focus(); // Trigger focus to highlight the row
                 });
                 row.appendChild(nameCell);
                 const options = ['For', 'Against', 'Neutral'];

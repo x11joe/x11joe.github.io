@@ -372,11 +372,11 @@ label {
     z-index: 1;
 }
 
-/* Vote Module Styling */
-.module-form {
+/* Regular Vote Form Styling */
+.regular-vote-form {
     display: flex;
     flex-direction: column;
-    /* gap: 10px; */
+    gap: 10px; /* Restored gap for regular vote module */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
@@ -384,19 +384,19 @@ label {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.module-form div {
+.regular-vote-form div {
     display: flex;
     align-items: center;
-    /* gap: 5px; */
+    gap: 5px; /* Restored gap for vote count rows */
 }
 
-.module-form label {
+.regular-vote-form label {
     width: 60px;
     font-weight: bold;
     margin-right: 0;
 }
 
-.module-form input[type="number"] {
+.regular-vote-form input[type="number"] {
     width: 50px;
     padding: 5px;
     text-align: center;
@@ -404,9 +404,9 @@ label {
     border-radius: 4px;
 }
 
-.module-form button {
+.regular-vote-form button {
     margin-top: 10px;
-    align-self: center;
+    align-self: flex-start;
     padding: 5px 10px;
     background-color: #007bff;
     color: white;
@@ -415,7 +415,7 @@ label {
     cursor: pointer;
 }
 
-.module-form button:hover {
+.regular-vote-form button:hover {
     background-color: #0056b3;
 }
 
@@ -423,7 +423,7 @@ label {
 .conference-vote-form {
     display: flex;
     flex-direction: column;
-    /* gap: 20px; */
+    gap: 20px; /* Adjusted gap for conference vote module */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
@@ -435,8 +435,8 @@ label {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
-    gap: 10px;
-    /* flex-wrap: wrap; */
+    gap: 20px; /* Adjusted gap for side-by-side tables */
+    flex-wrap: wrap;
 }
 
 .conference-vote-form .vote-section {
@@ -448,6 +448,7 @@ label {
 .conference-vote-form .vote-table {
     width: auto;
     border-collapse: collapse;
+    margin-bottom: 10px;
 }
 
 .conference-vote-form .vote-table th, 
@@ -491,6 +492,13 @@ label {
 
 .conference-vote-form button:hover {
     background-color: #0056b3;
+}
+
+/* Highlighted Row Styling */
+.member-row.focused {
+    outline: 2px solid #007bff;
+    outline-offset: -2px;
+    background-color: #e0f7fa;
 }
 
 /* Testimony Modal Styling */
