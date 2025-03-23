@@ -268,8 +268,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const stepConfig = flow.steps.find(step => step.step === stepType);
         if (!stepConfig) return [];
         let options = [];
-        if (stepConfig.options === "committeeMembers") options = getCommitteeMembers();
-        else if (stepConfig.options === "otherCommittees") options = getOtherCommittees();
+        if (stepConfig.options === "committeeMembers") {
+            if (currentBillType === 'Conference Committee') {
+                options = getLegendMembers().map(m => m.fullName);
+            } else {
+                options = getCommitteeMembers();
+            }
+        } else if (stepConfig.options === "otherCommittees") options = getOtherCommittees();
         else if (stepConfig.options === "allMembers") options = allMembers.map(member => member.fullName);
         else if (stepConfig.options === "suggestMotionType") options = suggestMotionType();
         else if (stepConfig.options === "suggestFailedReason") options = suggestFailedReason();
@@ -299,8 +304,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!currentFlow) {
             let allOptions = [];
             jsonStructure.startingPoints.forEach(sp => {
-                if (sp.options === "committeeMembers") allOptions = allOptions.concat(getCommitteeMembers());
-                else if (Array.isArray(sp.options)) allOptions = allOptions.concat(sp.options);
+                if (sp.options === "committeeMembers") {
+                    if (currentBillType === 'Conference Committee') {
+                        const conferenceMembers = getLegendMembers().map(m => m.fullName);
+                        allOptions = allOptions.concat(conferenceMembers);
+                    } else {
+                        allOptions = allOptions.concat(getCommitteeMembers());
+                    }
+                } else if (Array.isArray(sp.options)) allOptions = allOptions.concat(sp.options);
             });
             return allOptions;
         }
@@ -323,6 +334,129 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         return options;
+    }
+
+    // Get members for the legend based on bill type
+    function getLegendMembers() {
+        if (currentBillType === 'Conference Committee') {
+            const savedConferenceCommittee = localStorage.getItem('conferenceCommittee');
+            return savedConferenceCommittee ? JSON.parse(savedConferenceCommittee) : [];
+        } else {
+            const members = getCommitteeMembers();
+            return members.map(member => {
+                const parsed = parseMember(member);
+                return { fullName: member, role: parsed.title };
+            });
+        }
+    }
+
+    // Determine member's side (Senate or House)
+    function getMemberSide(fullName) {
+        if (fullName.startsWith("Senator")) return "Senate";
+        if (fullName.startsWith("Representative")) return "House";
+        return null;
+    }
+
+    // Count Senators and Representatives in the conference committee
+    function getConferenceCommitteeCounts() {
+        const members = getLegendMembers();
+        let senators = 0;
+        let representatives = 0;
+        members.forEach(m => {
+            if (getMemberSide(m.fullName) === "Senate") senators++;
+            else if (getMemberSide(m.fullName) === "House") representatives++;
+        });
+        return { senators, representatives };
+    }
+
+    // Remove a member from the conference committee
+    function removeMember(fullName) {
+        let members = getLegendMembers();
+        members = members.filter(m => m.fullName !== fullName);
+        localStorage.setItem('conferenceCommittee', JSON.stringify(members));
+        updateLegend();
+    }
+
+    // Promote a member to chairman/chairwoman
+    function promoteMember(fullName) {
+        let members = getLegendMembers();
+        const member = members.find(m => m.fullName === fullName);
+        if (member) {
+            const side = getMemberSide(member.fullName);
+            if (side) {
+                // Demote existing chairman on the same side
+                members.forEach(m => {
+                    if (getMemberSide(m.fullName) === side && m.role) {
+                        m.role = null;
+                    }
+                });
+                // Promote the member
+                const parsed = parseMember(member.fullName);
+                const isFemaleMember = isFemale(parsed.name);
+                member.role = isFemaleMember ? "Chairwoman" : "Chairman";
+                // Save and update
+                localStorage.setItem('conferenceCommittee', JSON.stringify(members));
+                updateLegend();
+            }
+        }
+    }
+
+    // Add a member to the conference committee
+    function addMemberToConferenceCommittee(fullName) {
+        const members = getLegendMembers();
+        members.push({ fullName, role: null });
+        localStorage.setItem('conferenceCommittee', JSON.stringify(members));
+        updateLegend();
+    }
+
+    // Show member selection modal
+    function showMemberSelectionModal() {
+        const modal = document.getElementById('memberSelectionModal');
+        const searchInput = document.getElementById('memberSearchInput');
+        const listContainer = document.getElementById('memberListContainer');
+        const cancelButton = document.getElementById('cancelMemberSelection');
+        
+        // Get available members
+        const conferenceMembers = getLegendMembers().map(m => m.fullName);
+        const counts = getConferenceCommitteeCounts();
+        const availableMembers = allMembers.filter(member => {
+            const side = getMemberSide(member.fullName);
+            if (side === "Senate" && counts.senators < 3 && !conferenceMembers.includes(member.fullName)) return true;
+            if (side === "House" && counts.representatives < 3 && !conferenceMembers.includes(member.fullName)) return true;
+            return false;
+        });
+        
+        function renderList(filterText = '') {
+            listContainer.innerHTML = '';
+            const filtered = availableMembers.filter(member => 
+                member.fullName.toLowerCase().includes(filterText.toLowerCase())
+            );
+            filtered.forEach(member => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.textContent = member.fullName;
+                div.onclick = () => {
+                    addMemberToConferenceCommittee(member.fullName);
+                    modal.classList.remove('active');
+                };
+                listContainer.appendChild(div);
+            });
+        }
+        
+        renderList();
+        searchInput.addEventListener('input', () => renderList(searchInput.value));
+        cancelButton.onclick = () => modal.classList.remove('active');
+        modal.classList.add('active');
+        searchInput.focus();
+        
+        // Add event listener to close on outside click
+        const closeOnOutsideClick = (e) => {
+            if (!modal.contains(e.target)) {
+                modal.classList.remove('active');
+                document.removeEventListener('click', closeOnOutsideClick);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeOnOutsideClick), 0);
     }
 
     // Serialize history array to a JSON string for storage
@@ -1980,30 +2114,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateLegend() {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = '';
-        const members = getCommitteeMembers();
-        const parsedMembers = members.map(member => ({ original: member, parsed: parseMember(member) }));
-        const chairperson = parsedMembers.find(m => m.parsed.title === "Chairwoman" || m.parsed.title === "Chairman");
-        const viceChairperson = parsedMembers.find(m => m.parsed.title === "Vice Chairwoman" || m.parsed.title === "Vice Chairman");
-        const otherMembers = parsedMembers.filter(m => m !== chairperson && m !== viceChairperson);
-        const createLi = (member) => {
-            const li = document.createElement('li');
-            const displayName = member.parsed.title ? `${member.parsed.title} ${member.parsed.name}` : member.parsed.name;
-            li.textContent = displayName;
-            li.onclick = () => {
-                if (path.length === 0) selectOption(member.original);
-                else console.log('Cannot select member while editing existing path');
+        if (currentBillType === 'Conference Committee') {
+            const members = getLegendMembers();
+            // Sort: chairmen first
+            members.sort((a, b) => (b.role ? 1 : 0) - (a.role ? 1 : 0));
+            members.forEach((member, index) => {
+                const li = document.createElement('li');
+                const displayName = member.role ? `${member.role} ${parseMember(member.fullName).name}` : member.fullName;
+                li.textContent = displayName;
+                li.onclick = () => {
+                    if (path.length === 0) selectOption(member.fullName);
+                    else console.log('Cannot select member while editing existing path');
+                };
+                const removeButton = document.createElement('button');
+                removeButton.textContent = '-';
+                removeButton.onclick = (e) => {
+                    e.stopPropagation();
+                    removeMember(member.fullName);
+                };
+                const promoteButton = document.createElement('button');
+                promoteButton.textContent = '↑';
+                promoteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    promoteMember(member.fullName);
+                };
+                li.appendChild(removeButton);
+                li.appendChild(promoteButton);
+                memberList.appendChild(li);
+            });
+            // Add button
+            const counts = getConferenceCommitteeCounts();
+            const canAdd = counts.senators < 3 || counts.representatives < 3;
+            const addButton = document.createElement('button');
+            addButton.textContent = '+';
+            addButton.style.backgroundColor = 'green';
+            addButton.style.color = 'white';
+            addButton.disabled = !canAdd;
+            addButton.onclick = () => showMemberSelectionModal();
+            memberList.appendChild(addButton);
+        } else {
+            const members = getCommitteeMembers();
+            const parsedMembers = members.map(member => ({ original: member, parsed: parseMember(member) }));
+            const chairperson = parsedMembers.find(m => m.parsed.title === "Chairwoman" || m.parsed.title === "Chairman");
+            const viceChairperson = parsedMembers.find(m => m.parsed.title === "Vice Chairwoman" || m.parsed.title === "Vice Chairman");
+            const otherMembers = parsedMembers.filter(m => m !== chairperson && m !== viceChairperson);
+            const createLi = (member) => {
+                const li = document.createElement('li');
+                const displayName = member.parsed.title ? `${member.parsed.title} ${member.parsed.name}` : member.parsed.name;
+                li.textContent = displayName;
+                li.onclick = () => {
+                    if (path.length === 0) selectOption(member.original);
+                    else console.log('Cannot select member while editing existing path');
+                };
+                return li;
             };
-            return li;
-        };
-        if (chairperson) {
-            memberList.appendChild(createLi(chairperson));
-            memberList.appendChild(document.createElement('hr'));
+            if (chairperson) {
+                memberList.appendChild(createLi(chairperson));
+                memberList.appendChild(document.createElement('hr'));
+            }
+            if (viceChairperson) {
+                memberList.appendChild(createLi(viceChairperson));
+                memberList.appendChild(document.createElement('hr'));
+            }
+            otherMembers.forEach(member => memberList.appendChild(createLi(member)));
         }
-        if (viceChairperson) {
-            memberList.appendChild(createLi(viceChairperson));
-            memberList.appendChild(document.createElement('hr'));
-        }
-        otherMembers.forEach(member => memberList.appendChild(createLi(member)));
         console.log('Legend updated');
     }
 
@@ -2381,6 +2555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentBillType = document.querySelector('input[name="billType"]:checked').value;
             localStorage.setItem('billType', currentBillType);
             console.log('Bill type changed to:', currentBillType);
+            updateLegend(); // Ensure legend updates when bill type changes
         });
     });
 
