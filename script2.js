@@ -1267,6 +1267,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         return statement;
     }
 
+    function constructMeetingActionProceduralStatement(time, path) {
+        const action = path.find(p => p.step === 'meetingAction')?.value || '';
+        const memberString = path.find(p => p.step === 'memberOptional')?.value || '';
+        const hours = time.getHours();
+        const minutes = time.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'p.m.' : 'a.m.';
+        const formattedHours = hours % 12 || 12;
+        const formattedTime = `${formattedHours}:${minutes} ${period}`;
+        const actionWords = action.split(' ');
+        const verb = actionWords[0].toLowerCase();
+        const noun = actionWords[1].toLowerCase();
+        const actionPhrase = `${verb} the ${noun}`;
+        if (memberString) {
+            const { lastName, title } = parseMember(memberString);
+            let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+            return `${formattedTime} ${memberText} ${actionPhrase}`;
+        } else {
+            return `${formattedTime} ${actionPhrase.charAt(0).toUpperCase() + actionPhrase.slice(1)}`;
+        }
+    }
+
     // Construct display text for a vote tag
     function constructVoteTagText(voteResult) {
         const forVotes = voteResult.for || 0;
@@ -1383,14 +1404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if (flowType === 'meetingAction') {
             const action = path.find(p => p.step === 'meetingAction')?.value || '';
-            const memberString = path.find(p => p.step === 'memberOptional')?.value || '';
-            let text = action;
-            if (memberString) {
-                const { lastName, title } = parseMember(memberString);
-                let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-                text += ` by ${memberText}`;
-            }
-            return text;
+            return action;
         } else if (flowType === 'introducedBill') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
             const { lastName, title } = parseMember(memberString);
@@ -1631,6 +1645,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const techStatement = statementText;
             const proceduralStatement = constructMemberActionProceduralStatement(time, path);
             const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
+            const link = '';
+            statementHtml = `
+                <div class="statement-box tech-clerk" 
+                    data-tech-statement="${techStatement.trim()}" 
+                    data-link="${link}" 
+                    data-memberno="${memberNo}" 
+                    data-time="${time.toISOString()}"
+                    title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
+                    ${techStatement.trim()}
+                </div>
+                <div class="statement-box procedural-clerk" title="Copy Procedural Clerk Statement">${proceduralStatement}</div>
+            `;
+        } else if (path[0].step === 'meetingAction') {
+            const techStatement = statementText;
+            const proceduralStatement = constructMeetingActionProceduralStatement(time, path);
+            const memberPart = path.find(p => p.step === 'memberOptional');
+            const memberNo = memberPart ? memberPart.memberNo || '' : '';
             const link = '';
             statementHtml = `
                 <div class="statement-box tech-clerk" 
