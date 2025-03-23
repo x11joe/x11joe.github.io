@@ -383,21 +383,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const member = members.find(m => m.fullName === fullName);
         if (member) {
             const side = getMemberSide(member.fullName);
+            console.log('promoteMember - Promoting:', fullName, 'Side:', side);
             if (side) {
                 // Demote existing chairman on the same side
                 members.forEach(m => {
                     if (getMemberSide(m.fullName) === side && m.role) {
+                        console.log('promoteMember - Demoting existing chairman:', m.fullName, 'from role:', m.role);
                         m.role = null;
                     }
                 });
                 // Promote the member
                 const parsed = parseMember(member.fullName);
-                const isFemaleMember = isFemale(member.fullName); // Use fullName to check
+                const isFemaleMember = isFemale(member.fullName);
+                console.log('promoteMember - Parsed name:', parsed.name, 'Is female:', isFemaleMember);
                 member.role = isFemaleMember ? "Chairwoman" : "Chairman";
+                console.log('promoteMember - Assigned role:', member.role, 'to', member.fullName);
                 // Save and update
                 localStorage.setItem('conferenceCommittee', JSON.stringify(members));
                 updateLegend();
+            } else {
+                console.warn('promoteMember - No valid side determined for:', fullName);
             }
+        } else {
+            console.warn('promoteMember - Member not found:', fullName);
         }
     }
 
@@ -499,9 +507,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Check if a name is in the list of female names
-    function isFemale(name) {
-        const parsedName = parseMember(name).name; // Extract just the name part
-        return window.FEMALE_NAMES.includes(parsedName);
+    function isFemale(fullName) {
+        const parsed = parseMember(fullName);
+        const nameWithoutTitle = parsed.name;
+        console.log('isFemale - Checking name:', nameWithoutTitle, 'against FEMALE_NAMES:', window.FEMALE_NAMES);
+        const isFemaleResult = window.FEMALE_NAMES.includes(nameWithoutTitle);
+        console.log('isFemale - Result for', nameWithoutTitle, ':', isFemaleResult);
+        return isFemaleResult;
     }
 
     // Map testimony format to a simplified category
@@ -2145,16 +2157,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateLegend() {
         const memberList = document.getElementById('memberList');
         memberList.innerHTML = '';
+        console.log('updateLegend - Current bill type:', currentBillType);
         if (currentBillType === 'Conference Committee') {
             const members = getLegendMembers();
             const senators = members.filter(m => getMemberSide(m.fullName) === "Senate");
             const representatives = members.filter(m => getMemberSide(m.fullName) === "House");
+            console.log('updateLegend - Senators:', senators.map(m => ({ fullName: m.fullName, role: m.role })));
+            console.log('updateLegend - Representatives:', representatives.map(m => ({ fullName: m.fullName, role: m.role })));
             
             // Function to create member li
-            const createMemberLi = (member, side) => {
+            const createMemberLi = (member) => {
                 const li = document.createElement('li');
-                const displayName = member.role ? `${side} ${member.role} ${parseMember(member.fullName).name}` : member.fullName;
+                const parsed = parseMember(member.fullName);
+                const displayName = member.role ? `${member.role} ${parsed.name}` : member.fullName;
                 li.textContent = displayName;
+                console.log('updateLegend - Created LI for', member.fullName, 'Display name:', displayName);
                 li.onclick = () => {
                     if (path.length === 0) selectOption(member.fullName);
                     else console.log('Cannot select member while editing existing path');
@@ -2187,12 +2204,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 senatorsDiv.appendChild(senatorsLabel);
                 const senatorChairman = senators.find(m => m.role === "Chairman" || m.role === "Chairwoman");
                 if (senatorChairman) {
-                    senatorsDiv.appendChild(createMemberLi(senatorChairman, 'Senate'));
+                    senatorsDiv.appendChild(createMemberLi(senatorChairman));
                     senatorsDiv.appendChild(document.createElement('hr'));
                 }
                 const otherSenators = senators.filter(m => m !== senatorChairman);
                 otherSenators.forEach(senator => {
-                    senatorsDiv.appendChild(createMemberLi(senator, 'Senate'));
+                    senatorsDiv.appendChild(createMemberLi(senator));
                 });
                 memberList.appendChild(senatorsDiv);
             }
@@ -2206,12 +2223,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 repsDiv.appendChild(repsLabel);
                 const repChairman = representatives.find(m => m.role === "Chairman" || m.role === "Chairwoman");
                 if (repChairman) {
-                    repsDiv.appendChild(createMemberLi(repChairman, 'House'));
+                    repsDiv.appendChild(createMemberLi(repChairman));
                     repsDiv.appendChild(document.createElement('hr'));
                 }
                 const otherReps = representatives.filter(m => m !== repChairman);
                 otherReps.forEach(rep => {
-                    repsDiv.appendChild(createMemberLi(rep, 'House'));
+                    repsDiv.appendChild(createMemberLi(rep));
                 });
                 memberList.appendChild(repsDiv);
             }
@@ -2226,16 +2243,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             addButton.disabled = !canAdd;
             addButton.onclick = () => showMemberSelectionModal();
             memberList.appendChild(addButton);
+            console.log('updateLegend - Add button added, canAdd:', canAdd, 'Counts:', counts);
         } else {
             const members = getCommitteeMembers();
             const parsedMembers = members.map(member => ({ original: member, parsed: parseMember(member) }));
             const chairperson = parsedMembers.find(m => m.parsed.title === "Chairwoman" || m.parsed.title === "Chairman");
             const viceChairperson = parsedMembers.find(m => m.parsed.title === "Vice Chairwoman" || m.parsed.title === "Vice Chairman");
             const otherMembers = parsedMembers.filter(m => m !== chairperson && m !== viceChairperson);
+            console.log('updateLegend - Non-conference members:', parsedMembers.map(m => ({ fullName: m.original, title: m.parsed.title })));
             const createLi = (member) => {
                 const li = document.createElement('li');
                 const displayName = member.parsed.title ? `${member.parsed.title} ${member.parsed.name}` : member.parsed.name;
                 li.textContent = displayName;
+                console.log('updateLegend - Created LI for', member.original, 'Display name:', displayName);
                 li.onclick = () => {
                     if (path.length === 0) selectOption(member.original);
                     else console.log('Cannot select member while editing existing path');
@@ -2252,7 +2272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             otherMembers.forEach(member => memberList.appendChild(createLi(member)));
         }
-        console.log('Legend updated');
+        console.log('updateLegend - Legend fully updated');
     }
 
     // Update the meeting actions legend
