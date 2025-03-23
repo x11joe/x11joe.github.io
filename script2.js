@@ -108,6 +108,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // === Utility Functions ===
 
+    function formatLcNumber(event) {
+        const input = event.target;
+        const value = input.value.replace(/\D/g, ''); // Remove non-digits
+        let formatted = '';
+        if (value.length > 0) {
+            formatted += value.substring(0, 2); // YY
+        }
+        if (value.length > 2) {
+            formatted += '.' + value.substring(2, 6); // .XXXX
+        }
+        if (value.length > 6) {
+            formatted += '.' + value.substring(6, 11); // .XXXXX
+        }
+        input.value = formatted;
+        // Set cursor to the end
+        input.setSelectionRange(formatted.length, formatted.length);
+    }
+
     // Suggest motion types for voting actions
     function suggestMotionType() {
         return ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
@@ -685,13 +703,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.createElement('div');
         form.className = 'module-form';
         const moduleValues = existingValues ? { ...existingValues } : {};
-    
+
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = field.label || `${field.name}: `;
-    
-            if (field.type === 'number') {
+
+            if (field.type === 'text') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `module-${field.name}`;
+                let defaultValue = field.default || '';
+                if (defaultValue.includes("current_year")) {
+                    const currentYear = new Date().getFullYear().toString().slice(-2);
+                    defaultValue = defaultValue.replace("current_year", currentYear);
+                }
+                input.value = moduleValues[field.name] || defaultValue;
+                input.placeholder = field.placeholder || '';
+                if (field.maxlength) input.maxLength = field.maxlength;
+                if (field.name === 'lcNumber') {
+                    input.classList.add('lc-number-input');
+                    input.addEventListener('input', formatLcNumber);
+                }
+                container.appendChild(label);
+                container.appendChild(input);
+            } else if (field.type === 'number') {
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.id = `module-${field.name}`;
@@ -700,7 +736,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 input.value = moduleValues[field.name];
                 input.min = '0';
-    
                 const decrement = document.createElement('button');
                 decrement.textContent = '-';
                 decrement.onclick = () => {
@@ -709,14 +744,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         input.value = moduleValues[field.name];
                     }
                 };
-    
                 const increment = document.createElement('button');
                 increment.textContent = '+';
                 increment.onclick = () => {
                     moduleValues[field.name]++;
                     input.value = moduleValues[field.name];
                 };
-    
                 input.addEventListener('input', () => {
                     const value = parseInt(input.value, 10);
                     if (isNaN(value) || value < 0) {
@@ -726,28 +759,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         moduleValues[field.name] = value;
                     }
                 });
-    
                 container.appendChild(label);
                 container.appendChild(decrement);
                 container.appendChild(input);
                 container.appendChild(increment);
-            } else if (field.type === 'text') {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = `module-${field.name}`;
-                if (field.default === "current_year") {
-                    input.value = moduleValues[field.name] || new Date().getFullYear().toString().slice(-2);
-                } else {
-                    input.value = moduleValues[field.name] || field.default || '';
-                }
-                input.placeholder = field.placeholder || '';
-                if (field.maxlength) input.maxLength = field.maxlength;
-                container.appendChild(label);
-                container.appendChild(input);
             }
             form.appendChild(container);
         });
-    
+
         const submit = document.createElement('button');
         submit.id = 'module-submit';
         submit.textContent = 'Submit';
@@ -1108,9 +1127,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
                 if (amendmentType === 'Verbal') statement += ` moved verbal amendment`;
                 else if (amendmentType === 'LC#') {
-                    const lcNumberObj = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value) : { year: '00', identifier: '0000', version: '00000' };
-                    const fullLcNumber = `${lcNumberObj.year}.${lcNumberObj.identifier}.${lcNumberObj.version}`;
-                    statement += ` moved amendment LC# ${fullLcNumber}`;
+                    const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
+                    statement += ` moved amendment LC# ${lcNumberStr}`;
                 }
             } else if (detail === 'Reconsider') {
                 statement += ` moved to reconsider`;
@@ -1199,8 +1217,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
                     if (amendmentType === 'Verbal') text += ' verbal amendment';
                     else if (amendmentType === 'LC#') {
-                        const lcNumberObj = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value) : { version: '00000' };
-                        text += ` amendment LC# .${lcNumberObj.version}`;
+                        const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
+                        const version = lcNumberStr.split('.')[2] || '00000';
+                        text += ` amendment LC# .${version}`;
                     }
                 } else {
                     text += ` ${detail}`;
@@ -1353,7 +1372,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get display text for a module step (e.g., vote results, LC number)
     function getModuleDisplayText(step, moduleResult) {
         if (step === 'voteModule') return constructVoteTagText(moduleResult);
-        else if (step === 'lcNumber') return `LC# .${moduleResult.version || '00000'}`;
+        else if (step === 'lcNumber') {
+            const lcNumberStr = moduleResult.lcNumber || '00.0000.00000';
+            const version = lcNumberStr.split('.')[2] || '00000';
+            return `LC# .${version}`;
+        }
         else if (step === 'amendmentModule') return `Amendment: ${moduleResult.amendmentText || ''}`;
         return JSON.stringify(moduleResult);
     }

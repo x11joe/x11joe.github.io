@@ -14,11 +14,20 @@
                 { "step": "rereferQuestion", "type": "select", "options": ["No Rerefer", "Rerefer"], "next": { "Rerefer": "rereferOptional", "No Rerefer": null } },
                 { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "next": null },
                 { "step": "amendmentType", "type": "select", "options": ["Verbal", "LC#"], "next": { "Verbal": null, "LC#": "lcNumber" } },
-                { "step": "lcNumber", "type": "module", "fields": [
-                    { "name": "year", "type": "text", "default": "current_year", "placeholder": "YY", "maxlength": 2, "label": "Year (YY):" },
-                    { "name": "identifier", "type": "text", "default": "0000", "placeholder": "XXXX", "maxlength": 4, "label": "Identifier (XXXX):" },
-                    { "name": "version", "type": "text", "default": "00000", "placeholder": "XXXXX", "maxlength": 5, "label": "Version (XXXXX):" }
-                ], "next": null },
+                {
+                    "step": "lcNumber",
+                    "type": "module",
+                    "fields": [
+                        {
+                            "name": "lcNumber",
+                            "type": "text",
+                            "default": "current_year.0000.00000",
+                            "placeholder": "YY.XXXX.XXXXX",
+                            "label": "LC# (YY.XXXX.XXXXX):"
+                        }
+                    ],
+                    "next": null
+                },
                 { "step": "amendmentModule", "type": "module", "fields": [{ "name": "amendmentText", "type": "text" }], "next": null }
             ]
         },

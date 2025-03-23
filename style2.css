@@ -538,3 +538,8 @@ label {
     align-items: center;
     gap: 5px;
 }
+
+.lc-number-input {
+    font-family: monospace;
+    width: 120px;
+}
