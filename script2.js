@@ -94,7 +94,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('History loaded from local storage:', history);
     }
 
-    // Set lastAction from the most recent member action in history
+    // Load state variables from localStorage
+    lastAction = localStorage.getItem('lastAction') || null;
+    lastMovedDetail = localStorage.getItem('lastMovedDetail') || null;
+    lastRereferCommittee = localStorage.getItem('lastRereferCommittee') || null;
+    amendmentPassed = localStorage.getItem('amendmentPassed') === 'true';
+    pendingAmendment = localStorage.getItem('pendingAmendment') === 'true';
+    console.log('Loaded state variables from localStorage:', {
+        lastAction,
+        lastMovedDetail,
+        lastRereferCommittee,
+        amendmentPassed,
+        pendingAmendment
+    });
+
+    // Set lastAction from the most recent member action in history (optional override)
     if (history.length > 0) {
         const lastEntry = history[history.length - 1];
         if (lastEntry.path[0].step === 'member') {
@@ -102,6 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (actionPart) {
                 lastAction = actionPart.value;
                 console.log('Set lastAction from history to:', lastAction);
+                localStorage.setItem('lastAction', lastAction); // Sync with localStorage
             }
         }
     }
@@ -1446,22 +1461,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (actionPart) {
                 lastAction = actionPart.value;
                 console.log('Updated lastAction to:', lastAction);
+                localStorage.setItem('lastAction', lastAction);
                 if (lastAction === 'Moved') {
                     const detailPart = path.find(p => p.step === 'movedDetail');
                     if (detailPart) {
                         lastMovedDetail = detailPart.value;
                         console.log('Updated lastMovedDetail to:', lastMovedDetail);
+                        localStorage.setItem('lastMovedDetail', lastMovedDetail);
                         if (lastMovedDetail === 'Amendment') {
                             pendingAmendment = true;
                             console.log('Set pendingAmendment to true');
+                            localStorage.setItem('pendingAmendment', 'true');
                         }
                     }
                     const rereferPart = path.find(p => p.step === 'rereferOptional');
                     if (rereferPart) {
                         lastRereferCommittee = rereferPart.value;
                         console.log('Updated lastRereferCommittee to:', lastRereferCommittee);
+                        localStorage.setItem('lastRereferCommittee', lastRereferCommittee);
                     } else {
                         lastRereferCommittee = null;
+                        localStorage.removeItem('lastRereferCommittee');
                     }
                 }
             }
@@ -1473,12 +1493,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (onWhat === 'Amendment') {
                     pendingAmendment = false;
                     console.log('Voice Vote on Amendment finalized, set pendingAmendment to false');
+                    localStorage.setItem('pendingAmendment', 'false');
                     if (outcome === 'Passed') {
                         amendmentPassed = true;
                         console.log('Amendment passed, setting amendmentPassed to true');
+                        localStorage.setItem('amendmentPassed', 'true');
                     } else {
                         amendmentPassed = false;
                         console.log('Amendment failed, setting amendmentPassed to false');
+                        localStorage.setItem('amendmentPassed', 'false');
                     }
                 }
             } else if (voteType === 'Roll Call Vote') {
@@ -1486,6 +1509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (motionType === 'Amendment') {
                     pendingAmendment = false;
                     console.log('Vote on Amendment finalized, set pendingAmendment to false');
+                    localStorage.setItem('pendingAmendment', 'false');
                     const voteResultPart = path.find(p => p.step === 'voteModule');
                     if (voteResultPart) {
                         const result = JSON.parse(voteResultPart.value);
@@ -1494,9 +1518,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (forVotes > againstVotes) {
                             amendmentPassed = true;
                             console.log('Roll Call Vote on Amendment passed, setting amendmentPassed to true');
+                            localStorage.setItem('amendmentPassed', 'true');
                         } else {
                             amendmentPassed = false;
                             console.log('Roll Call Vote on Amendment failed, setting amendmentPassed to false');
+                            localStorage.setItem('amendmentPassed', 'false');
                         }
                     }
                 } else {
@@ -1504,6 +1530,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     amendmentPassed = false;
                     lastRereferCommittee = null;
                     console.log('Non-Amendment motion finalized, reset amendmentPassed and lastRereferCommittee');
+                    localStorage.setItem('amendmentPassed', 'false');
+                    localStorage.removeItem('lastRereferCommittee');
                 }
             }
         }
@@ -2244,9 +2272,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('clearHistoryBtn').addEventListener('click', () => {
         history = [];
         lastAction = null;
+        lastMovedDetail = null;
+        lastRereferCommittee = null;
+        amendmentPassed = false;
+        pendingAmendment = false;
         localStorage.removeItem('historyStatements');
+        localStorage.removeItem('lastAction');
+        localStorage.removeItem('lastMovedDetail');
+        localStorage.removeItem('lastRereferCommittee');
+        localStorage.removeItem('amendmentPassed');
+        localStorage.removeItem('pendingAmendment');
         updateHistoryTable();
-        console.log('History cleared');
+        console.log('History cleared and state variables reset');
     });
 
     // Submit testimony button
