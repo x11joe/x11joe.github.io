@@ -301,6 +301,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Reordered movedDetail options based on lastAction:', lastAction, 'new options:', options);
             }
         }
+        if (currentFlow === jsonStructure.flows.voteActionFlow && currentStep === 'voiceVoteOn' && lastMovedDetail === 'Reconsider') {
+            if (options.includes('Reconsider')) {
+                options = ['Reconsider', ...options.filter(opt => opt !== 'Reconsider')];
+                console.log('Reordered voiceVoteOn options based on lastMovedDetail:', lastMovedDetail, 'new options:', options);
+            }
+        }
         return options;
     }
 
