@@ -330,6 +330,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             options = getLegendMembers().filter(m => getMemberSide(m.fullName) === 'Senate').map(m => m.fullName);
         } else if (currentStep === 'houseBillCarrier') {
             options = getLegendMembers().filter(m => getMemberSide(m.fullName) === 'House').map(m => m.fullName);
+        } else if (currentStep === 'carryBillPrompt') {
+            if (currentBillType === 'Conference Committee') {
+                options = ['X and Y Carried the Bill', 'No Carriers'];
+            } else {
+                options = ['X Carried the Bill', 'No Carrier'];
+            }
+        } else if (currentStep === 'billCarrierOptional') {
+            options = getCommitteeMembers();
         }
         if (currentFlow === jsonStructure.flows.committeeMemberFlow && currentStep === 'action' && lastAction) {
             if (lastAction === 'Moved') options = ['Seconded', ...options.filter(opt => opt !== 'Seconded')];
