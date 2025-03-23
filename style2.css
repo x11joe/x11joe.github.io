@@ -601,3 +601,13 @@ label {
 #memberListContainer .option:hover {
     background-color: #f0f0f0;
 }
+
+.member-group {
+    margin-bottom: 10px;
+}
+
+.member-group h5 {
+    margin: 0;
+    font-weight: bold;
+    color: #333;
+}

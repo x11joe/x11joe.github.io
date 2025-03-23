@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 // Promote the member
                 const parsed = parseMember(member.fullName);
-                const isFemaleMember = isFemale(parsed.name);
+                const isFemaleMember = isFemale(member.fullName); // Use fullName to check
                 member.role = isFemaleMember ? "Chairwoman" : "Chairman";
                 // Save and update
                 localStorage.setItem('conferenceCommittee', JSON.stringify(members));
@@ -499,8 +499,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Check if a name is in the list of female names
-    function isFemale(fullName) {
-        return window.FEMALE_NAMES.includes(fullName);
+    function isFemale(name) {
+        const parsedName = parseMember(name).name; // Extract just the name part
+        return window.FEMALE_NAMES.includes(parsedName);
     }
 
     // Map testimony format to a simplified category
@@ -1571,7 +1572,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const { lastName: providerLastName, title: providerTitle } = parseMember(providerMember);
                         providerText = providerTitle ? `${providerTitle} ${providerLastName}` : providerLastName;
                     } else if (providerType === 'External Source') {
-                        const provider = path.find(p => p.step === 'providerText') ? JSON.parse(path.find(p => p.step === 'providerText').value).provider : '';
+                        const providerTextPart = path.find(p => p.step === 'providerText');
+                        const provider = providerTextPart ? JSON.parse(providerTextPart.value).provider : '';
                         providerText = provider;
                     }
                     const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
@@ -2148,18 +2150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const senators = members.filter(m => getMemberSide(m.fullName) === "Senate");
             const representatives = members.filter(m => getMemberSide(m.fullName) === "House");
             
-            // Find senator chairman
-            const senatorChairman = senators.find(m => m.role === "Chairman" || m.role === "Chairwoman");
-            const otherSenators = senators.filter(m => m !== senatorChairman);
-            
-            // Find representative chairman
-            const repChairman = representatives.find(m => m.role === "Chairman" || m.role === "Chairwoman");
-            const otherReps = representatives.filter(m => m !== repChairman);
-            
             // Function to create member li
-            const createMemberLi = (member) => {
+            const createMemberLi = (member, side) => {
                 const li = document.createElement('li');
-                const displayName = member.role ? `${member.role} ${parseMember(member.fullName).name}` : member.fullName;
+                const displayName = member.role ? `${side} ${member.role} ${parseMember(member.fullName).name}` : member.fullName;
                 li.textContent = displayName;
                 li.onclick = () => {
                     if (path.length === 0) selectOption(member.fullName);
@@ -2184,28 +2178,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return li;
             };
             
-            // Append senator chairman and separator
-            if (senatorChairman) {
-                memberList.appendChild(createMemberLi(senatorChairman));
-                memberList.appendChild(document.createElement('hr'));
+            // Senators Section
+            if (senators.length > 0) {
+                const senatorsDiv = document.createElement('div');
+                senatorsDiv.className = 'member-group';
+                const senatorsLabel = document.createElement('h5');
+                senatorsLabel.textContent = 'Senators';
+                senatorsDiv.appendChild(senatorsLabel);
+                const senatorChairman = senators.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+                if (senatorChairman) {
+                    senatorsDiv.appendChild(createMemberLi(senatorChairman, 'Senate'));
+                    senatorsDiv.appendChild(document.createElement('hr'));
+                }
+                const otherSenators = senators.filter(m => m !== senatorChairman);
+                otherSenators.forEach(senator => {
+                    senatorsDiv.appendChild(createMemberLi(senator, 'Senate'));
+                });
+                memberList.appendChild(senatorsDiv);
             }
-            // Append other senators
-            otherSenators.forEach(senator => {
-                memberList.appendChild(createMemberLi(senator));
-            });
-            // Append separator between senators and representatives
-            if (senators.length > 0 && representatives.length > 0) {
-                memberList.appendChild(document.createElement('hr'));
+            
+            // Representatives Section
+            if (representatives.length > 0) {
+                const repsDiv = document.createElement('div');
+                repsDiv.className = 'member-group';
+                const repsLabel = document.createElement('h5');
+                repsLabel.textContent = 'Representatives';
+                repsDiv.appendChild(repsLabel);
+                const repChairman = representatives.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+                if (repChairman) {
+                    repsDiv.appendChild(createMemberLi(repChairman, 'House'));
+                    repsDiv.appendChild(document.createElement('hr'));
+                }
+                const otherReps = representatives.filter(m => m !== repChairman);
+                otherReps.forEach(rep => {
+                    repsDiv.appendChild(createMemberLi(rep, 'House'));
+                });
+                memberList.appendChild(repsDiv);
             }
-            // Append representative chairman and separator
-            if (repChairman) {
-                memberList.appendChild(createMemberLi(repChairman));
-                memberList.appendChild(document.createElement('hr'));
-            }
-            // Append other representatives
-            otherReps.forEach(rep => {
-                memberList.appendChild(createMemberLi(rep));
-            });
+            
             // Add button
             const counts = getConferenceCommitteeCounts();
             const canAdd = counts.senators < 3 || counts.representatives < 3;
