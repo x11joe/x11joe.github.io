@@ -118,22 +118,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         return ["for lack of a second"];
     }
 
+    function countDigitsBefore(value, pos) {
+        return value.substring(0, pos).replace(/\D/g, '').length;
+    }
+
     function formatLcNumber(event) {
         const input = event.target;
-        const value = input.value.replace(/\D/g, ''); // Remove non-digits
+        const oldValue = input.value;
+        const oldPos = input.selectionStart;
+        const rawDigits = oldValue.replace(/\D/g, '');
+        const digitsBefore = countDigitsBefore(oldValue, oldPos);
         let formatted = '';
-        if (value.length > 0) {
-            formatted += value.substring(0, 2); // YY
+        if (rawDigits.length > 0) {
+            formatted += rawDigits.substring(0, 2);
         }
-        if (value.length > 2) {
-            formatted += '.' + value.substring(2, 6); // .XXXX
+        if (rawDigits.length > 2) {
+            formatted += '.' + rawDigits.substring(2, 6);
         }
-        if (value.length > 6) {
-            formatted += '.' + value.substring(6, 11); // .XXXXX
+        if (rawDigits.length > 6) {
+            formatted += '.' + rawDigits.substring(6, 11);
         }
         input.value = formatted;
-        // Set cursor to the end
-        input.setSelectionRange(formatted.length, formatted.length);
+        // Calculate new cursor position
+        let newPos = 0;
+        let digitCount = 0;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) {
+                digitCount++;
+                if (digitCount > digitsBefore) {
+                    newPos = i;
+                    break;
+                }
+            } else {
+                if (digitCount === digitsBefore) {
+                    newPos = i + 1;
+                }
+            }
+        }
+        if (digitCount <= digitsBefore) {
+            newPos = formatted.length;
+        }
+        input.setSelectionRange(newPos, newPos);
     }
 
     // Determine legislative title (Senator/Representative) based on organization
@@ -2044,30 +2069,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (modal.classList.contains('active') && currentStep === 'voteModule') {
-            const inputFor = document.getElementById('module-for');
-            const inputAgainst = document.getElementById('module-against');
-            const inputNeutral = document.getElementById('module-neutral');
-            if (inputFor && inputAgainst && inputNeutral) {
-                let targetInput;
-                if (e.key === '1') targetInput = inputFor;
-                else if (e.key === '2') targetInput = inputAgainst;
-                else if (e.key === '3') targetInput = inputNeutral;
-                if (targetInput) {
-                    e.preventDefault(); // Prevent default behavior of the key press
-                    const currentValue = parseInt(targetInput.value, 10) || 0;
-                    if (e.ctrlKey) {
-                        if (currentValue > 0) targetInput.value = currentValue - 1;
-                    } else {
-                        targetInput.value = currentValue + 1;
+        if (modal.classList.contains('active') && currentFlow && currentStep) {
+            const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+            if (stepConfig && stepConfig.type === 'module') {
+                if (currentStep === 'voteModule') {
+                    const inputFor = document.getElementById('module-for');
+                    const inputAgainst = document.getElementById('module-against');
+                    const inputNeutral = document.getElementById('module-neutral');
+                    if (inputFor && inputAgainst && inputNeutral) {
+                        let targetInput;
+                        if (e.key === '1') targetInput = inputFor;
+                        else if (e.key === '2') targetInput = inputAgainst;
+                        else if (e.key === '3') targetInput = inputNeutral;
+                        if (targetInput) {
+                            e.preventDefault();
+                            const currentValue = parseInt(targetInput.value, 10) || 0;
+                            if (e.ctrlKey) {
+                                if (currentValue > 0) targetInput.value = currentValue - 1;
+                            } else {
+                                targetInput.value = currentValue + 1;
+                            }
+                        }
                     }
                 }
-            }
-            if (e.key === 'Tab') {
-                e.preventDefault(); // Prevent default tab behavior
-                const submitButton = document.getElementById('module-submit');
-                if (submitButton) {
-                    submitButton.click(); // Simulate click on submit button
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const submitButton = document.getElementById('module-submit');
+                    if (submitButton) {
+                        submitButton.click();
+                    }
                 }
             }
         }
