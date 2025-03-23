@@ -295,6 +295,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (lastAction === 'Seconded' || lastAction === 'Withdrew') options = ['Moved', ...options.filter(opt => opt !== 'Moved')];
             console.log('Reordered action options based on lastAction:', lastAction, 'new options:', options);
         }
+        if (currentFlow === jsonStructure.flows.committeeMemberFlow && currentStep === 'movedDetail' && (lastAction === 'Proposed Amendment' || lastAction === 'Introduced Amendment')) {
+            if (options.includes('Amendment')) {
+                options = ['Amendment', ...options.filter(opt => opt !== 'Amendment')];
+                console.log('Reordered movedDetail options based on lastAction:', lastAction, 'new options:', options);
+            }
+        }
         return options;
     }
 
