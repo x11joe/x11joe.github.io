@@ -118,6 +118,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return ["for lack of a second"];
     }
 
+    function performSpecialCopy(box) {
+        const techStatement = box.getAttribute('data-tech-statement');
+        const link = box.getAttribute('data-link') || '';
+        const memberNo = box.getAttribute('data-memberno') || '';
+        const timeStr = box.getAttribute('data-time');
+        const time = new Date(timeStr);
+        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        let memberNoFormatted = memberNo ? `member-no:${memberNo};Mic:` : '';
+        let specialFormat = `${formattedTime} | ${techStatement} | ${memberNoFormatted} |`;
+        if (link) specialFormat += ` ${link}`;
+        navigator.clipboard.writeText(specialFormat).then(() => {
+            console.log('Copied to clipboard:', specialFormat);
+            box.classList.add('special-copied');
+            setTimeout(() => box.classList.remove('special-copied'), 500);
+        });
+    }
+
     function countDigitsBefore(value, pos) {
         return value.substring(0, pos).replace(/\D/g, '').length;
     }
@@ -1588,6 +1605,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data-tech-statement="${techStatement.trim()}" 
                     data-link="${link}" 
                     data-memberno="${memberNo}" 
+                    data-time="${time.toISOString()}"
                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement.trim()}
                 </div>
@@ -1603,6 +1621,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="statement-box tech-clerk" 
                     data-tech-statement="${techStatement.trim()}" 
                     data-memberno="${memberNo}" 
+                    data-time="${time.toISOString()}"
                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement.trim()}
                 </div>
@@ -1618,6 +1637,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data-tech-statement="${techStatement.trim()}" 
                     data-link="${link}" 
                     data-memberno="${memberNo}" 
+                    data-time="${time.toISOString()}"
                     title="Copy Tech Clerk Statement (Ctrl+Click for Special Format)">
                     ${techStatement.trim()}
                 </div>
@@ -1638,32 +1658,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         statementBoxes.forEach(box => {
             box.addEventListener('click', (e) => {
                 e.stopPropagation();
-                let textToCopy;
                 if (box.classList.contains('tech-clerk') && e.ctrlKey) {
-                    const techStatement = box.getAttribute('data-tech-statement');
-                    const link = box.getAttribute('data-link') || '';
-                    const memberNo = box.getAttribute('data-memberno') || '';
-                    const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    let memberNoFormatted = memberNo ? `member-no:${memberNo};Mic:` : '';
-                    let specialFormat = `${formattedTime} | ${techStatement} | ${memberNoFormatted} |`;
-                    if (link) specialFormat += ` ${link}`;
-                    textToCopy = specialFormat;
-                    box.classList.add('special-copied');
-                    setTimeout(() => box.classList.remove('special-copied'), 500);
+                    performSpecialCopy(box);
                 } else {
-                    textToCopy = box.textContent.trim();
-                    box.classList.add('copied');
-                    setTimeout(() => box.classList.remove('copied'), 500);
+                    const textToCopy = box.textContent.trim();
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        console.log('Copied to clipboard:', textToCopy);
+                        box.classList.add('copied');
+                        setTimeout(() => box.classList.remove('copied'), 500);
+                    });
                 }
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    console.log('Copied to clipboard:', textToCopy);
-                });
             });
         });
         const techClerkBox = row.querySelector('.statement-box.tech-clerk');
         if (techClerkBox) {
             techClerkBox.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
+                performSpecialCopy(techClerkBox);
             });
         }
         const editIcon = row.querySelector('.edit-icon');
