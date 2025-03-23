@@ -543,11 +543,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Get the display name for a member, using role if available for conference committees
+    function getMemberDisplayName(memberString) {
+        let memberRole = null;
+        if (currentBillType === 'Conference Committee') {
+            const legendMembers = getLegendMembers();
+            const memberObj = legendMembers.find(m => m.fullName === memberString);
+            if (memberObj && memberObj.role) {
+                memberRole = memberObj.role;
+            }
+        }
+        const { lastName, title } = parseMember(memberString);
+        if (memberRole) {
+            return `${memberRole} ${lastName}`;
+        } else {
+            return title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+        }
+    }
+
     // Check if a string is an initial (e.g., "B.")
     function isInitial(str) {
         return str.length === 2 && /[A-Za-z]/.test(str[0]) && str[1] === '.';
     }
-    
+
     // Map testimony format to a simplified category
     function mapFormat(format) {
         if (format && format.includes('In-Person')) return 'In-Person';
@@ -1446,71 +1464,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Construct a procedural statement for member actions
     function constructMemberActionProceduralStatement(time, path) {
         const memberString = path.find(p => p.step === 'member')?.value || '';
-        const { lastName, title } = parseMember(memberString);
+        const memberText = getMemberDisplayName(memberString);
         const action = path.find(p => p.step === 'action')?.value || '';
-        const hours = time.getHours();
-        const minutes = time.getMinutes().toString().padStart(2, '0');
-        const period = hours >= 12 ? 'p.m.' : 'a.m.';
-        const formattedHours = hours % 12 || 12;
-        const formattedTime = `${formattedHours}:${minutes} ${period}`;
-        let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-        let statement = `${formattedTime} ${memberText}`;
-        if (action === 'Proposed Amendment' || action === 'Introduced Amendment') {
-            const verb = action.split(' ')[0].toLowerCase();
-            const amendmentProvider = path.find(p => p.step === 'amendmentProvider')?.value;
-            if (amendmentProvider === 'Self') {
+        const detail = path.find(p => p.step === 'movedDetail')?.value || '';
+        const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
+        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+        let text = `${formattedTime} ${memberText} ${action.toLowerCase()}`;
+        if (detail) {
+            if (detail === 'Amendment') {
                 const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                if (amendmentType === 'Verbal') {
-                    statement += ` ${verb} verbal amendment`;
-                } else if (amendmentType === 'LC#') {
+                if (amendmentType === 'Verbal') text += ' a verbal amendment';
+                else if (amendmentType === 'LC#') {
                     const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
-                    statement += ` ${verb} amendment LC# ${lcNumberStr}`;
+                    const version = lcNumberStr.split('.')[2] || '00000';
+                    text += ` amendment LC# .${version}`;
                 }
-            } else if (amendmentProvider === 'Provided By') {
-                const providerType = path.find(p => p.step === 'providerType')?.value;
-                let providerText = '';
-                if (providerType === 'Senator or Representative') {
-                    const providerMember = path.find(p => p.step === 'providerMember')?.value || '';
-                    const { lastName: providerLastName, title: providerTitle } = parseMember(providerMember);
-                    providerText = providerTitle ? `${providerTitle} ${providerLastName}` : providerLastName;
-                } else if (providerType === 'External Source') {
-                    const provider = path.find(p => p.step === 'providerText') ? JSON.parse(path.find(p => p.step === 'providerText').value).provider : '';
-                    providerText = provider;
-                }
-                const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                if (amendmentType === 'Verbal') {
-                    statement += ` ${verb} verbal amendment provided by ${providerText}`;
-                } else if (amendmentType === 'LC#') {
-                    const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
-                    statement += ` ${verb} amendment LC# ${lcNumberStr} provided by ${providerText}`;
-                }
+            } else {
+                text += ` ${detail.toLowerCase()}`;
             }
-        } else {
-            const detail = path.find(p => p.step === 'movedDetail')?.value || '';
-            const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
-            if (action === 'Moved') {
-                if (detail === 'Amendment') {
-                    const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                    if (amendmentType === 'Verbal') statement += ` moved verbal amendment`;
-                    else if (amendmentType === 'LC#') {
-                        const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
-                        statement += ` moved amendment LC# ${lcNumberStr}`;
-                    }
-                } else if (detail === 'Reconsider') {
-                    statement += ` moved to reconsider`;
-                } else if (detail === 'Without Committee Recommendation') {
-                    statement += ` moved without committee recommendation`;
-                } else {
-                    const motionTypesRequiringArticle = suggestMotionType();
-                    statement += motionTypesRequiringArticle.includes(detail) ? ` moved a ${detail}` : ` moved ${detail}`;
-                }
-                if (rerefer) statement += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
-            } else if (action === 'Seconded') statement += ` seconded the motion`;
-            else if (action === 'Withdrew') statement += ` withdrew the motion`;
-            else if (action === 'Introduced Bill') statement += ` introduced the bill`;
-            else statement += ` performed action: ${action}`;
         }
-        return statement;
+        if (rerefer) text += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
+        return text;
     }
 
     function constructMeetingActionProceduralStatement(time, path) {
@@ -1571,9 +1545,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     text = `Roll Call Vote on ${motionText} - Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
                     if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
-                        const { lastName, title } = parseMember(billCarrier);
-                        const memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
-                        text += ` - ${memberText} Carried the Bill`;
+                        const carrierText = getMemberDisplayName(billCarrier);
+                        text += ` - ${carrierText} Carried the Bill`;
                     }
                 } else {
                     text = `Roll Call Vote on ${baseMotionType}`;
@@ -1593,9 +1566,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if (flowType === 'member') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
-            const { lastName, title } = parseMember(memberString);
+            let memberText = getMemberDisplayName(memberString);
             const action = path.find(p => p.step === 'action')?.value || '';
-            let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
             if (action === 'Proposed Amendment' || action === 'Introduced Amendment') {
                 const verb = action.split(' ')[0].toLowerCase();
                 const amendmentProvider = path.find(p => p.step === 'amendmentProvider')?.value;
@@ -1613,8 +1585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let providerText = '';
                     if (providerType === 'Senator or Representative') {
                         const providerMember = path.find(p => p.step === 'providerMember')?.value || '';
-                        const { lastName: providerLastName, title: providerTitle } = parseMember(providerMember);
-                        providerText = providerTitle ? `${providerTitle} ${providerLastName}` : providerLastName;
+                        providerText = getMemberDisplayName(providerMember);
                     } else if (providerType === 'External Source') {
                         const providerTextPart = path.find(p => p.step === 'providerText');
                         const provider = providerTextPart ? JSON.parse(providerTextPart.value).provider : '';
@@ -1654,8 +1625,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return action;
         } else if (flowType === 'introducedBill') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
-            const { lastName, title } = parseMember(memberString);
-            let memberText = title ? `${title} ${lastName}` : `${isSenateCommittee(currentCommittee) ? 'Senator' : 'Representative'} ${lastName}`;
+            let memberText = getMemberDisplayName(memberString);
             return `${memberText} - Introduced Bill`;
         }
         return path.map(p => p.value).join(' - ');
@@ -1813,8 +1783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get display text for a tag based on step and value
     function getTagText(step, value) {
         if (step === 'member' || step === 'memberOptional' || step === 'billCarrierOptional') {
-            const { name, title } = parseMember(value);
-            return title ? `${title} ${name}` : name;
+            return getMemberDisplayName(value);
         }
         return value;
     }
@@ -1888,9 +1857,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (path[0].step === 'introducedBill') {
             const memberString = path.find(p => p.step === 'member')?.value || '';
             const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
-            const { lastName, title } = parseMember(memberString);
-            const techStatement = `${title} ${lastName} - Introduced Bill`;
-            const proceduralStatement = constructProceduralStatement(time, { lastName, title, introducingBill: true });
+            const memberText = getMemberDisplayName(memberString);
+            const techStatement = `${memberText} - Introduced Bill`;
+            const proceduralStatement = constructProceduralStatement(time, { lastName: parseMember(memberString).lastName, title: memberText.split(' ')[0], introducingBill: true });
             statementHtml = `
                 <div class="statement-box tech-clerk" 
                     data-tech-statement="${techStatement.trim()}" 
@@ -1903,8 +1872,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         } else if (path[0].step === 'member') {
             const techStatement = statementText;
-            const proceduralStatement = constructMemberActionProceduralStatement(time, path);
+            const memberString = path.find(p => p.step === 'member')?.value || '';
             const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
+            const proceduralStatement = constructMemberActionProceduralStatement(time, path); // Assume this needs fixing separately
             const link = '';
             statementHtml = `
                 <div class="statement-box tech-clerk" 
