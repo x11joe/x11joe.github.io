@@ -2145,9 +2145,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         memberList.innerHTML = '';
         if (currentBillType === 'Conference Committee') {
             const members = getLegendMembers();
-            // Sort: chairmen first
-            members.sort((a, b) => (b.role ? 1 : 0) - (a.role ? 1 : 0));
-            members.forEach((member, index) => {
+            const senators = members.filter(m => getMemberSide(m.fullName) === "Senate");
+            const representatives = members.filter(m => getMemberSide(m.fullName) === "House");
+            
+            // Find senator chairman
+            const senatorChairman = senators.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+            const otherSenators = senators.filter(m => m !== senatorChairman);
+            
+            // Find representative chairman
+            const repChairman = representatives.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+            const otherReps = representatives.filter(m => m !== repChairman);
+            
+            // Function to create member li
+            const createMemberLi = (member) => {
                 const li = document.createElement('li');
                 const displayName = member.role ? `${member.role} ${parseMember(member.fullName).name}` : member.fullName;
                 li.textContent = displayName;
@@ -2171,7 +2181,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 li.appendChild(removeButton);
                 li.appendChild(promoteButton);
-                memberList.appendChild(li);
+                return li;
+            };
+            
+            // Append senator chairman and separator
+            if (senatorChairman) {
+                memberList.appendChild(createMemberLi(senatorChairman));
+                memberList.appendChild(document.createElement('hr'));
+            }
+            // Append other senators
+            otherSenators.forEach(senator => {
+                memberList.appendChild(createMemberLi(senator));
+            });
+            // Append separator between senators and representatives
+            if (senators.length > 0 && representatives.length > 0) {
+                memberList.appendChild(document.createElement('hr'));
+            }
+            // Append representative chairman and separator
+            if (repChairman) {
+                memberList.appendChild(createMemberLi(repChairman));
+                memberList.appendChild(document.createElement('hr'));
+            }
+            // Append other representatives
+            otherReps.forEach(rep => {
+                memberList.appendChild(createMemberLi(rep));
             });
             // Add button
             const counts = getConferenceCommitteeCounts();
