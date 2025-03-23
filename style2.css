@@ -376,7 +376,7 @@ label {
 .module-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    /* gap: 10px; */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
@@ -387,7 +387,7 @@ label {
 .module-form div {
     display: flex;
     align-items: center;
-    gap: 5px;
+    /* gap: 5px; */
 }
 
 .module-form label {
@@ -423,7 +423,7 @@ label {
 .conference-vote-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    /* gap: 20px; */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #ccc;
