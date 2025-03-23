@@ -723,6 +723,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         currentStep = null;
                         console.log('No next step found, currentStep set to null');
                     }
+                    // Special logic for modules
+                    if (stepConfig && stepConfig.type === 'module' && currentStep === null) {
+                        if (lastPart.step === 'voteModule') {
+                            const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                            if (motionType && motionType !== 'Reconsider' && motionType !== 'Amendment') {
+                                currentStep = 'carryBillPrompt';
+                                console.log('Special logic for voteModule: set currentStep to carryBillPrompt');
+                            }
+                        }
+                        // Add similar logic for other modules if needed
+                    }
                 } else {
                     currentFlow = null;
                     currentStep = null;
