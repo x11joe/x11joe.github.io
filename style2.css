@@ -405,8 +405,7 @@ label {
 }
 
 .regular-vote-form button {
-    margin-top: 10px;
-    align-self: flex-start;
+    align-self: center;
     padding: 5px 10px;
     background-color: #007bff;
     color: white;
