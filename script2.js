@@ -509,10 +509,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if a name is in the list of female names
     function isFemale(fullName) {
         const parsed = parseMember(fullName);
-        const nameWithoutTitle = parsed.name;
-        console.log('isFemale - Checking name:', nameWithoutTitle, 'against FEMALE_NAMES:', window.FEMALE_NAMES);
-        const isFemaleResult = window.FEMALE_NAMES.includes(nameWithoutTitle);
-        console.log('isFemale - Result for', nameWithoutTitle, ':', isFemaleResult);
+        const lastName = parsed.lastName;
+        console.log('isFemale - Checking last name:', lastName, 'against FEMALE_NAMES:', window.FEMALE_NAMES);
+        const isFemaleResult = window.FEMALE_NAMES.some(fullName => fullName.endsWith(lastName));
+        console.log('isFemale - Result for', lastName, ':', isFemaleResult);
         return isFemaleResult;
     }
 
