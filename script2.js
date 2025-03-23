@@ -1469,9 +1469,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const detail = path.find(p => p.step === 'movedDetail')?.value || '';
         const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
         const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+        
         let text = `${formattedTime} ${memberText} ${action.toLowerCase()}`;
+        
         if (detail) {
-            if (detail === 'Amendment') {
+            if (detail === 'Do Pass' || detail === 'Do Not Pass') {
+                text += ` a ${detail}`;
+            } else if (detail === 'Amendment') {
                 const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
                 if (amendmentType === 'Verbal') text += ' a verbal amendment';
                 else if (amendmentType === 'LC#') {
@@ -1483,7 +1487,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 text += ` ${detail.toLowerCase()}`;
             }
         }
+        
         if (rerefer) text += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
+        
         return text;
     }
 
