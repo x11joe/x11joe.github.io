@@ -9,26 +9,16 @@
         "committeeMemberFlow": {
             "steps": [
                 { "step": "member", "type": "select", "options": "committeeMembers", "next": "action" },
-                { "step": "action", "type": "select", "options": ["Moved", "Seconded", "Withdrew", "Proposed Amendment", "Introduced Bill"], "next": { "Moved": "movedDetail", "Proposed Amendment": "amendmentModule", "default": null } },
+                { "step": "action", "type": "select", "options": ["Moved", "Seconded", "Withdrew", "Proposed Amendment", "Introduced Amendment", "Introduced Bill"], "next": { "Moved": "movedDetail", "Proposed Amendment": "amendmentProvider", "Introduced Amendment": "amendmentProvider", "default": null } },
                 { "step": "movedDetail", "type": "select", "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"], "next": { "Do Pass": "rereferQuestion", "Do Not Pass": "rereferQuestion", "Amendment": "amendmentType", "default": null } },
                 { "step": "rereferQuestion", "type": "select", "options": ["No Rerefer", "Rerefer"], "next": { "Rerefer": "rereferOptional", "No Rerefer": null } },
                 { "step": "rereferOptional", "type": "select", "options": "otherCommittees", "next": null },
+                { "step": "amendmentProvider", "type": "select", "options": ["Self", "Provided By"], "next": { "Self": "amendmentType", "Provided By": "providerType" } },
+                { "step": "providerType", "type": "select", "options": ["Senator or Representative", "External Source"], "next": { "Senator or Representative": "providerMember", "External Source": "providerText" } },
+                { "step": "providerMember", "type": "select", "options": "allMembers", "next": "amendmentType" },
+                { "step": "providerText", "type": "module", "fields": [{ "name": "provider", "type": "text" }], "next": "amendmentType" },
                 { "step": "amendmentType", "type": "select", "options": ["Verbal", "LC#"], "next": { "Verbal": null, "LC#": "lcNumber" } },
-                {
-                    "step": "lcNumber",
-                    "type": "module",
-                    "fields": [
-                        {
-                            "name": "lcNumber",
-                            "type": "text",
-                            "default": "current_year.0000.00000",
-                            "placeholder": "YY.XXXX.XXXXX",
-                            "label": "LC# (YY.XXXX.XXXXX):"
-                        }
-                    ],
-                    "next": null
-                },
-                { "step": "amendmentModule", "type": "module", "fields": [{ "name": "amendmentText", "type": "text" }], "next": null }
+                { "step": "lcNumber", "type": "module", "fields": [{ "name": "lcNumber", "type": "text", "default": "current_year.0000.00000", "placeholder": "YY.XXXX.XXXXX", "label": "LC# (YY.XXXX.XXXXX):" }], "next": null }
             ]
         },
         "meetingActionFlow": {
