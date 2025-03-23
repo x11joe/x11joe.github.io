@@ -728,12 +728,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.createElement('div');
         form.className = 'module-form';
         const moduleValues = existingValues ? { ...existingValues } : {};
-
+    
         stepConfig.fields.forEach(field => {
             const container = document.createElement('div');
             const label = document.createElement('label');
             label.textContent = field.label || `${field.name}: `;
-
+    
             if (field.type === 'text') {
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -750,6 +750,53 @@ document.addEventListener('DOMContentLoaded', async () => {
                     input.classList.add('lc-number-input');
                     input.addEventListener('input', formatLcNumber);
                     label.style.width = 'auto'; // Ensure the full label is visible
+                    // Set initial cursor position after the first period
+                    setTimeout(() => {
+                        const firstPeriodIndex = input.value.indexOf('.');
+                        if (firstPeriodIndex !== -1) {
+                            input.setSelectionRange(firstPeriodIndex + 1, firstPeriodIndex + 1);
+                        } else {
+                            input.setSelectionRange(0, 0);
+                        }
+                        input.focus();
+                    }, 0);
+                    // Add keydown listener for Tab and Shift+Tab navigation
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Tab' && !e.shiftKey) {
+                            e.preventDefault();
+                            const currentPos = input.selectionStart;
+                            const periods = [];
+                            let index = -1;
+                            while ((index = input.value.indexOf('.', index + 1)) !== -1) {
+                                periods.push(index);
+                            }
+                            const nextPeriod = periods.find(p => p > currentPos - 1);
+                            if (nextPeriod !== undefined) {
+                                input.setSelectionRange(nextPeriod + 1, nextPeriod + 1);
+                            } else {
+                                // In the last section, submit the form
+                                const submitButton = document.getElementById('module-submit');
+                                if (submitButton) {
+                                    submitButton.click();
+                                }
+                            }
+                        } else if (e.key === 'Tab' && e.shiftKey) {
+                            e.preventDefault();
+                            const currentPos = input.selectionStart;
+                            const periods = [];
+                            let index = -1;
+                            while ((index = input.value.indexOf('.', index + 1)) !== -1) {
+                                periods.push(index);
+                            }
+                            const previousPeriod = periods.reverse().find(p => p < currentPos - 1);
+                            if (previousPeriod !== undefined) {
+                                input.setSelectionRange(previousPeriod + 1, previousPeriod + 1);
+                            } else {
+                                // No previous period, move to start
+                                input.setSelectionRange(0, 0);
+                            }
+                        }
+                    });
                 }
                 container.appendChild(label);
                 container.appendChild(input);
@@ -792,7 +839,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             form.appendChild(container);
         });
-
+    
         const submit = document.createElement('button');
         submit.id = 'module-submit';
         submit.textContent = 'Submit';
@@ -2092,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
                 }
-                if (e.key === 'Tab') {
+                if (e.key === 'Tab' && currentStep !== 'lcNumber') {
                     e.preventDefault();
                     const submitButton = document.getElementById('module-submit');
                     if (submitButton) {
