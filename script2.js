@@ -1182,8 +1182,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tbody = document.createElement('tbody');
             memberList.forEach(member => {
                 const row = document.createElement('tr');
+                row.className = 'member-row';
+                row.tabIndex = 0;
                 const nameCell = document.createElement('td');
-                nameCell.textContent = getMemberDisplayName(member.fullName);
+                const parsed = parseMember(member.fullName);
+                nameCell.textContent = parsed.name;
                 row.appendChild(nameCell);
                 const options = ['For', 'Against', 'Neutral'];
                 options.forEach(opt => {
@@ -1192,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     radio.type = 'radio';
                     radio.name = `vote-${member.fullName}`;
                     radio.value = opt;
+                    radio.tabIndex = -1; // Remove from tab order
                     const memberVote = existingValues?.votes?.[member.fullName];
                     if (memberVote === opt) {
                         radio.checked = true;
@@ -1264,6 +1268,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
+        
+        // Add event listeners for member rows
+        const memberRows = form.querySelectorAll('.member-row');
+        memberRows.forEach((row, index) => {
+            row.addEventListener('focus', () => {
+                row.classList.add('focused');
+            });
+            row.addEventListener('blur', () => {
+                row.classList.remove('focused');
+            });
+            row.addEventListener('keydown', (e) => {
+                if (e.key === '1') {
+                    const radio = row.querySelector('input[value="For"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === '2') {
+                    const radio = row.querySelector('input[value="Against"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === '3') {
+                    const radio = row.querySelector('input[value="Neutral"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === 'Tab' && !e.shiftKey && index === memberRows.length - 1) {
+                    e.preventDefault();
+                    submit.click();
+                }
+            });
+        });
+        
+        // Focus the first member row
+        if (memberRows.length > 0) {
+            memberRows[0].focus();
+        }
     }
 
     // Adjust the layout of the history section based on window size
