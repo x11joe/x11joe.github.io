@@ -611,3 +611,29 @@ label {
     font-weight: bold;
     color: #333;
 }
+
+.conference-vote-form {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.vote-section {
+    flex: 1;
+}
+
+.member-vote {
+    margin-bottom: 10px;
+}
+
+.member-vote label {
+    font-weight: bold;
+}
+
+.member-vote input[type="radio"] {
+    margin-left: 10px;
+}
+
+.member-vote input[type="radio"]:first-of-type {
+    margin-left: 0;
+}

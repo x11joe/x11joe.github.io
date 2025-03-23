@@ -1005,144 +1005,244 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle module input (e.g., vote counts, amendment text)
     function handleModule(stepConfig, existingValues = null) {
-        modal.innerHTML = '';
-        const form = document.createElement('div');
-        form.className = 'module-form';
-        const moduleValues = existingValues ? { ...existingValues } : {};
-    
-        stepConfig.fields.forEach(field => {
-            const container = document.createElement('div');
-            const label = document.createElement('label');
-            label.textContent = field.label || `${field.name}: `;
-    
-            if (field.type === 'text') {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = `module-${field.name}`;
-                let defaultValue = field.default || '';
-                if (defaultValue.includes("current_year")) {
-                    const currentYear = new Date().getFullYear().toString().slice(-2);
-                    defaultValue = defaultValue.replace("current_year", currentYear);
-                }
-                input.value = moduleValues[field.name] || defaultValue;
-                input.placeholder = field.placeholder || '';
-                if (field.maxlength) input.maxLength = field.maxlength;
-                if (field.name === 'lcNumber') {
-                    input.classList.add('lc-number-input');
-                    input.addEventListener('input', formatLcNumber);
-                    label.style.width = 'auto'; // Ensure the full label is visible
-                    // Set initial cursor position after the first period
-                    setTimeout(() => {
-                        const firstPeriodIndex = input.value.indexOf('.');
-                        if (firstPeriodIndex !== -1) {
-                            input.setSelectionRange(firstPeriodIndex + 1, firstPeriodIndex + 1);
-                        } else {
-                            input.setSelectionRange(0, 0);
-                        }
-                        input.focus();
-                    }, 0);
-                    // Add keydown listener for Tab and Shift+Tab navigation
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Tab' && !e.shiftKey) {
-                            e.preventDefault();
-                            const currentPos = input.selectionStart;
-                            const periods = [];
-                            let index = -1;
-                            while ((index = input.value.indexOf('.', index + 1)) !== -1) {
-                                periods.push(index);
-                            }
-                            const nextPeriod = periods.find(p => p > currentPos - 1);
-                            if (nextPeriod !== undefined) {
-                                input.setSelectionRange(nextPeriod + 1, nextPeriod + 1);
+        if (currentBillType === 'Conference Committee' && stepConfig.step === 'voteModule') {
+            handleConferenceVoteModule(stepConfig, existingValues);
+        } else {
+            modal.innerHTML = '';
+            const form = document.createElement('div');
+            form.className = 'module-form';
+            const moduleValues = existingValues ? { ...existingValues } : {};
+        
+            stepConfig.fields.forEach(field => {
+                const container = document.createElement('div');
+                const label = document.createElement('label');
+                label.textContent = field.label || `${field.name}: `;
+        
+                if (field.type === 'text') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `module-${field.name}`;
+                    let defaultValue = field.default || '';
+                    if (defaultValue.includes("current_year")) {
+                        const currentYear = new Date().getFullYear().toString().slice(-2);
+                        defaultValue = defaultValue.replace("current_year", currentYear);
+                    }
+                    input.value = moduleValues[field.name] || defaultValue;
+                    input.placeholder = field.placeholder || '';
+                    if (field.maxlength) input.maxLength = field.maxlength;
+                    if (field.name === 'lcNumber') {
+                        input.classList.add('lc-number-input');
+                        input.addEventListener('input', formatLcNumber);
+                        label.style.width = 'auto'; // Ensure the full label is visible
+                        // Set initial cursor position after the first period
+                        setTimeout(() => {
+                            const firstPeriodIndex = input.value.indexOf('.');
+                            if (firstPeriodIndex !== -1) {
+                                input.setSelectionRange(firstPeriodIndex + 1, firstPeriodIndex + 1);
                             } else {
-                                // In the last section, submit the form
-                                const submitButton = document.getElementById('module-submit');
-                                if (submitButton) {
-                                    submitButton.click();
-                                }
-                            }
-                        } else if (e.key === 'Tab' && e.shiftKey) {
-                            e.preventDefault();
-                            const currentPos = input.selectionStart;
-                            const periods = [];
-                            let index = -1;
-                            while ((index = input.value.indexOf('.', index + 1)) !== -1) {
-                                periods.push(index);
-                            }
-                            const previousPeriod = periods.reverse().find(p => p < currentPos - 1);
-                            if (previousPeriod !== undefined) {
-                                input.setSelectionRange(previousPeriod + 1, previousPeriod + 1);
-                            } else {
-                                // No previous period, move to start
                                 input.setSelectionRange(0, 0);
                             }
+                            input.focus();
+                        }, 0);
+                        // Add keydown listener for Tab and Shift+Tab navigation
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Tab' && !e.shiftKey) {
+                                e.preventDefault();
+                                const currentPos = input.selectionStart;
+                                const periods = [];
+                                let index = -1;
+                                while ((index = input.value.indexOf('.', index + 1)) !== -1) {
+                                    periods.push(index);
+                                }
+                                const nextPeriod = periods.find(p => p > currentPos - 1);
+                                if (nextPeriod !== undefined) {
+                                    input.setSelectionRange(nextPeriod + 1, nextPeriod + 1);
+                                } else {
+                                    // In the last section, submit the form
+                                    const submitButton = document.getElementById('module-submit');
+                                    if (submitButton) {
+                                        submitButton.click();
+                                    }
+                                }
+                            } else if (e.key === 'Tab' && e.shiftKey) {
+                                e.preventDefault();
+                                const currentPos = input.selectionStart;
+                                const periods = [];
+                                let index = -1;
+                                while ((index = input.value.indexOf('.', index + 1)) !== -1) {
+                                    periods.push(index);
+                                }
+                                const previousPeriod = periods.reverse().find(p => p < currentPos - 1);
+                                if (previousPeriod !== undefined) {
+                                    input.setSelectionRange(previousPeriod + 1, previousPeriod + 1);
+                                } else {
+                                    // No previous period, move to start
+                                    input.setSelectionRange(0, 0);
+                                }
+                            }
+                        });
+                    }
+                    container.appendChild(label);
+                    container.appendChild(input);
+                } else if (field.type === 'number') {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `module-${field.name}`;
+                    if (moduleValues[field.name] === undefined) {
+                        moduleValues[field.name] = 0;
+                    }
+                    input.value = moduleValues[field.name];
+                    input.min = '0';
+                    const decrement = document.createElement('button');
+                    decrement.textContent = '-';
+                    decrement.onclick = () => {
+                        if (moduleValues[field.name] > 0) {
+                            moduleValues[field.name]--;
+                            input.value = moduleValues[field.name];
+                        }
+                    };
+                    const increment = document.createElement('button');
+                    increment.textContent = '+';
+                    increment.onclick = () => {
+                        moduleValues[field.name]++;
+                        input.value = moduleValues[field.name];
+                    };
+                    input.addEventListener('input', () => {
+                        const value = parseInt(input.value, 10);
+                        if (isNaN(value) || value < 0) {
+                            input.value = 0;
+                            moduleValues[field.name] = 0;
+                        } else {
+                            moduleValues[field.name] = value;
                         }
                     });
+                    container.appendChild(label);
+                    container.appendChild(decrement);
+                    container.appendChild(input);
+                    container.appendChild(increment);
                 }
-                container.appendChild(label);
-                container.appendChild(input);
-            } else if (field.type === 'number') {
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.id = `module-${field.name}`;
-                if (moduleValues[field.name] === undefined) {
-                    moduleValues[field.name] = 0;
-                }
-                input.value = moduleValues[field.name];
-                input.min = '0';
-                const decrement = document.createElement('button');
-                decrement.textContent = '-';
-                decrement.onclick = () => {
-                    if (moduleValues[field.name] > 0) {
-                        moduleValues[field.name]--;
-                        input.value = moduleValues[field.name];
-                    }
-                };
-                const increment = document.createElement('button');
-                increment.textContent = '+';
-                increment.onclick = () => {
-                    moduleValues[field.name]++;
-                    input.value = moduleValues[field.name];
-                };
-                input.addEventListener('input', () => {
-                    const value = parseInt(input.value, 10);
-                    if (isNaN(value) || value < 0) {
-                        input.value = 0;
-                        moduleValues[field.name] = 0;
-                    } else {
-                        moduleValues[field.name] = value;
+                form.appendChild(container);
+            });
+        
+            const submit = document.createElement('button');
+            submit.id = 'module-submit';
+            submit.textContent = 'Submit';
+            submit.onclick = () => {
+                const moduleResult = {};
+                stepConfig.fields.forEach(field => {
+                    const input = document.getElementById(`module-${field.name}`);
+                    if (field.type === 'number') {
+                        const value = parseInt(input.value, 10);
+                        moduleResult[field.name] = isNaN(value) ? 0 : value;
+                    } else if (field.type === 'text') {
+                        moduleResult[field.name] = input.value;
                     }
                 });
-                container.appendChild(label);
-                container.appendChild(decrement);
-                container.appendChild(input);
-                container.appendChild(increment);
-            }
-            form.appendChild(container);
-        });
-    
+                const resultStr = JSON.stringify(moduleResult);
+                if (currentStep === stepConfig.step) {
+                    selectOption(resultStr);
+                } else {
+                    const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
+                    if (moduleIndex !== -1) {
+                        path[moduleIndex].value = resultStr;
+                        path[moduleIndex].display = getModuleDisplayText(stepConfig.step, moduleResult);
+                        updateInput();
+                        showSuggestions('');
+                    }
+                }
+                modal.classList.remove('active');
+            };
+            form.appendChild(submit);
+            modal.appendChild(form);
+            modal.classList.add('active');
+            positionModal();
+        }
+    }
+
+    function handleConferenceVoteModule(stepConfig, existingValues = null) {
+        modal.innerHTML = '';
+        const form = document.createElement('div');
+        form.className = 'module-form conference-vote-form';
+        
+        const members = getLegendMembers();
+        const senators = members.filter(m => getMemberSide(m.fullName) === "Senate");
+        const representatives = members.filter(m => getMemberSide(m.fullName) === "House");
+        
+        const createMemberVoteSection = (title, memberList) => {
+            const section = document.createElement('div');
+            section.className = 'vote-section';
+            const heading = document.createElement('h5');
+            heading.textContent = title;
+            section.appendChild(heading);
+            memberList.forEach(member => {
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'member-vote';
+                const label = document.createElement('label');
+                label.textContent = getMemberDisplayName(member.fullName);
+                memberDiv.appendChild(label);
+                const options = ['For', 'Against', 'Neutral'];
+                options.forEach(opt => {
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `vote-${member.fullName}`;
+                    radio.value = opt;
+                    if (existingValues && existingValues[member.fullName] === opt) {
+                        radio.checked = true;
+                    } else if (!existingValues && opt === 'Neutral') {
+                        radio.checked = true;
+                    }
+                    memberDiv.appendChild(radio);
+                    memberDiv.appendChild(document.createTextNode(opt));
+                });
+                section.appendChild(memberDiv);
+            });
+            return section;
+        };
+        
+        const senatorsSection = createMemberVoteSection('Senators', senators);
+        const repsSection = createMemberVoteSection('Representatives', representatives);
+        
+        form.appendChild(senatorsSection);
+        form.appendChild(repsSection);
+        
         const submit = document.createElement('button');
         submit.id = 'module-submit';
         submit.textContent = 'Submit';
         submit.onclick = () => {
-            const moduleResult = {};
-            stepConfig.fields.forEach(field => {
-                const input = document.getElementById(`module-${field.name}`);
-                if (field.type === 'number') {
-                    const value = parseInt(input.value, 10);
-                    moduleResult[field.name] = isNaN(value) ? 0 : value;
-                } else if (field.type === 'text') {
-                    moduleResult[field.name] = input.value;
+            const voteResults = {};
+            const allVotes = {};
+            let totalFor = 0, totalAgainst = 0, totalNeutral = 0;
+            let senateFor = 0, houseFor = 0;
+            
+            members.forEach(member => {
+                const vote = form.querySelector(`input[name="vote-${member.fullName}"]:checked`)?.value || 'Neutral';
+                allVotes[member.fullName] = vote;
+                if (vote === 'For') {
+                    totalFor++;
+                    if (getMemberSide(member.fullName) === "Senate") senateFor++;
+                    else if (getMemberSide(member.fullName) === "House") houseFor++;
+                } else if (vote === 'Against') {
+                    totalAgainst++;
+                } else {
+                    totalNeutral++;
                 }
             });
-            const resultStr = JSON.stringify(moduleResult);
+            
+            voteResults.for = totalFor;
+            voteResults.against = totalAgainst;
+            voteResults.neutral = totalNeutral;
+            voteResults.senateFor = senateFor;
+            voteResults.houseFor = houseFor;
+            voteResults.votes = allVotes; // Optional: store individual votes
+            
+            const resultStr = JSON.stringify(voteResults);
             if (currentStep === stepConfig.step) {
                 selectOption(resultStr);
             } else {
                 const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
                 if (moduleIndex !== -1) {
                     path[moduleIndex].value = resultStr;
-                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, moduleResult);
+                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, voteResults);
                     updateInput();
                     showSuggestions('');
                 }
@@ -1154,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.classList.add('active');
         positionModal();
     }
-
+    
     // Adjust the layout of the history section based on window size
     function adjustHistoryLayout() {
         const entryRect = entryWrapper.getBoundingClientRect();
@@ -1543,7 +1643,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const forVotes = result.for || 0;
                     const againstVotes = result.against || 0;
                     const neutralVotes = result.neutral || 0;
-                    const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
+                    let outcome;
+                    if (currentBillType === 'Conference Committee') {
+                        const senateFor = result.senateFor || 0;
+                        const houseFor = result.houseFor || 0;
+                        outcome = (senateFor >= 2 && houseFor >= 2) ? 'Passed' : 'Failed';
+                    } else {
+                        outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
+                    }
                     let motionText = baseMotionType;
                     if (modifiers.includes('as Amended')) motionText += ' as Amended';
                     if (modifiers.includes('and Rereferred')) {
