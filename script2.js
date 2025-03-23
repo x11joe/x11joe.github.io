@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inputRect = inputDiv.getBoundingClientRect();
         const containerRect = document.querySelector('.container').getBoundingClientRect();
         const modalHeight = modal.offsetHeight;
-    
+        
         // Check if there's enough space above the input field in the viewport
         if (inputRect.top >= modalHeight) {
             // Place above the input
@@ -941,10 +941,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Place below the input
             modal.style.top = (inputRect.bottom - containerRect.top) + 'px';
         }
-    
+        
         // Align modal with the input field's left edge and match its width
         modal.style.left = '0';
         modal.style.width = inputRect.width + 'px';
+        modal.style.maxHeight = '80vh'; // Ensure modal doesn't exceed 80% of viewport height
+        modal.style.overflowY = 'auto'; // Allow scrolling if content overflows
     }
 
     // Update highlighting for suggestion options
