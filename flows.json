@@ -37,9 +37,10 @@
                     { "name": "for", "type": "number" },
                     { "name": "against", "type": "number" },
                     { "name": "neutral", "type": "number" }
-                ], "next": null },
-                { "step": "carryBillPrompt", "type": "select", "options": ["X Carried the Bill", "No Carrier"], "next": { "X Carried the Bill": "billCarrierOptional", "No Carrier": null } },
-                { "step": "billCarrierOptional", "type": "select", "options": "committeeMembers", "optional": true, "next": null },
+                ], "next": "carryBillPrompt" },
+                { "step": "carryBillPrompt", "type": "select", "options": ["X and Y Carried the Bill", "No Carriers"], "next": { "X and Y Carried the Bill": "senateBillCarrier", "No Carriers": null } },
+                { "step": "senateBillCarrier", "type": "select", "options": "committeeMembers", "next": "houseBillCarrier" },
+                { "step": "houseBillCarrier", "type": "select", "options": "committeeMembers", "next": null },
                 { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },
                 { "step": "voiceVoteOutcome", "type": "select", "options": ["Passed", "Failed"], "next": null },
                 { "step": "motionFailedReason", "type": "select", "options": "suggestFailedReason", "next": null }

@@ -326,6 +326,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return allOptions;
         }
         let options = getOptionsForStep(currentStep, currentFlow);
+        if (currentStep === 'senateBillCarrier') {
+            options = getLegendMembers().filter(m => getMemberSide(m.fullName) === 'Senate').map(m => m.fullName);
+        } else if (currentStep === 'houseBillCarrier') {
+            options = getLegendMembers().filter(m => getMemberSide(m.fullName) === 'House').map(m => m.fullName);
+        }
         if (currentFlow === jsonStructure.flows.committeeMemberFlow && currentStep === 'action' && lastAction) {
             if (lastAction === 'Moved') options = ['Seconded', ...options.filter(opt => opt !== 'Seconded')];
             else if (lastAction === 'Seconded' || lastAction === 'Withdrew') options = ['Moved', ...options.filter(opt => opt !== 'Moved')];
@@ -705,15 +710,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                 path.push({ step: currentStep, value: option, display: displayText });
                 if (currentStep === 'voteModule') {
                     const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                    currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                    if (currentBillType === 'Conference Committee') {
+                        currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                    } else {
+                        currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                    }
                 } else {
                     currentStep = stepConfig.next;
                 }
                 console.log('selectOption - Module processed:', { path, currentStep });
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
-                currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
+                if (currentBillType === 'Conference Committee') {
+                    currentStep = option === 'X and Y Carried the Bill' ? 'senateBillCarrier' : null;
+                } else {
+                    currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
+                }
                 console.log('selectOption - Carry bill prompt processed:', { path, currentStep });
+            } else if (currentStep === 'senateBillCarrier') {
+                const lastName = extractLastName(option);
+                const member = allMembers.find(m => m.lastName === lastName && m.firstName === 'Senator');
+                if (member) {
+                    path.push({ step: currentStep, value: option, memberNo: member.memberNo });
+                } else {
+                    path.push({ step: currentStep, value: option });
+                }
+                currentStep = 'houseBillCarrier';
+                console.log('selectOption - Senate bill carrier selected:', { path, currentStep });
+            } else if (currentStep === 'houseBillCarrier') {
+                const lastName = extractLastName(option);
+                const member = allMembers.find(m => m.lastName === lastName && m.firstName === 'Representative');
+                if (member) {
+                    path.push({ step: currentStep, value: option, memberNo: member.memberNo });
+                } else {
+                    path.push({ step: currentStep, value: option });
+                }
+                currentStep = null;
+                console.log('selectOption - House bill carrier selected:', { path, currentStep });
             } else if (currentStep === 'rereferCommittee') {
                 path.push({ step: currentStep, value: option });
                 currentStep = 'voteModule';
@@ -1695,60 +1728,83 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Construct display text for a vote tag
-    function constructVoteTagText(voteResult) {
-        const forVotes = voteResult.for || 0;
-        const againstVotes = voteResult.against || 0;
-        const neutralVotes = voteResult.neutral || 0;
-        const outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
-        return `Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
+    function constructVoteTagText(moduleResult) {
+        const forVotes = moduleResult.for || 0;
+        const againstVotes = moduleResult.against || 0;
+        const neutralVotes = moduleResult.neutral || 0;
+        
+        if (currentBillType === 'Conference Committee') {
+            const senateFor = moduleResult.senateFor || 0;
+            const houseFor = moduleResult.houseFor || 0;
+            const counts = getConferenceCommitteeCounts();
+            const senateMajority = Math.ceil(counts.senators / 2);
+            const houseMajority = Math.ceil(counts.representatives / 2);
+            const passed = senateFor >= senateMajority && houseFor >= houseMajority;
+            return `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
+        } else {
+            const passed = forVotes > againstVotes;
+            return `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
+        }
     }
 
     // Construct the full statement text based on the path
     function constructStatementText(path) {
-        if (path.length === 0) return '';
-        const flowType = path[0].step;
-        if (flowType === 'voteType') {
-            const voteType = path.find(p => p.step === 'voteType').value;
+        const flowType = currentFlow === jsonStructure.flows.committeeMemberFlow ? 'member' :
+                        currentFlow === jsonStructure.flows.meetingActionFlow ? 'meetingAction' :
+                        currentFlow === jsonStructure.flows.voteActionFlow ? 'voteAction' :
+                        currentFlow === jsonStructure.flows.introducedBillFlow ? 'introducedBill' : 'unknown';
+        if (flowType === 'voteAction') {
+            const voteType = path.find(p => p.step === 'voteType')?.value;
             if (voteType === 'Roll Call Vote') {
                 const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
-                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended')
-                    .map(p => p.value)
-                    .filter(val => val !== 'Take the Vote');
-                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
                 const voteResultPart = path.find(p => p.step === 'voteModule');
-                const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
-                let text = '';
+                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value);
+                const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
                 if (voteResultPart) {
                     const result = JSON.parse(voteResultPart.value);
                     const forVotes = result.for || 0;
                     const againstVotes = result.against || 0;
                     const neutralVotes = result.neutral || 0;
-                    let outcome;
+                    let text = `Roll Call Vote on ${baseMotionType} - `;
                     if (currentBillType === 'Conference Committee') {
                         const senateFor = result.senateFor || 0;
                         const houseFor = result.houseFor || 0;
-                        outcome = (senateFor >= 2 && houseFor >= 2) ? 'Passed' : 'Failed';
+                        const counts = getConferenceCommitteeCounts();
+                        const senateMajority = Math.ceil(counts.senators / 2);
+                        const houseMajority = Math.ceil(counts.representatives / 2);
+                        const passed = senateFor >= senateMajority && houseFor >= houseMajority;
+                        text += `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
+                        if (path.find(p => p.step === 'carryBillPrompt')?.value === 'X and Y Carried the Bill') {
+                            const senateCarrier = path.find(p => p.step === 'senateBillCarrier')?.value;
+                            const houseCarrier = path.find(p => p.step === 'houseBillCarrier')?.value;
+                            if (senateCarrier && houseCarrier) {
+                                const senateText = getMemberDisplayName(senateCarrier);
+                                const houseText = getMemberDisplayName(houseCarrier);
+                                text += ` - ${senateText} and ${houseText} Carried the Bill`;
+                            }
+                        }
                     } else {
-                        outcome = forVotes > againstVotes ? 'Passed' : 'Failed';
+                        const passed = forVotes > againstVotes;
+                        text += `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
+                        const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
+                        if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
+                            const carrierText = getMemberDisplayName(billCarrier);
+                            text += ` - ${carrierText} Carried the Bill`;
+                        }
                     }
-                    let motionText = baseMotionType;
-                    if (modifiers.includes('as Amended')) motionText += ' as Amended';
+                    if (modifiers.includes('as Amended')) text += ' as Amended';
                     if (modifiers.includes('and Rereferred')) {
-                        motionText += rereferCommittee ? ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}` : ' and Rereferred';
+                        text += rereferCommittee ? ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}` : ' and Rereferred';
                     }
-                    text = `Roll Call Vote on ${motionText} - Motion ${outcome} ${forVotes}-${againstVotes}-${neutralVotes}`;
-                    if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
-                        const carrierText = getMemberDisplayName(billCarrier);
-                        text += ` - ${carrierText} Carried the Bill`;
-                    }
+                    return text;
                 } else {
                     text = `Roll Call Vote on ${baseMotionType}`;
                     if (modifiers.includes('as Amended')) text += ' as Amended';
                     if (modifiers.includes('and Rereferred')) {
                         text += rereferCommittee ? ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}` : ' and Rereferred';
                     }
+                    return text;
                 }
-                return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
                 const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
