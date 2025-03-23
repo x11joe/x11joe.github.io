@@ -415,6 +415,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const searchInput = document.getElementById('memberSearchInput');
         const listContainer = document.getElementById('memberListContainer');
         const cancelButton = document.getElementById('cancelMemberSelection');
+        const addButton = document.querySelector('#memberList button:not([disabled])'); // Reference to the "Add Member +" button
+        
+        console.log('showMemberSelectionModal - Opening modal, currentBillType:', currentBillType);
         
         // Get available members
         const conferenceMembers = getLegendMembers().map(m => m.fullName);
@@ -425,6 +428,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (side === "House" && counts.representatives < 3 && !conferenceMembers.includes(member.fullName)) return true;
             return false;
         });
+        console.log('showMemberSelectionModal - Available members:', availableMembers.map(m => m.fullName));
         
         function renderList(filterText = '') {
             listContainer.innerHTML = '';
@@ -438,22 +442,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 div.onclick = () => {
                     addMemberToConferenceCommittee(member.fullName);
                     modal.classList.remove('active');
+                    console.log('showMemberSelectionModal - Member added:', member.fullName);
                 };
                 listContainer.appendChild(div);
             });
+            console.log('showMemberSelectionModal - Rendered list with filter:', filterText, 'items:', filtered.length);
         }
         
         renderList();
         searchInput.addEventListener('input', () => renderList(searchInput.value));
-        cancelButton.onclick = () => modal.classList.remove('active');
+        cancelButton.onclick = () => {
+            modal.classList.remove('active');
+            console.log('showMemberSelectionModal - Modal cancelled');
+        };
         modal.classList.add('active');
         searchInput.focus();
+        console.log('showMemberSelectionModal - Modal activated');
         
         // Add event listener to close on outside click
         const closeOnOutsideClick = (e) => {
-            if (!modal.contains(e.target)) {
+            if (!modal.contains(e.target) && e.target !== addButton) {
                 modal.classList.remove('active');
                 document.removeEventListener('click', closeOnOutsideClick);
+                console.log('showMemberSelectionModal - Closed due to outside click');
             }
         };
         setTimeout(() => document.addEventListener('click', closeOnOutsideClick), 0);
@@ -557,49 +568,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Select an option and update the path accordingly
     function selectOption(option) {
-        console.log('selectOption - option:', option, 'currentStep:', currentStep, 'currentFlow:', currentFlow);
+        console.log('selectOption - Starting with option:', option, 'currentStep:', currentStep, 'currentFlow:', currentFlow, 'currentBillType:', currentBillType);
         if (!currentFlow) {
             const startingPoint = jsonStructure.startingPoints.find(sp => {
-                if (sp.options === "committeeMembers") return getCommitteeMembers().includes(option);
-                else if (Array.isArray(sp.options)) return sp.options.includes(option);
+                if (sp.options === "committeeMembers") {
+                    const members = currentBillType === 'Conference Committee' ? getLegendMembers().map(m => m.fullName) : getCommitteeMembers();
+                    const isIncluded = members.includes(option);
+                    console.log('selectOption - Checking committeeMembers:', { option, members, isIncluded });
+                    return isIncluded;
+                } else if (Array.isArray(sp.options)) {
+                    const isIncluded = sp.options.includes(option);
+                    console.log('selectOption - Checking array options:', { option, options: sp.options, isIncluded });
+                    return isIncluded;
+                }
                 return false;
             });
             if (startingPoint) {
                 currentFlow = jsonStructure.flows[startingPoint.flow];
-                console.log('Flow set to:', startingPoint.flow);
+                console.log('selectOption - Flow set to:', startingPoint.flow, 'startingPoint:', startingPoint);
                 if (startingPoint.type === 'voteAction') {
                     path.push({ step: 'voteType', value: option });
                     currentStep = jsonStructure.flows.voteActionFlow.steps.find(step => step.step === 'voteType').next[option];
+                    console.log('selectOption - Vote action initiated:', { path, currentStep });
                 } else if (startingPoint.type === 'introducedBill') {
                     path.push({ step: 'introducedBill', value: option });
                     currentStep = 'member';
+                    console.log('selectOption - Introduced bill initiated:', { path, currentStep });
                 } else {
                     const firstStep = currentFlow.steps[0];
-                    let stepOptions = firstStep.options === "committeeMembers" ? getCommitteeMembers() : (firstStep.options === "allMembers" ? allMembers.map(m => m.fullName) : firstStep.options);
+                    let stepOptions = firstStep.options === "committeeMembers" ? (currentBillType === 'Conference Committee' ? getLegendMembers().map(m => m.fullName) : getCommitteeMembers()) : (firstStep.options === "allMembers" ? allMembers.map(m => m.fullName) : firstStep.options);
+                    console.log('selectOption - First step options:', stepOptions);
                     if (stepOptions.includes(option)) {
                         if (firstStep.options === "committeeMembers" || firstStep.options === "allMembers") {
                             const lastName = extractLastName(option);
                             const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
                             if (member) {
-                                console.log('Member found:', member);
+                                console.log('selectOption - Member found:', member);
                                 path.push({ step: firstStep.step, value: option, memberNo: member.memberNo });
                             } else {
-                                console.warn('No member found for option:', option);
+                                console.warn('selectOption - No member found for option:', option);
                                 path.push({ step: firstStep.step, value: option });
                             }
                         } else {
                             path.push({ step: firstStep.step, value: option });
                         }
                         currentStep = typeof firstStep.next === 'string' ? firstStep.next : firstStep.next?.default;
+                        console.log('selectOption - Step option matched:', { path, currentStep });
                     } else {
                         path.push({ step: startingPoint.type, value: option });
                         currentStep = firstStep.step;
+                        console.log('selectOption - Starting point type set:', { path, currentStep });
                     }
                 }
-                console.log('Initial path:', path, 'currentStep:', currentStep);
+            } else {
+                console.warn('selectOption - No starting point found for option:', option);
             }
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
+            console.log('selectOption - Processing step:', { currentStep, stepConfig });
             if (stepConfig.type === 'module') {
                 const moduleResult = JSON.parse(option);
                 const displayText = getModuleDisplayText(currentStep, moduleResult);
@@ -610,23 +636,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     currentStep = stepConfig.next;
                 }
+                console.log('selectOption - Module processed:', { path, currentStep });
             } else if (currentStep === 'carryBillPrompt') {
                 path.push({ step: currentStep, value: option });
                 currentStep = option === 'X Carried the Bill' ? 'billCarrierOptional' : null;
+                console.log('selectOption - Carry bill prompt processed:', { path, currentStep });
             } else if (currentStep === 'rereferCommittee') {
                 path.push({ step: currentStep, value: option });
                 currentStep = 'voteModule';
-                console.log('Selected committee:', option, 'transitioning to voteModule');
-                console.log('Current path after selection:', path);
+                console.log('selectOption - Rerefer committee selected:', { option, path, currentStep });
             } else {
                 if (stepConfig.options === "committeeMembers" || stepConfig.options === "allMembers") {
                     const lastName = extractLastName(option);
                     const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
                     if (member) {
-                        console.log('Member found:', member);
+                        console.log('selectOption - Member found in step:', member);
                         path.push({ step: currentStep, value: option, memberNo: member.memberNo });
                     } else {
-                        console.warn('No member found for option:', option);
+                        console.warn('selectOption - No member found in step for option:', option);
                         path.push({ step: currentStep, value: option });
                     }
                 } else {
@@ -641,9 +668,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     currentStep = null;
                 }
+                console.log('selectOption - Step processed:', { path, currentStep });
             }
         }
         if (path.length === 1) statementStartTime = new Date();
+        console.log('selectOption - Final state:', { path, currentStep, currentFlow });
         updateInput();
         setTimeout(() => showSuggestions(''), 0);
     }
@@ -2128,12 +2157,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 const removeButton = document.createElement('button');
                 removeButton.textContent = '-';
+                removeButton.style.marginLeft = '5px';
                 removeButton.onclick = (e) => {
                     e.stopPropagation();
                     removeMember(member.fullName);
                 };
                 const promoteButton = document.createElement('button');
                 promoteButton.textContent = '↑';
+                promoteButton.style.marginLeft = '5px';
                 promoteButton.onclick = (e) => {
                     e.stopPropagation();
                     promoteMember(member.fullName);
@@ -2146,8 +2177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const counts = getConferenceCommitteeCounts();
             const canAdd = counts.senators < 3 || counts.representatives < 3;
             const addButton = document.createElement('button');
-            addButton.textContent = '+';
-            addButton.style.backgroundColor = 'green';
+            addButton.textContent = 'Add Member +';
+            addButton.style.backgroundColor = canAdd ? 'green' : '#ccc';
             addButton.style.color = 'white';
             addButton.disabled = !canAdd;
             addButton.onclick = () => showMemberSelectionModal();
