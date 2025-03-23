@@ -1885,6 +1885,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
+        // New logic to set currentStep based on the last part
+        if (path.length > 0) {
+            const lastPart = path[path.length - 1];
+            const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
+            if (stepConfig) {
+                if (stepConfig.type === 'module') {
+                    if (lastPart.step === 'voteModule') {
+                        const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                        currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                    } else {
+                        currentStep = stepConfig.next;
+                    }
+                } else if (stepConfig.next) {
+                    if (typeof stepConfig.next === 'string') {
+                        currentStep = stepConfig.next;
+                    } else {
+                        currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default;
+                    }
+                } else {
+                    currentStep = null;
+                }
+            } else {
+                currentStep = null;
+            }
+        }
         console.log('editHistoryEntry - Final state - path:', path, 'currentFlow:', currentFlow, 'currentStep:', currentStep);
         updateInput();
         showSuggestions('');
