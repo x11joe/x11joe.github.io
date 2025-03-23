@@ -108,6 +108,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // === Utility Functions ===
 
+    // Suggest motion types for voting actions
+    function suggestMotionType() {
+        return ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
+    }
+
+    // Suggest reasons a motion failed
+    function suggestFailedReason() {
+        return ["for lack of a second"];
+    }
+
     function formatLcNumber(event) {
         const input = event.target;
         const value = input.value.replace(/\D/g, ''); // Remove non-digits
@@ -124,16 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.value = formatted;
         // Set cursor to the end
         input.setSelectionRange(formatted.length, formatted.length);
-    }
-
-    // Suggest motion types for voting actions
-    function suggestMotionType() {
-        return ["Do Pass", "Do Not Pass", "Without Committee Recommendation"];
-    }
-
-    // Suggest reasons a motion failed
-    function suggestFailedReason() {
-        return ["for lack of a second"];
     }
 
     // Determine legislative title (Senator/Representative) based on organization
@@ -724,6 +724,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (field.name === 'lcNumber') {
                     input.classList.add('lc-number-input');
                     input.addEventListener('input', formatLcNumber);
+                    label.style.width = 'auto'; // Ensure the full label is visible
                 }
                 container.appendChild(label);
                 container.appendChild(input);
