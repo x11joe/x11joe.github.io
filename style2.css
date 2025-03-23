@@ -647,6 +647,7 @@ label {
 
 .vote-table td:first-child {
     max-width: 150px;
+    min-width: 150px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
