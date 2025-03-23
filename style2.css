@@ -419,6 +419,81 @@ label {
     background-color: #0056b3;
 }
 
+/* Conference Vote Form Styling */
+.conference-vote-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.conference-vote-form .vote-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.conference-vote-form .vote-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.conference-vote-form .vote-table {
+    width: auto;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.conference-vote-form .vote-table th, 
+.conference-vote-form .vote-table td {
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: center;
+}
+
+.conference-vote-form .vote-table th {
+    background-color: #f0f0f0;
+}
+
+.conference-vote-form .vote-table td {
+    width: 60px;
+}
+
+.conference-vote-form .vote-table td:first-child {
+    max-width: 150px;
+    min-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.conference-vote-form .vote-table th:first-child {
+    text-align: left;
+}
+
+.conference-vote-form button {
+    margin-top: 10px;
+    align-self: center;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.conference-vote-form button:hover {
+    background-color: #0056b3;
+}
+
 /* Testimony Modal Styling */
 #testimonyModal {
     position: fixed;
@@ -612,63 +687,4 @@ label {
     margin: 0;
     font-weight: bold;
     color: #333;
-}
-
-/* Vote Container for Side-by-Side Tables */
-.vote-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap; /* Allows stacking on narrow screens if needed */
-}
-
-/* Table Styling for Vote Options */
-.vote-table {
-    width: auto; /* Let content dictate width */
-    border-collapse: collapse;
-    margin-bottom: 10px;
-}
-
-.vote-table th, .vote-table td {
-    border: 1px solid #ccc;
-    padding: 5px;
-    text-align: center;
-}
-
-.vote-table th {
-    background-color: #f0f0f0;
-}
-
-.vote-table td {
-    width: 60px; /* Fixed width for vote columns */
-}
-
-.vote-table td:first-child {
-    max-width: 150px;
-    min-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.vote-table th:first-child {
-    text-align: left;
-}
-
-/* Member Row Focus Styling */
-.member-row.focused {
-    background-color: #e0e0e0; /* Highlight focused row */
-}
-
-/* Vote Section Styling */
-.vote-section {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.vote-section h5 {
-    margin: 0 0 5px 0; /* Minimal spacing below heading */
 }

@@ -1195,65 +1195,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.className = 'member-row';
                 row.tabIndex = 0;
                 const parsed = parseMember(member.fullName);
-                // Use parsed.name if it has an initial, else use lastName
                 const originalName = parsed.name.includes('.') ? parsed.name : parsed.lastName;
-                const fullName = getFullName(parsed.name); // Pass full parsed.name to getFullName
+                const fullName = getFullName(parsed.name);
                 const nameCell = document.createElement('td');
                 nameCell.textContent = originalName;
                 nameCell.title = fullName;
                 row.addEventListener('mouseenter', () => {
-                    console.log('Hover on', originalName, 'showing', fullName);
                     nameCell.textContent = fullName;
                     if (fullName.length > 15) {
                         nameCell.style.fontSize = '0.9em';
                     }
                 });
                 row.addEventListener('mouseleave', () => {
-                    console.log('Hover off', fullName, 'back to', originalName);
                     nameCell.textContent = originalName;
                     nameCell.style.fontSize = '';
                 });
                 row.addEventListener('focus', () => {
-                    console.log('Focus on', originalName, 'showing', fullName);
                     nameCell.textContent = fullName;
                     if (fullName.length > 15) {
                         nameCell.style.fontSize = '0.9em';
                     }
                 });
                 row.addEventListener('blur', () => {
-                    console.log('Blur from', fullName, 'back to', originalName);
                     nameCell.textContent = originalName;
                     nameCell.style.fontSize = '';
                 });
-                const forCell = document.createElement('td');
-                const forRadio = document.createElement('input');
-                forRadio.type = 'radio';
-                forRadio.name = `vote-${member.fullName}`;
-                forRadio.value = 'for';
-                forCell.appendChild(forRadio);
-                const againstCell = document.createElement('td');
-                const againstRadio = document.createElement('input');
-                againstRadio.type = 'radio';
-                againstRadio.name = `vote-${member.fullName}`;
-                againstRadio.value = 'against';
-                againstCell.appendChild(againstRadio);
-                const neutralCell = document.createElement('td');
-                const neutralRadio = document.createElement('input');
-                neutralRadio.type = 'radio';
-                neutralRadio.name = `vote-${member.fullName}`;
-                neutralRadio.value = 'neutral';
-                neutralRadio.checked = true;
-                neutralCell.appendChild(neutralRadio);
-                if (existingValues && existingValues.members && existingValues.members[member.fullName]) {
-                    const vote = existingValues.members[member.fullName];
-                    if (vote === 'for') forRadio.checked = true;
-                    else if (vote === 'against') againstRadio.checked = true;
-                    else if (vote === 'neutral') neutralRadio.checked = true;
-                }
                 row.appendChild(nameCell);
-                row.appendChild(forCell);
-                row.appendChild(againstCell);
-                row.appendChild(neutralCell);
+                const options = ['For', 'Against', 'Neutral'];
+                options.forEach(opt => {
+                    const cell = document.createElement('td');
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `vote-${member.fullName}`;
+                    radio.value = opt;
+                    radio.tabIndex = -1; // Remove from tab order
+                    const memberVote = existingValues?.votes?.[member.fullName];
+                    if (memberVote === opt) {
+                        radio.checked = true;
+                    } else if (!memberVote && opt === "Neutral") {
+                        radio.checked = true;
+                    }
+                    cell.appendChild(radio);
+                    row.appendChild(cell);
+                });
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
@@ -1261,50 +1245,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             return section;
         };
         
-        if (senators.length > 0) {
-            form.appendChild(createMemberVoteSection('Senators', senators));
-        }
-        if (representatives.length > 0) {
-            form.appendChild(createMemberVoteSection('Representatives', representatives));
-        }
+        const voteContainer = document.createElement('div');
+        voteContainer.className = 'vote-container';
+        const senatorsSection = createMemberVoteSection('Senators', senators);
+        const repsSection = createMemberVoteSection('Representatives', representatives);
+        voteContainer.appendChild(senatorsSection);
+        voteContainer.appendChild(repsSection);
+        form.appendChild(voteContainer);
         
         const submit = document.createElement('button');
         submit.id = 'module-submit';
         submit.textContent = 'Submit';
         submit.onclick = () => {
-            const memberVotes = {};
-            let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
-            let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
+            const voteResults = {};
+            const allVotes = {};
+            let totalFor = 0, totalAgainst = 0, totalNeutral = 0;
+            let senateFor = 0, houseFor = 0;
+            
             members.forEach(member => {
-                const selectedVote = form.querySelector(`input[name="vote-${member.fullName}"]:checked`);
-                memberVotes[member.fullName] = selectedVote ? selectedVote.value : 'neutral';
-                const side = getMemberSide(member.fullName);
-                if (side === 'Senate') {
-                    if (memberVotes[member.fullName] === 'for') senateFor++;
-                    else if (memberVotes[member.fullName] === 'against') senateAgainst++;
-                    else senateNeutral++;
-                } else if (side === 'House') {
-                    if (memberVotes[member.fullName] === 'for') houseFor++;
-                    else if (memberVotes[member.fullName] === 'against') houseAgainst++;
-                    else houseNeutral++;
+                const vote = form.querySelector(`input[name="vote-${member.fullName}"]:checked`)?.value || 'Neutral';
+                allVotes[member.fullName] = vote;
+                if (vote === 'For') {
+                    totalFor++;
+                    if (getMemberSide(member.fullName) === "Senate") senateFor++;
+                    else if (getMemberSide(member.fullName) === "House") houseFor++;
+                } else if (vote === 'Against') {
+                    totalAgainst++;
+                } else {
+                    totalNeutral++;
                 }
             });
-            const result = {
-                members: memberVotes,
-                senateFor, senateAgainst, senateNeutral,
-                houseFor, houseAgainst, houseNeutral,
-                for: senateFor + houseFor,
-                against: senateAgainst + houseAgainst,
-                neutral: senateNeutral + houseNeutral
-            };
-            const resultStr = JSON.stringify(result);
+            
+            voteResults.for = totalFor;
+            voteResults.against = totalAgainst;
+            voteResults.neutral = totalNeutral;
+            voteResults.senateFor = senateFor;
+            voteResults.houseFor = houseFor;
+            voteResults.votes = allVotes;
+            
+            const resultStr = JSON.stringify(voteResults);
             if (currentStep === stepConfig.step) {
                 selectOption(resultStr);
             } else {
                 const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
                 if (moduleIndex !== -1) {
                     path[moduleIndex].value = resultStr;
-                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, result);
+                    path[moduleIndex].display = getModuleDisplayText(stepConfig.step, voteResults);
                     updateInput();
                     showSuggestions('');
                 }
@@ -1315,6 +1301,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.appendChild(form);
         modal.classList.add('active');
         positionModal();
+        
+        // Add event listeners for member rows
+        const memberRows = form.querySelectorAll('.member-row');
+        memberRows.forEach((row, index) => {
+            row.addEventListener('focus', () => {
+                row.classList.add('focused');
+            });
+            row.addEventListener('blur', () => {
+                row.classList.remove('focused');
+            });
+            row.addEventListener('keydown', (e) => {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    const radio = row.querySelector('input[value="For"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    const radio = row.querySelector('input[value="Against"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === '3') {
+                    e.preventDefault();
+                    const radio = row.querySelector('input[value="Neutral"]');
+                    if (radio) radio.checked = true;
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const nextIndex = e.shiftKey ? index - 1 : index + 1;
+                    if (nextIndex >= 0 && nextIndex < memberRows.length) {
+                        memberRows[nextIndex].focus();
+                    } else if (nextIndex === memberRows.length) {
+                        submit.focus();
+                    } else if (nextIndex < 0) {
+                        memberRows[memberRows.length - 1].focus();
+                    }
+                }
+            });
+        });
+        
+        // Auto-focus the first member row
+        setTimeout(() => {
+            if (memberRows.length > 0) {
+                memberRows[0].focus();
+            }
+        }, 0);
     }
 
     // Adjust the layout of the history section based on window size
