@@ -1174,36 +1174,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             const heading = document.createElement('h5');
             heading.textContent = title;
             section.appendChild(heading);
+            const table = document.createElement('table');
+            table.className = 'vote-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th>Member</th><th>For</th><th>Against</th><th>Neutral</th></tr>';
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
             memberList.forEach(member => {
-                const memberDiv = document.createElement('div');
-                memberDiv.className = 'member-vote';
-                const label = document.createElement('label');
-                label.textContent = getMemberDisplayName(member.fullName);
-                memberDiv.appendChild(label);
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.textContent = getMemberDisplayName(member.fullName);
+                row.appendChild(nameCell);
                 const options = ['For', 'Against', 'Neutral'];
                 options.forEach(opt => {
+                    const cell = document.createElement('td');
                     const radio = document.createElement('input');
                     radio.type = 'radio';
                     radio.name = `vote-${member.fullName}`;
                     radio.value = opt;
-                    if (existingValues && existingValues[member.fullName] === opt) {
+                    const memberVote = existingValues?.votes?.[member.fullName];
+                    if (memberVote === opt) {
                         radio.checked = true;
-                    } else if (!existingValues && opt === 'Neutral') {
+                    } else if (!memberVote && opt === "Neutral") {
                         radio.checked = true;
                     }
-                    memberDiv.appendChild(radio);
-                    memberDiv.appendChild(document.createTextNode(opt));
+                    cell.appendChild(radio);
+                    row.appendChild(cell);
                 });
-                section.appendChild(memberDiv);
+                tbody.appendChild(row);
             });
+            table.appendChild(tbody);
+            section.appendChild(table);
             return section;
         };
         
+        const voteContainer = document.createElement('div');
+        voteContainer.className = 'vote-container';
         const senatorsSection = createMemberVoteSection('Senators', senators);
         const repsSection = createMemberVoteSection('Representatives', representatives);
-        
-        form.appendChild(senatorsSection);
-        form.appendChild(repsSection);
+        voteContainer.appendChild(senatorsSection);
+        voteContainer.appendChild(repsSection);
+        form.appendChild(voteContainer);
         
         const submit = document.createElement('button');
         submit.id = 'module-submit';
@@ -1233,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             voteResults.neutral = totalNeutral;
             voteResults.senateFor = senateFor;
             voteResults.houseFor = houseFor;
-            voteResults.votes = allVotes; // Optional: store individual votes
+            voteResults.votes = allVotes; // Store individual votes for editing
             
             const resultStr = JSON.stringify(voteResults);
             if (currentStep === stepConfig.step) {
@@ -1254,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.classList.add('active');
         positionModal();
     }
-    
+
     // Adjust the layout of the history section based on window size
     function adjustHistoryLayout() {
         const entryRect = entryWrapper.getBoundingClientRect();

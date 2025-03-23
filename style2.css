@@ -405,6 +405,8 @@ label {
 }
 
 .module-form button {
+    margin-top: 10px;
+    align-self: center;
     padding: 5px 10px;
     background-color: #007bff;
     color: white;
@@ -612,28 +614,30 @@ label {
     color: #333;
 }
 
-.conference-vote-form {
+/* Vote Container for Side-by-Side Tables */
+.vote-container {
     display: flex;
     flex-direction: row;
     gap: 20px;
 }
 
-.vote-section {
-    flex: 1;
+/* Table Styling for Vote Options */
+.vote-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.member-vote {
-    margin-bottom: 10px;
+.vote-table th, .vote-table td {
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: center;
 }
 
-.member-vote label {
+.vote-table th {
+    background-color: #f0f0f0;
+}
+
+.vote-table td:first-child {
+    text-align: left;
     font-weight: bold;
-}
-
-.member-vote input[type="radio"] {
-    margin-left: 10px;
-}
-
-.member-vote input[type="radio"]:first-of-type {
-    margin-left: 0;
 }
