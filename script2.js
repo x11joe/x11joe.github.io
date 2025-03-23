@@ -510,12 +510,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     function isFemale(fullName) {
         const parsed = parseMember(fullName);
         const nameParts = parsed.name.split(' ');
-        if (nameParts.length === 2 && nameParts[0].length === 2 && nameParts[0][1] === '.') {
+
+        if (nameParts.length === 1) {
+            // Just last name, check if there's exactly one female name ending with this last name
+            const lastName = nameParts[0];
+            const matchingFemales = window.FEMALE_NAMES.filter(femaleName => {
+                const femaleParts = femaleName.split(' ');
+                const femaleLast = femaleParts[femaleParts.length - 1];
+                return femaleLast === lastName;
+            });
+            const isFemaleResult = matchingFemales.length === 1;
+            console.log('isFemale - Checking last name:', lastName, 'Matching females:', matchingFemales, 'Result:', isFemaleResult);
+            return isFemaleResult;
+        } else if (nameParts.length === 2 && isInitial(nameParts[0])) {
             // Has initial, e.g., "B. Anderson"
             const initial = nameParts[0][0];
             const lastName = nameParts[1];
-            const isFemaleResult = window.FEMALE_NAMES.some(fullName => {
-                const femaleParts = fullName.split(' ');
+            const isFemaleResult = window.FEMALE_NAMES.some(femaleName => {
+                const femaleParts = femaleName.split(' ');
                 const femaleFirst = femaleParts[0];
                 const femaleLast = femaleParts[femaleParts.length - 1];
                 return femaleFirst.startsWith(initial) && femaleLast === lastName;
@@ -523,13 +535,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('isFemale - Checking initial:', initial, 'lastName:', lastName, 'Result:', isFemaleResult);
             return isFemaleResult;
         } else {
-            // No initial, check if full name is in FEMALE_NAMES
-            const isFemaleResult = window.FEMALE_NAMES.includes(parsed.name);
-            console.log('isFemale - Checking full name:', parsed.name, 'Result:', isFemaleResult);
+            // Full name without initial, check if it's in FEMALE_NAMES
+            const fullNameToCheck = nameParts.join(' ');
+            const isFemaleResult = window.FEMALE_NAMES.includes(fullNameToCheck);
+            console.log('isFemale - Checking full name:', fullNameToCheck, 'Result:', isFemaleResult);
             return isFemaleResult;
         }
     }
 
+    // Check if a string is an initial (e.g., "B.")
+    function isInitial(str) {
+        return str.length === 2 && /[A-Za-z]/.test(str[0]) && str[1] === '.';
+    }
+    
     // Map testimony format to a simplified category
     function mapFormat(format) {
         if (format && format.includes('In-Person')) return 'In-Person';
