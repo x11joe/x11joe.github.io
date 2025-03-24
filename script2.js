@@ -1336,108 +1336,78 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (stepConfig.step === 'voteModule') {
             modalContent.className = 'vote-module';
     
-            let useDetailedVoting = currentBillType === 'Conference Committee';
-            const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
             const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
-            let detailedButton; // Declare detailedButton here to make it accessible in renderVoteForm
-    
-            // Add "Detailed" button for non-conference modes if not editing in detailed mode
-            if (!useDetailedVoting && (!parsedExistingValues.votes || Object.keys(parsedExistingValues.votes).length === 0)) {
-                detailedButton = document.createElement('button');
-                detailedButton.textContent = 'Detailed';
-                detailedButton.className = 'detailed';
-                detailedButton.onclick = () => {
-                    useDetailedVoting = true;
-                    renderVoteForm();
-                };
-                modalContent.appendChild(detailedButton);
+            // Determine if we are in Conference Committee mode
+            if (currentBillType === 'Conference Committee') {
+                // Use the detailed voting form for Conference Committee
+                const members = getLegendMembers();
+                const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
+                modalContent.appendChild(detailedForm);
+            } else {
+                // Use the simple voting form for other bill types
+                const simpleForm = renderSimpleVoteForm(parsedExistingValues);
+                modalContent.appendChild(simpleForm);
             }
     
-            function renderVoteForm() {
-                while (modalContent.firstChild) {
-                    modalContent.removeChild(modalContent.firstChild);
-                }
-                if (!useDetailedVoting && detailedButton) { // Check if detailedButton is defined before appending
-                    modalContent.appendChild(detailedButton);
-                }
-    
-                const formContainer = document.createElement('div');
-                if (useDetailedVoting) {
-                    const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
-                    formContainer.appendChild(detailedForm);
-                } else {
-                    const simpleForm = renderSimpleVoteForm(parsedExistingValues);
-                    formContainer.appendChild(simpleForm);
-                }
-    
-                const submitButton = document.createElement('button');
-                submitButton.id = 'module-submit';
-                submitButton.textContent = 'Submit';
-                submitButton.onclick = () => {
-                    let moduleResult;
-                    if (useDetailedVoting) {
-                        const votes = {};
-                        members.forEach(member => {
-                            const fullName = member.fullName || getFullMemberName(member);
-                            const selected = formContainer.querySelector(`input[name="${fullName}"]:checked`);
-                            votes[fullName] = selected ? selected.value : 'neutral';
-                        });
-                        if (currentBillType === 'Conference Committee') {
-                            let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
-                            let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
-                            members.forEach(member => {
-                                const fullName = member.fullName || getFullMemberName(member);
-                                const vote = votes[fullName];
-                                const side = getMemberSide(fullName);
-                                if (side === 'Senate') {
-                                    if (vote === 'for') senateFor++;
-                                    else if (vote === 'against') senateAgainst++;
-                                    else senateNeutral++;
-                                } else if (side === 'House') {
-                                    if (vote === 'for') houseFor++;
-                                    else if (vote === 'against') houseAgainst++;
-                                    else houseNeutral++;
-                                }
-                            });
-                            moduleResult = { votes, senateFor, senateAgainst, senateNeutral, houseFor, houseAgainst, houseNeutral };
-                        } else {
-                            const forCount = Object.values(votes).filter(v => v === 'for').length;
-                            const againstCount = Object.values(votes).filter(v => v === 'against').length;
-                            const neutralCount = Object.values(votes).filter(v => v === 'neutral').length;
-                            moduleResult = { votes, for: forCount, against: againstCount, neutral: neutralCount };
+            // Add submit button
+            const submitButton = document.createElement('button');
+            submitButton.id = 'module-submit';
+            submitButton.textContent = 'Submit';
+            submitButton.onclick = () => {
+                let moduleResult;
+                if (currentBillType === 'Conference Committee') {
+                    const votes = {};
+                    const members = getLegendMembers();
+                    members.forEach(member => {
+                        const fullName = member.fullName;
+                        const selected = modalContent.querySelector(`input[name="${fullName}"]:checked`);
+                        votes[fullName] = selected ? selected.value : 'neutral';
+                    });
+                    let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
+                    let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
+                    members.forEach(member => {
+                        const fullName = member.fullName;
+                        const vote = votes[fullName];
+                        const side = getMemberSide(fullName);
+                        if (side === 'Senate') {
+                            if (vote === 'for') senateFor++;
+                            else if (vote === 'against') senateAgainst++;
+                            else senateNeutral++;
+                        } else if (side === 'House') {
+                            if (vote === 'for') houseFor++;
+                            else if (vote === 'against') houseAgainst++;
+                            else houseNeutral++;
                         }
-                    } else {
-                        const forCount = parseInt(formContainer.querySelector('#module-for').value, 10) || 0;
-                        const againstCount = parseInt(formContainer.querySelector('#module-against').value, 10) || 0;
-                        const neutralCount = parseInt(formContainer.querySelector('#module-neutral').value, 10) || 0;
-                        moduleResult = { for: forCount, against: againstCount, neutral: neutralCount };
-                    }
-                    const displayText = constructVoteTagText(moduleResult);
-                    if (pathIndex !== null) {
-                        path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
-                    } else {
-                        path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
-                    }
-                    const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                    const motionPassed = didMotionPass(moduleResult);
-                    const carrierMotionTypes = ['Do Pass', 'Do Not Pass'];
-                    if (carrierMotionTypes.includes(motionType) && motionPassed) {
-                        currentStep = 'carryBillPrompt';
-                    } else {
-                        currentStep = null;
-                    }
-                    modal.classList.remove('active');
-                    updateInput();
-                    showSuggestions('');
-                };
-                formContainer.appendChild(submitButton);
-                modalContent.appendChild(formContainer);
-            }
-    
-            renderVoteForm();
+                    });
+                    moduleResult = { votes, senateFor, senateAgainst, senateNeutral, houseFor, houseAgainst, houseNeutral };
+                } else {
+                    const forCount = parseInt(modalContent.querySelector('#module-for').value, 10) || 0;
+                    const againstCount = parseInt(modalContent.querySelector('#module-against').value, 10) || 0;
+                    const neutralCount = parseInt(modalContent.querySelector('#module-neutral').value, 10) || 0;
+                    moduleResult = { for: forCount, against: againstCount, neutral: forCount };
+                }
+                const displayText = constructVoteTagText(moduleResult);
+                if (pathIndex !== null) {
+                    path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
+                } else {
+                    path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
+                }
+                const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                const motionPassed = didMotionPass(moduleResult);
+                const carrierMotionTypes = ['Do Pass', 'Do Not Pass'];
+                if (carrierMotionTypes.includes(motionType) && motionPassed) {
+                    currentStep = 'carryBillPrompt';
+                } else {
+                    currentStep = null;
+                }
+                modal.classList.remove('active');
+                updateInput();
+                showSuggestions('');
+            };
+            modalContent.appendChild(submitButton);
         } else {
-            // Handle other modules
+            // Handle other modules (unchanged)
             const fields = stepConfig.fields || [];
             const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
