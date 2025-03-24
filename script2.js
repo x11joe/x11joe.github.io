@@ -1817,8 +1817,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (action === 'Accept' || action === 'Reject') {
             const detailStep = action === 'Accept' ? 'acceptDetail' : 'rejectDetail';
             const detail = path.find(p => p.step === detailStep)?.value || '';
-            const detailLower = detail.toLowerCase();
-            text += ` ${detailLower}`;
+            const detailWords = detail.split(' ');
+            if (detailWords.length >= 2) {
+                detailWords[1] = detailWords[1].toLowerCase();
+            }
+            const transformedDetail = detailWords.join(' ');
+            text += ` that ${transformedDetail}`;
         } else if (action === 'Discharged') {
             text += ` the committee be discharged`;
         } else if (action === 'In Place Of') {
