@@ -291,31 +291,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
     
         const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
-        let tableHtml = '<table style="border-collapse: collapse; border: 2px double black; width: 100%;">';
-        tableHtml += '<thead><tr style="border-bottom: 1px solid black;">';
-        tableHtml += '<th style="padding: 2px 5px; text-align: center; border-right: 1px solid black;">Senators</th>';
-        tableHtml += '<th style="padding: 2px 5px; text-align: center;">Vote</th>';
+        let tableHtml = '<table style="border-collapse: collapse; width: 100%;">';
+        tableHtml += '<thead><tr>';
+        tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Senators</th>';
+        tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Vote</th>';
         tableHtml += '</tr></thead><tbody>';
     
         if (currentBillType === 'Conference Committee') {
             const votes = moduleResult.votes;
-            members.forEach(member => {
+            for (let i = 0; i < members.length; i++) {
+                const member = members[i];
                 let vote = votes[member.fullName] || 'A';
                 if (vote === 'for') vote = 'Y';
                 else if (vote === 'against') vote = 'N';
                 else if (vote === 'neutral') vote = 'A';
                 const fullName = member.fullName;
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="padding: 2px 5px; text-align: left; border-right: 1px solid black;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">${vote}</td></tr>`;
-            });
+                const isLast = i === members.length - 1;
+                const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
+                tableHtml += `<tr>`;
+                tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
+                tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
+                tableHtml += `</tr>`;
+            }
         } else {
-            members.forEach(member => {
+            for (let i = 0; i < members.length; i++) {
+                const member = members[i];
                 const fullName = getFullMemberName(member);
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="padding: 2px 5px; text-align: left; border-right: 1px solid black;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">Y</td></tr>`;
-            });
+                const isLast = i === members.length - 1;
+                const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
+                tableHtml += `<tr>`;
+                tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
+                tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">Y</td>`;
+                tableHtml += `</tr>`;
+            }
         }
     
         tableHtml += '</tbody></table>';
-        tableHtml += `<p style="margin: 5px 0 0 0; text-align: left;">${motionText}</p>`;
+        tableHtml += `<p style="margin: 5pt 0 0 0; text-align: left; font-size: 12pt;">${motionText}</p>`;
     
         return tableHtml;
     }
