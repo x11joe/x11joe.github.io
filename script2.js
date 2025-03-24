@@ -1048,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const stepConfig = flow.steps.find(step => step.step === stepType);
         if (stepConfig && stepConfig.type === 'module') {
             const moduleResult = JSON.parse(path[pathIndex].value);
-            handleModule(stepConfig, moduleResult);
+            handleModule(stepConfig, moduleResult, pathIndex); // Pass pathIndex for editing
         } else if (stepType === 'testimony') {
             const part = path[pathIndex];
             populateTestimonyModal(part);
@@ -1329,29 +1329,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Handle module input (e.g., vote counts, amendment text)
-    function handleModule(stepConfig, existingValues) {
+    function handleModule(stepConfig, existingValues, pathIndex = null) {
         modal.innerHTML = '';
+        const modalContent = document.createElement('div');
         if (stepConfig.step === 'voteModule') {
-            const modalContent = document.createElement('div');
             modalContent.className = 'vote-module';
     
-            // Parse existing values, ensuring it’s an object
-            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
-            
-            // Determine if the vote was originally saved in detailed mode
-            const isOriginallyDetailed = parsedExistingValues.votes && Object.keys(parsedExistingValues.votes).length > 0;
-            let useDetailedVoting = isOriginallyDetailed || currentBillType === 'Conference Committee';
+            let useDetailedVoting = currentBillType === 'Conference Committee';
             const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
+            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
-            // Create a container for the form content
-            const formContainer = document.createElement('div');
-            formContainer.className = 'form-container';
-            modalContent.appendChild(formContainer);
-    
-            // Define detailedButton only if originally in simple mode
-            let detailedButton;
-            if (!isOriginallyDetailed && !useDetailedVoting) {
-                detailedButton = document.createElement('button');
+            // Add "Detailed" button for non-conference modes if not editing in detailed mode
+            if (!useDetailedVoting && (!parsedExistingValues.votes || Object.keys(parsedExistingValues.votes).length === 0)) {
+                const detailedButton = document.createElement('button');
                 detailedButton.textContent = 'Detailed';
                 detailedButton.className = 'detailed';
                 detailedButton.onclick = () => {
@@ -1362,11 +1352,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
     
             function renderVoteForm() {
-                // Clear the form container completely
-                while (formContainer.firstChild) {
-                    formContainer.removeChild(formContainer.firstChild);
+                while (modalContent.firstChild) {
+                    modalContent.removeChild(modalContent.firstChild);
+                }
+                if (!useDetailedVoting) {
+                    modalContent.appendChild(detailedButton);
                 }
     
+                const formContainer = document.createElement('div');
                 if (useDetailedVoting) {
                     const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
                     formContainer.appendChild(detailedForm);
@@ -1375,7 +1368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     formContainer.appendChild(simpleForm);
                 }
     
-                // Append a single submit button
                 const submitButton = document.createElement('button');
                 submitButton.id = 'module-submit';
                 submitButton.textContent = 'Submit';
@@ -1419,11 +1411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         moduleResult = { for: forCount, against: againstCount, neutral: neutralCount };
                     }
                     const displayText = constructVoteTagText(moduleResult);
-                    const stepIndex = path.findIndex(p => p.step === currentStep);
-                    if (stepIndex !== -1) {
-                        path[stepIndex] = { step: currentStep, value: JSON.stringify(moduleResult), display: displayText };
+                    if (pathIndex !== null) {
+                        path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
                     } else {
-                        path.push({ step: currentStep, value: JSON.stringify(moduleResult), display: displayText });
+                        path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
                     }
                     const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
                     const motionPassed = didMotionPass(moduleResult);
@@ -1438,17 +1429,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showSuggestions('');
                 };
                 formContainer.appendChild(submitButton);
+                modalContent.appendChild(formContainer);
             }
     
-            // Initial render
             renderVoteForm();
-            modal.appendChild(modalContent);
-            modal.classList.add('active');
-            positionModal();
         } else {
+            // Handle other modules
             const fields = stepConfig.fields || [];
-            const modalContent = document.createElement('div');
-            const form = document.createElement('form');
             const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
             fields.forEach(field => {
@@ -1474,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 div.appendChild(label);
                 div.appendChild(input);
-                form.appendChild(div);
+                modalContent.appendChild(div);
             });
     
             const submitButton = document.createElement('button');
@@ -1488,23 +1475,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     moduleResult[field.name] = field.type === 'number' ? parseInt(input.value, 10) || 0 : input.value;
                 });
                 const displayText = getModuleDisplayText(stepConfig.step, moduleResult);
-                const stepIndex = path.findIndex(p => p.step === currentStep);
-                if (stepIndex !== -1) {
-                    path[stepIndex] = { step: currentStep, value: JSON.stringify(moduleResult), display: displayText };
+                if (pathIndex !== null) {
+                    path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
                 } else {
-                    path.push({ step: currentStep, value: JSON.stringify(moduleResult), display: displayText });
+                    path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
                 }
                 currentStep = stepConfig.next;
                 modal.classList.remove('active');
                 updateInput();
                 showSuggestions('');
             };
-            form.appendChild(submitButton);
-            modalContent.appendChild(form);
-            modal.appendChild(modalContent);
-            modal.classList.add('active');
-            positionModal();
+            modalContent.appendChild(submitButton);
         }
+        modal.appendChild(modalContent);
+        modal.classList.add('active');
+        positionModal();
     }
 
     function handleConferenceVoteModule(stepConfig, existingValues = null) {
