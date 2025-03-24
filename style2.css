@@ -609,6 +609,32 @@ label {
     100% { box-shadow: 0 0 5px #28a745; }
 }
 
+/* Copy Table Button Styling */
+.copy-table-btn {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #28a745; /* Green to distinguish from other buttons */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.copy-table-btn:hover {
+    background-color: #218838;
+}
+
+.copy-table-btn.copied {
+    animation: table-glow 0.5s ease-in-out;
+}
+
+@keyframes table-glow {
+    0% { box-shadow: 0 0 5px #28a745; }
+    50% { box-shadow: 0 0 20px #28a745; }
+    100% { box-shadow: 0 0 5px #28a745; }
+}
+
 /* Time Editor Styling */
 .time-editor {
     background: white;

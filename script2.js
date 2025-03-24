@@ -265,6 +265,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         return committees[currentCommittee] || [];
     }
 
+    function generateVoteTable(entry) {
+        const path = entry.path;
+        const voteModule = path.find(p => p.step === 'voteModule');
+        if (!voteModule) return '';
+    
+        const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
+        let tableString = 'Senators\tVote\n';
+    
+        if (currentBillType === 'Conference Committee') {
+            // For conference committees, use actual vote data if available
+            const voteData = JSON.parse(voteModule.value);
+            members.forEach(member => {
+                const vote = voteData[member.fullName] || 'A'; // Default to 'A' if not found
+                tableString += `${member.fullName}\t${vote}\n`;
+            });
+        } else {
+            // For non-conference committees, assume all 'Y' for now
+            members.forEach(member => {
+                tableString += `${member}\tY\n`;
+            });
+        }
+    
+        return tableString;
+    }
+
     // Get other committees of the same type (House/Senate) excluding the current one
     function getOtherCommittees() {
         const isHouse = currentCommittee.toLowerCase().includes("house");
@@ -2224,10 +2249,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         let statementHtml = '';
-        const isVoteAction = path[0].step === 'voteType' && (path[0].value === 'Roll Call Vote' || path[0].value === 'Voice Vote');
+        const isRollCallVote = path[0].step === 'voteType' && path[0].value === 'Roll Call Vote';
     
-        if (isVoteAction) {
-            // For vote actions (roll call or voice votes), create a single statement box with special copy support
+        if (isRollCallVote) {
+            // For roll call votes, create a statement box with a button to copy the table
             const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
             const specialFormat = `${formattedTime} | ${statementText.trim()} | |`;
             statementHtml = `
@@ -2239,6 +2264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     title="Copy Statement (Ctrl+Click for Special Format)">
                     ${statementText.trim()}
                 </div>
+                <button class="copy-table-btn" data-index="${index}">Copy Table</button>
             `;
         } else if (path[0].step === 'testimony') {
             const testimonyDetails = path[0].details;
@@ -2290,7 +2316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const techStatement = statementText;
             const memberString = path.find(p => p.step === 'member')?.value || '';
             const memberNo = path.find(p => p.step === 'member')?.memberNo || '';
-            const proceduralStatement = constructMemberActionProceduralStatement(time, path); // Assume this needs fixing separately
+            const proceduralStatement = constructMemberActionProceduralStatement(time, path);
             const link = '';
             statementHtml = `
                 <div class="statement-box tech-clerk" 
@@ -2352,6 +2378,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             techClerkBox.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 performSpecialCopy(techClerkBox);
+            });
+        }
+        const copyTableBtn = row.querySelector('.copy-table-btn');
+        if (copyTableBtn) {
+            copyTableBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const entry = history[index];
+                const tableString = generateVoteTable(entry);
+                navigator.clipboard.writeText(tableString).then(() => {
+                    console.log('Table copied to clipboard:', tableString);
+                    copyTableBtn.classList.add('copied');
+                    setTimeout(() => copyTableBtn.classList.remove('copied'), 500);
+                });
             });
         }
         const editIcon = row.querySelector('.edit-icon');
