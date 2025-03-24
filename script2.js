@@ -291,9 +291,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
     
         const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
-        let tableHtml = '<table style="border-collapse: collapse; border: 3px double black;">';
-        tableHtml += '<thead><tr style="border-bottom: 2px solid black;">';
-        tableHtml += '<th style="border-right: 1px solid black; padding: 2px 5px; text-align: left;">Senators</th>';
+        let tableHtml = '<table style="border-collapse: collapse; border: 2px double black; width: 100%;">';
+        tableHtml += '<thead><tr style="border-bottom: 1px solid black;">';
+        tableHtml += '<th style="padding: 2px 5px; text-align: center; border-right: 1px solid black;">Senators</th>';
         tableHtml += '<th style="padding: 2px 5px; text-align: center;">Vote</th>';
         tableHtml += '</tr></thead><tbody>';
     
@@ -305,12 +305,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else if (vote === 'against') vote = 'N';
                 else if (vote === 'neutral') vote = 'A';
                 const fullName = member.fullName;
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 2px 5px;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">${vote}</td></tr>`;
+                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="padding: 2px 5px; text-align: left; border-right: 1px solid black;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">${vote}</td></tr>`;
             });
         } else {
             members.forEach(member => {
                 const fullName = getFullMemberName(member);
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 2px 5px;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">Y</td></tr>`;
+                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="padding: 2px 5px; text-align: left; border-right: 1px solid black;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">Y</td></tr>`;
             });
         }
     
