@@ -1893,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Construct the full statement text based on the path
     function constructStatementText(path) {
         const flowType = path[0].step;
-        if (flowType === 'voteAction') {
+        if (flowType === 'voteType') {  // Changed from 'voteAction' to 'voteType'
             const voteType = path.find(p => p.step === 'voteType')?.value;
             if (voteType === 'Roll Call Vote') {
                 const baseMotion = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
@@ -1960,7 +1960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else if (action === 'Accept' || action === 'Reject') {
                 const detailStep = action === 'Accept' ? 'acceptDetail' : 'rejectDetail';
-                const detail = path.find(p => p.step === detailStep)?.value || '';
+                const detail = path.find(p => p.step === 'detailStep')?.value || '';
                 return `${memberText} moved ${detail}`;
             } else if (action === 'Discharged') {
                 return `${memberText} moved the committee be Discharged`;
