@@ -1029,10 +1029,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             modal.style.overflowY = 'auto';
         }
         
-        // Set modal position (only top and width, leaving left to default/CSS)
+        // Set modal position
         modal.style.top = `${topPosition}px`;
+        modal.style.left = `${inputRect.left}px`;  // Align horizontally with the input field
         modal.style.width = `${inputRect.width}px`;
-        console.log('Modal styles set: top:', modal.style.top, 'width:', modal.style.width, 'left (not set):', modal.style.left || 'default');
+        console.log('Modal styles set: top:', modal.style.top, 'left:', modal.style.left, 'width:', modal.style.width);
     }
 
     // Update highlighting for suggestion options
