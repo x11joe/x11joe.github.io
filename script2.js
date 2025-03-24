@@ -321,11 +321,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderSimpleVoteForm(existingValues = {}) {
         const form = document.createElement('div');
         form.className = 'regular-vote-form';
-        form.innerHTML = `
-            <div><label>For:</label><input type="number" id="module-for" value="${existingValues.for || 0}" min="0"></div>
-            <div><label>Against:</label><input type="number" id="module-against" value="${existingValues.against || 0}" min="0"></div>
-            <div><label>Neutral:</label><input type="number" id="module-neutral" value="${existingValues.neutral || 0}" min="0"></div>
-        `;
+    
+        const fields = ['for', 'against', 'neutral'];
+        fields.forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'vote-count-row';
+    
+            const label = document.createElement('label');
+            label.textContent = `${field.charAt(0).toUpperCase() + field.slice(1)}:`;
+            div.appendChild(label);
+    
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.id = `module-${field}`;
+            input.value = existingValues[field] || 0;
+            input.min = 0;
+            div.appendChild(input);
+    
+            const minusButton = document.createElement('button');
+            minusButton.textContent = '-';
+            minusButton.onclick = () => {
+                const currentValue = parseInt(input.value, 10) || 0;
+                if (currentValue > 0) input.value = currentValue - 1;
+            };
+            div.appendChild(minusButton);
+    
+            const plusButton = document.createElement('button');
+            plusButton.textContent = '+';
+            plusButton.onclick = () => {
+                const currentValue = parseInt(input.value, 10) || 0;
+                input.value = currentValue + 1;
+            };
+            div.appendChild(plusButton);
+    
+            form.appendChild(div);
+        });
+    
         return form;
     }
 
@@ -1306,40 +1337,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             let useDetailedVoting = currentBillType === 'Conference Committee';
             const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
-            const parsedExistingValues = existingValues ? JSON.parse(existingValues) : {};
+            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
-            // Define detailedButton in the outer scope, always created
+            // Create a container for the form content
+            const formContainer = document.createElement('div');
+            formContainer.className = 'form-container';
+            modalContent.appendChild(formContainer);
+    
+            // Define detailedButton
             const detailedButton = document.createElement('button');
             detailedButton.textContent = 'Detailed';
-            detailedButton.style.cssText = 'position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;';
+            detailedButton.className = 'detailed';
             detailedButton.onclick = () => {
                 useDetailedVoting = true;
                 renderVoteForm();
             };
     
             function renderVoteForm() {
-                // Clear modalContent, preserving detailedButton if present
-                while (modalContent.firstChild) {
-                    if (modalContent.firstChild !== detailedButton) {
-                        modalContent.removeChild(modalContent.firstChild);
-                    } else {
-                        break;
-                    }
+                // Clear the form container completely
+                while (formContainer.firstChild) {
+                    formContainer.removeChild(formContainer.firstChild);
                 }
     
-                const formContainer = document.createElement('div');
+                // Remove detailedButton if present
+                if (modalContent.contains(detailedButton)) {
+                    modalContent.removeChild(detailedButton);
+                }
+    
                 if (useDetailedVoting) {
                     const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
                     formContainer.appendChild(detailedForm);
                 } else {
                     const simpleForm = renderSimpleVoteForm(parsedExistingValues);
                     formContainer.appendChild(simpleForm);
-                    // Append detailedButton only in simple mode if not already present
-                    if (!modalContent.contains(detailedButton)) {
-                        modalContent.appendChild(detailedButton);
-                    }
+                    // Append detailedButton only in simple mode
+                    modalContent.appendChild(detailedButton);
                 }
     
+                // Append a single submit button
                 const submitButton = document.createElement('button');
                 submitButton.id = 'module-submit';
                 submitButton.textContent = 'Submit';
@@ -1349,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const votes = {};
                         members.forEach(member => {
                             const fullName = member.fullName || getFullMemberName(member);
-                            const selected = modalContent.querySelector(`input[name="${fullName}"]:checked`);
+                            const selected = formContainer.querySelector(`input[name="${fullName}"]:checked`);
                             votes[fullName] = selected ? selected.value : 'neutral';
                         });
                         if (currentBillType === 'Conference Committee') {
@@ -1377,9 +1412,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             moduleResult = { votes, for: forCount, against: againstCount, neutral: neutralCount };
                         }
                     } else {
-                        const forCount = parseInt(modalContent.querySelector('#module-for').value, 10) || 0;
-                        const againstCount = parseInt(modalContent.querySelector('#module-against').value, 10) || 0;
-                        const neutralCount = parseInt(modalContent.querySelector('#module-neutral').value, 10) || 0;
+                        const forCount = parseInt(formContainer.querySelector('#module-for').value, 10) || 0;
+                        const againstCount = parseInt(formContainer.querySelector('#module-against').value, 10) || 0;
+                        const neutralCount = parseInt(formContainer.querySelector('#module-neutral').value, 10) || 0;
                         moduleResult = { for: forCount, against: againstCount, neutral: neutralCount };
                     }
                     const displayText = constructVoteTagText(moduleResult);
@@ -1402,7 +1437,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showSuggestions('');
                 };
                 formContainer.appendChild(submitButton);
-                modalContent.appendChild(formContainer);
             }
     
             // Initial render
@@ -1414,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const fields = stepConfig.fields || [];
             const modalContent = document.createElement('div');
             const form = document.createElement('form');
-            const parsedExistingValues = existingValues ? JSON.parse(existingValues) : {};
+            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
             fields.forEach(field => {
                 const div = document.createElement('div');
