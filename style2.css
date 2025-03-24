@@ -218,7 +218,7 @@ body {
     border: 1px solid #ccc;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     width: 100%; /* Take full width of container */
-    max-width: 798px; /* Maximum width */
+    max-width: 778px; /* Maximum width */
     max-height: 80vh; /* Adjusted to accommodate detailed voting */
     overflow-y: auto; /* Scrollbar if content overflows */
     display: none;
