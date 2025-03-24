@@ -855,7 +855,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show options for editing a tag in the input
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
-        const stepConfig = currentFlow.steps.find(step => step.step === stepType);
+        const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
+        if (!flow) {
+            console.warn('No flow found for stepType:', stepType);
+            return;
+        }
+        const stepConfig = flow.steps.find(step => step.step === stepType);
         if (stepConfig && stepConfig.type === 'module') {
             const moduleResult = JSON.parse(path[pathIndex].value);
             handleModule(stepConfig, moduleResult);
@@ -865,7 +870,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             openTestimonyModal(null, true);
             editingTestimonyIndex = pathIndex;
         } else {
-            const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
             const options = getOptionsForStep(stepType, flow);
             console.log('Tag options:', options);
             modal.classList.remove('active');
@@ -1090,10 +1094,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             path.pop();
             console.log('removeLastTag - After pop, path:', path);
             if (path.length > 0) {
-                const firstValue = path[0].value;
+                const firstPart = path[0];
                 const startingPoint = jsonStructure.startingPoints.find(sp => {
-                    if (sp.options === "committeeMembers") return getCommitteeMembers().includes(firstValue);
-                    else if (Array.isArray(sp.options)) return sp.options.includes(firstValue);
+                    if (sp.options === "committeeMembers") {
+                        const members = currentBillType === 'Conference Committee' ? getLegendMembers().map(m => m.fullName) : getCommitteeMembers();
+                        return members.includes(firstPart.value);
+                    } else if (Array.isArray(sp.options)) {
+                        return sp.options.includes(firstPart.value);
+                    }
                     return false;
                 });
                 if (startingPoint) {
@@ -1122,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     currentFlow = null;
                     currentStep = null;
-                    console.log('No starting point found for first value:', firstValue);
+                    console.log('No starting point found for first part:', firstPart);
                 }
             } else {
                 currentFlow = null;
