@@ -1893,11 +1893,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Construct the full statement text based on the path
     function constructStatementText(path) {
         const flowType = path[0].step;
-        if (flowType === 'voteType') {  // Changed from 'voteAction' to 'voteType'
+        if (flowType === 'voteType') {
             const voteType = path.find(p => p.step === 'voteType')?.value;
             if (voteType === 'Roll Call Vote') {
                 const baseMotion = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
-                let modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value).join(' ');
+                let modifiers = path.filter(p => (p.step === 'motionModifiers' || p.step === 'afterAmended') && p.value !== 'Take the Vote').map(p => p.value).join(' ');
                 const voteResultPart = path.find(p => p.step === 'voteModule');
                 let voteResultText = '';
                 if (voteResultPart) voteResultText = voteResultPart.display || JSON.parse(voteResultPart.value);
@@ -1912,8 +1912,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (billCarriers.length === 2) carrierText = `${billCarriers[0]} and ${billCarriers[1]} Carried the Bill`;
                 else if (billCarriers.length === 1) carrierText = `${billCarriers[0]} Carried the Bill`;
                 const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
-                if (rereferCommittee) modifiers += ` to ${getShortCommitteeName(rereferCommittee)}`;
-                return `${baseMotion} ${modifiers} ${voteResultText}${carrierText ? ' - ' + carrierText : ''}`.trim();
+                if (rereferCommittee && modifiers.includes('Rereferred')) {
+                    modifiers = modifiers.replace('Rereferred', `Rereferred to ${getShortCommitteeName(rereferCommittee)}`);
+                }
+                const motionText = [baseMotion, modifiers].filter(Boolean).join(' ');
+                return `Roll Call Vote on ${motionText} - ${voteResultText}${carrierText ? ' - ' + carrierText : ''}`.trim();
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
                 const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
@@ -1926,41 +1929,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const memberString = path.find(p => p.step === 'member')?.value || '';
             let memberText = getMemberDisplayName(memberString);
             const action = path.find(p => p.step === 'action')?.value || '';
-            if (action === 'Proposed Amendment' || action === 'Introduced Amendment') {
-                const verb = action.split(' ')[0].toLowerCase();
-                const amendmentProvider = path.find(p => p.step === 'amendmentProvider')?.value;
-                if (amendmentProvider === 'Self') {
-                    const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                    if (amendmentType === 'Verbal') {
-                        return `${memberText} ${verb} Verbal Amendment`;
-                    } else if (amendmentType === 'LC#') {
-                        const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
-                        const version = lcNumberStr.split('.')[2] || '00000';
-                        return `${memberText} ${verb} Amendment LC# .${version}`;
-                    }
-                } else if (amendmentProvider === 'Provided By') {
-                    const providerType = path.find(p => p.step === 'providerType')?.value;
-                    let providerText = '';
-                    if (providerType === 'Senator or Representative') {
-                        const providerMember = path.find(p => p.step === 'providerMember')?.value || '';
-                        providerText = getMemberDisplayName(providerMember);
-                    } else if (providerType === 'External Source') {
-                        const providerTextPart = path.find(p => p.step === 'providerText');
-                        const provider = providerTextPart ? JSON.parse(providerTextPart.value).provider : '';
-                        providerText = provider;
-                    }
-                    const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                    if (amendmentType === 'Verbal') {
-                        return `${memberText} ${verb} Verbal Amendment provided by ${providerText}`;
-                    } else if (amendmentType === 'LC#') {
-                        const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
-                        const version = lcNumberStr.split('.')[2] || '00000';
-                        return `${memberText} ${verb} Amendment LC# .${version} provided by ${providerText}`;
-                    }
+            if (!action) return `${memberText} - No action specified`;
+            const verb = action === 'Seconded' ? 'seconded' : action.toLowerCase();
+            if (action === 'Introduced Amendment' || action === 'Proposed Amendment') {
+                const providerType = path.find(p => p.step === 'providerType')?.value || 'Member';
+                let providerText = '';
+                if (providerType === 'Member') {
+                    const providerMember = path.find(p => p.step === 'providerMember')?.value || '';
+                    providerText = getMemberDisplayName(providerMember);
+                } else if (providerType === 'External Source') {
+                    const providerTextPart = path.find(p => p.step === 'providerText');
+                    const provider = providerTextPart ? JSON.parse(providerTextPart.value).provider : '';
+                    providerText = provider;
+                }
+                const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
+                if (amendmentType === 'Verbal') {
+                    return `${memberText} ${verb} Verbal Amendment provided by ${providerText}`;
+                } else if (amendmentType === 'LC#') {
+                    const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
+                    const version = lcNumberStr.split('.')[2] || '00000';
+                    return `${memberText} ${verb} Amendment LC# .${version} provided by ${providerText}`;
                 }
             } else if (action === 'Accept' || action === 'Reject') {
                 const detailStep = action === 'Accept' ? 'acceptDetail' : 'rejectDetail';
-                const detail = path.find(p => p.step === 'detailStep')?.value || '';
+                const detail = path.find(p => p.step === detailStep)?.value || '';
                 return `${memberText} moved ${detail}`;
             } else if (action === 'Discharged') {
                 return `${memberText} moved the committee be Discharged`;
