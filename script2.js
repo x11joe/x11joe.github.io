@@ -1768,22 +1768,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Construct the full statement text based on the path
     function constructStatementText(path) {
         const flowType = currentFlow === jsonStructure.flows.committeeMemberFlow ? 'member' :
-                        currentFlow === jsonStructure.flows.meetingActionFlow ? 'meetingAction' :
-                        currentFlow === jsonStructure.flows.voteActionFlow ? 'voteAction' :
-                        currentFlow === jsonStructure.flows.introducedBillFlow ? 'introducedBill' : 'unknown';
+                         currentFlow === jsonStructure.flows.meetingActionFlow ? 'meetingAction' :
+                         currentFlow === jsonStructure.flows.voteActionFlow ? 'voteAction' :
+                         currentFlow === jsonStructure.flows.introducedBillFlow ? 'introducedBill' : 'unknown';
         if (flowType === 'voteAction') {
             const voteType = path.find(p => p.step === 'voteType')?.value;
             if (voteType === 'Roll Call Vote') {
                 const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
                 const voteResultPart = path.find(p => p.step === 'voteModule');
-                const modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value);
+                const motionModifiers = path.filter(p => (p.step === 'motionModifiers' || p.step === 'afterAmended') && p.value !== 'Take the Vote').map(p => p.value);
                 const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
+                
+                let motionDescription = baseMotionType;
+                motionModifiers.forEach(mod => {
+                    if (mod === 'as Amended') {
+                        motionDescription += ' as Amended';
+                    } else if (mod === 'and Rereferred') {
+                        if (rereferCommittee) {
+                            motionDescription += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
+                        } else {
+                            motionDescription += ' and Rereferred';
+                        }
+                    }
+                });
+                
+                let text = `Roll Call Vote on ${motionDescription} - `;
+                
                 if (voteResultPart) {
                     const result = JSON.parse(voteResultPart.value);
                     const forVotes = result.for || 0;
                     const againstVotes = result.against || 0;
                     const neutralVotes = result.neutral || 0;
-                    let text = `Roll Call Vote on ${baseMotionType} - `;
                     if (currentBillType === 'Conference Committee') {
                         const senateFor = result.senateFor || 0;
                         const houseFor = result.houseFor || 0;
@@ -1810,19 +1825,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             text += ` - ${carrierText} Carried the Bill`;
                         }
                     }
-                    if (modifiers.includes('as Amended')) text += ' as Amended';
-                    if (modifiers.includes('and Rereferred')) {
-                        text += rereferCommittee ? ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}` : ' and Rereferred';
-                    }
-                    return text;
                 } else {
-                    text = `Roll Call Vote on ${baseMotionType}`;
-                    if (modifiers.includes('as Amended')) text += ' as Amended';
-                    if (modifiers.includes('and Rereferred')) {
-                        text += rereferCommittee ? ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}` : ' and Rereferred';
-                    }
-                    return text;
+                    // If no vote result, just return the motion description
+                    text = `Roll Call Vote on ${motionDescription}`;
                 }
+                return text;
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
                 const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
@@ -2751,7 +2758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         adjustHistoryLayout();
     });
 
-    // Handle key presses in the input div
+    // Handle key presses in the input div in particular
     inputDiv.addEventListener('keydown', (e) => {
         if (e.key === 'Backspace') {
             const selection = window.getSelection();
@@ -2890,6 +2897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    //Modal Active Event Listners
     document.addEventListener('keydown', (e) => {
         if (modal.classList.contains('active') && currentFlow && currentStep) {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
