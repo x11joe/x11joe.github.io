@@ -290,21 +290,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (stepConfig.options === "suggestFailedReason") options = suggestFailedReason();
         else if (Array.isArray(stepConfig.options)) {
             options = stepConfig.options.slice(); // Copy the array to avoid mutating the original
-            if (stepType === 'rollCallBaseMotionType' && currentBillType === 'Conference Committee') {
-                options = options.filter(opt => opt !== 'Without Committee Recommendation');
-            }
-            if (stepType === 'motionModifiers') {
-                if (amendmentPassed && lastRereferCommittee) options = ['as Amended', 'and Rereferred', 'Take the Vote'].filter(opt => stepConfig.options.includes(opt));
-                else if (amendmentPassed) options = ['as Amended', 'Take the Vote', 'and Rereferred'].filter(opt => stepConfig.options.includes(opt));
-                else if (lastRereferCommittee) options = ['and Rereferred', 'Take the Vote', 'as Amended'].filter(opt => stepConfig.options.includes(opt));
-                else options = ['Take the Vote', 'as Amended', 'and Rereferred'];
-            } else if (stepType === 'afterAmended') {
-                options = lastRereferCommittee ? ['and Rereferred', 'Take the Vote'] : ['Take the Vote', 'and Rereferred'];
-            } else if (stepType === 'rollCallBaseMotionType') {
-                if (pendingAmendment && options.includes('Amendment')) {
-                    options = ['Amendment', ...options.filter(opt => opt !== 'Amendment')];
-                } else if (lastMovedDetail && options.includes(lastMovedDetail)) {
-                    options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
+            if (flow === jsonStructure.flows.committeeMemberFlow) {
+                if (stepType === 'action') {
+                    if (currentBillType !== 'Conference Committee') {
+                        options = options.filter(opt => !['Accept', 'Reject', 'In Place Of', 'Discharged'].includes(opt));
+                    }
+                    // Possibly reorder based on lastAction, etc.
+                } else if (stepType === 'movedDetail' && currentBillType === 'Conference Committee') {
+                    options = options.filter(opt => opt !== 'Without Committee Recommendation');
+                } else if (stepType === 'acceptDetail') {
+                    if (isSenateCommittee(currentCommittee)) {
+                        options = ["Senate Accepts the House Amendments", "House Accepts the Senate Amendments"];
+                    } else {
+                        options = ["House Accepts the Senate Amendments", "Senate Accepts the House Amendments"];
+                    }
+                } else if (stepType === 'rejectDetail') {
+                    if (isSenateCommittee(currentCommittee)) {
+                        options = ["House Rejects its Amendments", "Senate Rejects its Amendments"];
+                    } else {
+                        options = ["Senate Rejects its Amendments", "House Rejects its Amendments"];
+                    }
+                }
+            } else if (flow === jsonStructure.flows.voteActionFlow) {
+                if (stepType === 'rollCallBaseMotionType' && currentBillType === 'Conference Committee') {
+                    options = options.filter(opt => opt !== 'Without Committee Recommendation');
+                }
+                if (stepType === 'motionModifiers') {
+                    if (amendmentPassed && lastRereferCommittee) options = ['as Amended', 'and Rereferred', 'Take the Vote'].filter(opt => stepConfig.options.includes(opt));
+                    else if (amendmentPassed) options = ['as Amended', 'Take the Vote', 'and Rereferred'].filter(opt => stepConfig.options.includes(opt));
+                    else if (lastRereferCommittee) options = ['and Rereferred', 'Take the Vote', 'as Amended'].filter(opt => stepConfig.options.includes(opt));
+                    else options = ['Take the Vote', 'as Amended', 'and Rereferred'];
+                } else if (stepType === 'afterAmended') {
+                    options = lastRereferCommittee ? ['and Rereferred', 'Take the Vote'] : ['Take the Vote', 'and Rereferred'];
+                } else if (stepType === 'rollCallBaseMotionType') {
+                    if (pendingAmendment && options.includes('Amendment')) {
+                        options = ['Amendment', ...options.filter(opt => opt !== 'Amendment')];
+                    } else if (lastMovedDetail && options.includes(lastMovedDetail)) {
+                        options = [lastMovedDetail, ...options.filter(opt => opt !== lastMovedDetail)];
+                    }
                 }
             }
         }
@@ -1732,33 +1755,77 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Construct a procedural statement for member actions
     function constructMemberActionProceduralStatement(time, path) {
+        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
         const memberString = path.find(p => p.step === 'member')?.value || '';
         const memberText = getMemberDisplayName(memberString);
         const action = path.find(p => p.step === 'action')?.value || '';
-        const detail = path.find(p => p.step === 'movedDetail')?.value || '';
-        const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
-        const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
-        
-        let text = `${formattedTime} ${memberText} ${action.toLowerCase()}`;
-        
-        if (detail) {
-            if (detail === 'Do Pass' || detail === 'Do Not Pass') {
-                text += ` a ${detail}`;
-            } else if (detail === 'Amendment') {
+        let verb = 'moved';
+    
+        if (action === 'Seconded') verb = 'seconded';
+        else if (action === 'Withdrew') verb = 'withdrew';
+        else if (action === 'Proposed Amendment' || action === 'Introduced Amendment') verb = 'introduced';
+    
+        let text = `${formattedTime} ${memberText} ${verb}`;
+    
+        if (action === 'Proposed Amendment' || action === 'Introduced Amendment') {
+            const amendmentProvider = path.find(p => p.step === 'amendmentProvider')?.value;
+            if (!amendmentProvider) {
                 const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
-                if (amendmentType === 'Verbal') text += ' a verbal amendment';
-                else if (amendmentType === 'LC#') {
+                if (amendmentType === 'Verbal') {
+                    text += ` Verbal Amendment`;
+                } else if (amendmentType === 'LC#') {
                     const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
                     const version = lcNumberStr.split('.')[2] || '00000';
-                    text += ` amendment LC# .${version}`;
+                    text += ` Amendment LC# .${version}`;
                 }
-            } else {
-                text += ` ${detail.toLowerCase()}`;
+            } else if (amendmentProvider === 'Provided By') {
+                const providerType = path.find(p => p.step === 'providerType')?.value;
+                let providerText = '';
+                if (providerType === 'Senator or Representative') {
+                    const providerMember = path.find(p => p.step === 'providerMember')?.value || '';
+                    providerText = getMemberDisplayName(providerMember);
+                } else if (providerType === 'External Source') {
+                    const providerTextPart = path.find(p => p.step === 'providerText');
+                    const provider = providerTextPart ? JSON.parse(providerTextPart.value).provider : '';
+                    providerText = provider;
+                }
+                const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
+                if (amendmentType === 'Verbal') {
+                    text += ` Verbal Amendment provided by ${providerText}`;
+                } else if (amendmentType === 'LC#') {
+                    const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
+                    const version = lcNumberStr.split('.')[2] || '00000';
+                    text += ` Amendment LC# .${version} provided by ${providerText}`;
+                }
             }
+        } else if (action === 'Accept' || action === 'Reject') {
+            const detailStep = action === 'Accept' ? 'acceptDetail' : 'rejectDetail';
+            const detail = path.find(p => p.step === detailStep)?.value || '';
+            const detailLower = detail.toLowerCase();
+            text += ` ${detailLower}`;
+        } else if (action === 'Discharged') {
+            text += ` the committee be discharged`;
+        } else if (action === 'In Place Of') {
+            text += ` in place of`;
+        } else {
+            const detail = path.find(p => p.step === 'movedDetail')?.value || '';
+            const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
+            if (detail) {
+                if (detail === 'Amendment') {
+                    const amendmentType = path.find(p => p.step === 'amendmentType')?.value;
+                    if (amendmentType === 'Verbal') text += ' verbal amendment';
+                    else if (amendmentType === 'LC#') {
+                        const lcNumberStr = path.find(p => p.step === 'lcNumber') ? JSON.parse(path.find(p => p.step === 'lcNumber').value).lcNumber : '00.0000.00000';
+                        const version = lcNumberStr.split('.')[2] || '00000';
+                        text += ` amendment LC# .${version}`;
+                    }
+                } else {
+                    text += ` ${detail.toLowerCase()}`;
+                }
+            }
+            if (rerefer) text += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
         }
-        
-        if (rerefer) text += ` and rereferred to ${getShortCommitteeName(rerefer)}`;
-        
+    
         return text;
     }
 
@@ -1805,69 +1872,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Construct the full statement text based on the path
     function constructStatementText(path) {
-        const flowType = currentFlow === jsonStructure.flows.committeeMemberFlow ? 'member' :
-                         currentFlow === jsonStructure.flows.meetingActionFlow ? 'meetingAction' :
-                         currentFlow === jsonStructure.flows.voteActionFlow ? 'voteAction' :
-                         currentFlow === jsonStructure.flows.introducedBillFlow ? 'introducedBill' : 'unknown';
+        const flowType = path[0].step;
         if (flowType === 'voteAction') {
             const voteType = path.find(p => p.step === 'voteType')?.value;
             if (voteType === 'Roll Call Vote') {
-                const baseMotionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
+                const baseMotion = path.find(p => p.step === 'rollCallBaseMotionType')?.value || '';
+                let modifiers = path.filter(p => p.step === 'motionModifiers' || p.step === 'afterAmended').map(p => p.value).join(' ');
                 const voteResultPart = path.find(p => p.step === 'voteModule');
-                const motionModifiers = path.filter(p => (p.step === 'motionModifiers' || p.step === 'afterAmended') && p.value !== 'Take the Vote').map(p => p.value);
+                let voteResultText = '';
+                if (voteResultPart) voteResultText = voteResultPart.display || JSON.parse(voteResultPart.value);
+                const billCarriers = [];
+                const senateCarrierPart = path.find(p => p.step === 'senateBillCarrier');
+                const houseCarrierPart = path.find(p => p.step === 'houseBillCarrier');
+                const singleCarrierPart = path.find(p => p.step === 'billCarrierOptional');
+                if (senateCarrierPart) billCarriers.push(getMemberDisplayName(senateCarrierPart.value));
+                if (houseCarrierPart) billCarriers.push(getMemberDisplayName(houseCarrierPart.value));
+                if (singleCarrierPart) billCarriers.push(getMemberDisplayName(singleCarrierPart.value));
+                let carrierText = '';
+                if (billCarriers.length === 2) carrierText = `${billCarriers[0]} and ${billCarriers[1]} Carried the Bill`;
+                else if (billCarriers.length === 1) carrierText = `${billCarriers[0]} Carried the Bill`;
                 const rereferCommittee = path.find(p => p.step === 'rereferCommittee')?.value;
-                
-                let motionDescription = baseMotionType;
-                motionModifiers.forEach(mod => {
-                    if (mod === 'as Amended') {
-                        motionDescription += ' as Amended';
-                    } else if (mod === 'and Rereferred') {
-                        if (rereferCommittee) {
-                            motionDescription += ` and Rereferred to ${getShortCommitteeName(rereferCommittee)}`;
-                        } else {
-                            motionDescription += ' and Rereferred';
-                        }
-                    }
-                });
-                
-                let text = `Roll Call Vote on ${motionDescription} - `;
-                
-                if (voteResultPart) {
-                    const result = JSON.parse(voteResultPart.value);
-                    const forVotes = result.for || 0;
-                    const againstVotes = result.against || 0;
-                    const neutralVotes = result.neutral || 0;
-                    if (currentBillType === 'Conference Committee') {
-                        const senateFor = result.senateFor || 0;
-                        const houseFor = result.houseFor || 0;
-                        const counts = getConferenceCommitteeCounts();
-                        const senateMajority = Math.ceil(counts.senators / 2);
-                        const houseMajority = Math.ceil(counts.representatives / 2);
-                        const passed = senateFor >= senateMajority && houseFor >= houseMajority;
-                        text += `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
-                        if (path.find(p => p.step === 'carryBillPrompt')?.value === 'X and Y Carried the Bill') {
-                            const senateCarrier = path.find(p => p.step === 'senateBillCarrier')?.value;
-                            const houseCarrier = path.find(p => p.step === 'houseBillCarrier')?.value;
-                            if (senateCarrier && houseCarrier) {
-                                const senateText = getMemberDisplayName(senateCarrier);
-                                const houseText = getMemberDisplayName(houseCarrier);
-                                text += ` - ${senateText} and ${houseText} Carried the Bill`;
-                            }
-                        }
-                    } else {
-                        const passed = forVotes > againstVotes;
-                        text += `Motion ${passed ? 'Passed' : 'Failed'} ${forVotes}-${againstVotes}-${neutralVotes}`;
-                        const billCarrier = path.find(p => p.step === 'billCarrierOptional')?.value;
-                        if (billCarrier && path.find(p => p.step === 'carryBillPrompt')?.value === 'X Carried the Bill') {
-                            const carrierText = getMemberDisplayName(billCarrier);
-                            text += ` - ${carrierText} Carried the Bill`;
-                        }
-                    }
-                } else {
-                    // If no vote result, just return the motion description
-                    text = `Roll Call Vote on ${motionDescription}`;
-                }
-                return text;
+                if (rereferCommittee) modifiers += ` to ${getShortCommitteeName(rereferCommittee)}`;
+                return `${baseMotion} ${modifiers} ${voteResultText}${carrierText ? ' - ' + carrierText : ''}`.trim();
             } else if (voteType === 'Voice Vote') {
                 const onWhat = path.find(p => p.step === 'voiceVoteOn')?.value || '';
                 const outcome = path.find(p => p.step === 'voiceVoteOutcome')?.value || '';
@@ -1912,6 +1938,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return `${memberText} ${verb} Amendment LC# .${version} provided by ${providerText}`;
                     }
                 }
+            } else if (action === 'Accept' || action === 'Reject') {
+                const detailStep = action === 'Accept' ? 'acceptDetail' : 'rejectDetail';
+                const detail = path.find(p => p.step === detailStep)?.value || '';
+                return `${memberText} moved ${detail}`;
+            } else if (action === 'Discharged') {
+                return `${memberText} moved the committee be Discharged`;
+            } else if (action === 'In Place Of') {
+                return `${memberText} moved In Place Of`; // Placeholder
             } else {
                 const detail = path.find(p => p.step === 'movedDetail')?.value || '';
                 const rerefer = path.find(p => p.step === 'rereferOptional')?.value || '';
