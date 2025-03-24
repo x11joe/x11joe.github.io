@@ -2224,7 +2224,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         let statementHtml = '';
-        if (path[0].step === 'testimony') {
+        const isRollCallVote = path[0].step === 'voteType' && path[0].value === 'Roll Call Vote';
+    
+        if (isRollCallVote) {
+            // For roll call votes, create a single statement box with special copy support
+            const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
+            const specialFormat = `${formattedTime} | ${statementText.trim()} | |`;
+            statementHtml = `
+                <div class="statement-box tech-clerk" 
+                    data-tech-statement="${statementText.trim()}" 
+                    data-link="" 
+                    data-memberno="" 
+                    data-time="${time.toISOString()}"
+                    title="Copy Statement (Ctrl+Click for Special Format)">
+                    ${statementText.trim()}
+                </div>
+            `;
+        } else if (path[0].step === 'testimony') {
             const testimonyDetails = path[0].details;
             let techStatement = statementText;
             let proceduralStatement;
