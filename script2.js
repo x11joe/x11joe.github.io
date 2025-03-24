@@ -1335,33 +1335,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             const modalContent = document.createElement('div');
             modalContent.className = 'vote-module';
     
-            let useDetailedVoting = currentBillType === 'Conference Committee';
-            const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
+            // Parse existing values, ensuring it’s an object
             const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
+            
+            // Determine if the vote was originally saved in detailed mode
+            const isOriginallyDetailed = parsedExistingValues.votes && Object.keys(parsedExistingValues.votes).length > 0;
+            let useDetailedVoting = isOriginallyDetailed || currentBillType === 'Conference Committee';
+            const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
     
             // Create a container for the form content
             const formContainer = document.createElement('div');
             formContainer.className = 'form-container';
             modalContent.appendChild(formContainer);
     
-            // Define detailedButton
-            const detailedButton = document.createElement('button');
-            detailedButton.textContent = 'Detailed';
-            detailedButton.className = 'detailed';
-            detailedButton.onclick = () => {
-                useDetailedVoting = true;
-                renderVoteForm();
-            };
+            // Define detailedButton only if originally in simple mode
+            let detailedButton;
+            if (!isOriginallyDetailed && !useDetailedVoting) {
+                detailedButton = document.createElement('button');
+                detailedButton.textContent = 'Detailed';
+                detailedButton.className = 'detailed';
+                detailedButton.onclick = () => {
+                    useDetailedVoting = true;
+                    renderVoteForm();
+                };
+                modalContent.appendChild(detailedButton);
+            }
     
             function renderVoteForm() {
                 // Clear the form container completely
                 while (formContainer.firstChild) {
                     formContainer.removeChild(formContainer.firstChild);
-                }
-    
-                // Remove detailedButton if present
-                if (modalContent.contains(detailedButton)) {
-                    modalContent.removeChild(detailedButton);
                 }
     
                 if (useDetailedVoting) {
@@ -1370,8 +1373,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     const simpleForm = renderSimpleVoteForm(parsedExistingValues);
                     formContainer.appendChild(simpleForm);
-                    // Append detailedButton only in simple mode
-                    modalContent.appendChild(detailedButton);
                 }
     
                 // Append a single submit button
