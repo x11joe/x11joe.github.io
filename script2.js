@@ -507,7 +507,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Add event listener to close on outside click
         const closeOnOutsideClick = (e) => {
-            if (!modal.contains(e.target) && e.target !== addButton) {
+            if (!modal.classList.contains('active')) return; // Only proceed if modal is active
+            const currentAddButton = document.getElementById('addMemberButton'); // Dynamically get current button
+            if (!modal.contains(e.target) && e.target !== currentAddButton) {
                 modal.classList.remove('active');
                 document.removeEventListener('click', closeOnOutsideClick);
                 console.log('showMemberSelectionModal - Closed due to outside click');
@@ -2613,6 +2615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const counts = getConferenceCommitteeCounts();
             const canAdd = counts.senators < 3 || counts.representatives < 3;
             const addButton = document.createElement('button');
+            addButton.id = 'addMemberButton'; // Added unique ID
             addButton.textContent = 'Add Member +';
             addButton.style.backgroundColor = canAdd ? 'green' : '#ccc';
             addButton.style.color = 'white';
