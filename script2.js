@@ -1486,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('testimonyNumber').value = '';
         document.getElementById('testimonyLink').value = '';
         const formatSelect = document.getElementById('testimonyFormat');
-        if (formatSelect) formatSelect.value = 'Written';
+        if (formatSelect) formatSelect.value = 'In-Person';
     }
 
     // Open the testimony modal, optionally pre-filling with details
