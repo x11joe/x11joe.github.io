@@ -2600,30 +2600,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Function to create member li
             const createMemberLi = (member) => {
                 const li = document.createElement('li');
+                li.className = 'member-item'; // Add a class for styling
                 const parsed = parseMember(member.fullName);
                 const displayName = member.role ? `${member.role} ${parsed.name}` : member.fullName;
-                li.textContent = displayName;
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = displayName;
+                li.appendChild(nameSpan);
                 console.log('updateLegend - Created LI for', member.fullName, 'Display name:', displayName);
                 li.onclick = () => {
                     if (path.length === 0) selectOption(member.fullName);
                     else console.log('Cannot select member while editing existing path');
                 };
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'button-group';
                 const removeButton = document.createElement('button');
                 removeButton.textContent = '-';
-                removeButton.style.marginLeft = '5px';
                 removeButton.onclick = (e) => {
                     e.stopPropagation();
                     removeMember(member.fullName);
                 };
                 const promoteButton = document.createElement('button');
                 promoteButton.textContent = '↑';
-                promoteButton.style.marginLeft = '5px';
                 promoteButton.onclick = (e) => {
                     e.stopPropagation();
                     promoteMember(member.fullName);
                 };
-                li.appendChild(removeButton);
-                li.appendChild(promoteButton);
+                buttonGroup.appendChild(removeButton);
+                buttonGroup.appendChild(promoteButton);
+                li.appendChild(buttonGroup);
                 return li;
             };
             

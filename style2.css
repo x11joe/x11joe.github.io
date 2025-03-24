@@ -343,7 +343,7 @@ label {
 .legend li {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between; /* Space between name and button group */
     padding: 5px;
     cursor: pointer;
 }
@@ -369,6 +369,20 @@ label {
 
 #clearHistoryBtn {
     z-index: 1;
+}
+
+/* New class for member items */
+.member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* New class for button group */
+.button-group {
+    display: flex;
+    gap: 5px; /* Space between buttons */
 }
 
 /* Regular Vote Form Styling */
