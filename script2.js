@@ -290,6 +290,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (stepConfig.options === "suggestFailedReason") options = suggestFailedReason();
         else if (Array.isArray(stepConfig.options)) {
             options = stepConfig.options.slice(); // Copy the array to avoid mutating the original
+            if (stepType === 'rollCallBaseMotionType' && currentBillType === 'Conference Committee') {
+                options = options.filter(opt => opt !== 'Without Committee Recommendation');
+            }
             if (stepType === 'motionModifiers') {
                 if (amendmentPassed && lastRereferCommittee) options = ['as Amended', 'and Rereferred', 'Take the Vote'].filter(opt => stepConfig.options.includes(opt));
                 else if (amendmentPassed) options = ['as Amended', 'Take the Vote', 'and Rereferred'].filter(opt => stepConfig.options.includes(opt));
@@ -390,6 +393,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (getMemberSide(m.fullName) === "House") representatives++;
         });
         return { senators, representatives };
+    }
+
+    // Determine if the motion passed based on vote results and bill type
+    function didMotionPass(moduleResult) {
+        if (currentBillType === 'Conference Committee') {
+            const counts = getConferenceCommitteeCounts();
+            const senateMajority = Math.ceil(counts.senators / 2);
+            const houseMajority = Math.ceil(counts.representatives / 2);
+            return moduleResult.senateFor >= senateMajority && moduleResult.houseFor >= houseMajority;
+        } else {
+            return moduleResult.for > moduleResult.against;
+        }
     }
 
     // Remove a member from the conference committee
@@ -728,10 +743,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 path.push({ step: currentStep, value: option, display: displayText });
                 if (currentStep === 'voteModule') {
                     const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                    if (currentBillType === 'Conference Committee') {
-                        currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                    const motionPassed = didMotionPass(moduleResult);
+                    if (motionType === 'Do Pass' && motionPassed) {
+                        currentStep = 'carryBillPrompt';
                     } else {
-                        currentStep = (motionType === 'Reconsider' || motionType === 'Amendment') ? null : 'carryBillPrompt';
+                        currentStep = null;
                     }
                 } else {
                     currentStep = stepConfig.next;
@@ -759,9 +775,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const lastName = extractLastName(option);
                 const member = allMembers.find(m => m.lastName === lastName && m.firstName === 'Representative');
                 if (member) {
-                    path.push({ step: currentStep, value: option, memberNo: member.memberNo });
+                    path.push({ step: 'houseBillCarrier', value: option, memberNo: member.memberNo });
                 } else {
-                    path.push({ step: currentStep, value: option });
+                    path.push({ step: 'houseBillCarrier', value: option });
                 }
                 currentStep = null;
                 console.log('selectOption - House bill carrier selected:', { path, currentStep });
