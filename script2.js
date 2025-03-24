@@ -712,7 +712,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
             console.log('selectOption - Processing step:', { currentStep, stepConfig });
-            if (stepConfig.type === 'module') {
+            if (currentStep === 'billCarrierOptional') {
+                const lastName = extractLastName(option);
+                const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
+                if (member) {
+                    path.push({ step: 'billCarrierOptional', value: option, memberNo: member.memberNo });
+                } else {
+                    path.push({ step: 'billCarrierOptional', value: option });
+                }
+                currentStep = null;
+                console.log('selectOption - Bill carrier selected:', { path, currentStep });
+            } else if (stepConfig && stepConfig.type === 'module') {
                 const moduleResult = JSON.parse(option);
                 const displayText = getModuleDisplayText(currentStep, moduleResult);
                 path.push({ step: currentStep, value: option, display: displayText });
@@ -760,7 +770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentStep = 'voteModule';
                 console.log('selectOption - Rerefer committee selected:', { option, path, currentStep });
             } else {
-                if (stepConfig.options === "committeeMembers" || stepConfig.options === "allMembers") {
+                if (stepConfig && (stepConfig.options === "committeeMembers" || stepConfig.options === "allMembers")) {
                     const lastName = extractLastName(option);
                     const member = allMembers.find(m => m.lastName === lastName && (m.firstName === 'Senator' || m.firstName === 'Representative'));
                     if (member) {
@@ -773,7 +783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     path.push({ step: currentStep, value: option });
                 }
-                if (stepConfig.next) {
+                if (stepConfig && stepConfig.next) {
                     if (typeof stepConfig.next === 'string') {
                         currentStep = stepConfig.next;
                     } else {
@@ -2776,11 +2786,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dropdownActive) {
                 const dropdown = document.querySelector('.dropdown');
                 if (dropdown && selectedDropdownIndex >= 0) dropdown.querySelectorAll('.dropdown-option')[selectedDropdownIndex].click();
-            } else if (currentStep && currentFlow.steps.find(step => step.step === currentStep).optional) {
+            } else if (currentStep && currentFlow) {
                 const stepConfig = currentFlow.steps.find(step => step.step === currentStep);
-                currentStep = stepConfig.next;
-                updateInput();
-                showSuggestions('');
+                if (stepConfig && stepConfig.optional) {
+                    currentStep = stepConfig.next;
+                    updateInput();
+                    showSuggestions('');
+                } else {
+                    finalizeStatement();
+                }
             } else {
                 finalizeStatement();
             }
