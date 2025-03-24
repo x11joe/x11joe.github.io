@@ -270,22 +270,90 @@ document.addEventListener('DOMContentLoaded', async () => {
         const voteModule = path.find(p => p.step === 'voteModule');
         if (!voteModule) return '';
     
+        const moduleResult = JSON.parse(voteModule.value);
+        let forVotes, againstVotes, neutralVotes;
+        let motionPassed;
+    
+        if (currentBillType === 'Conference Committee') {
+            forVotes = moduleResult.senateFor + moduleResult.houseFor;
+            againstVotes = moduleResult.senateAgainst + moduleResult.houseAgainst;
+            neutralVotes = moduleResult.senateNeutral + moduleResult.houseNeutral;
+            const senateMajority = Math.ceil(getConferenceCommitteeCounts().senators / 2);
+            const houseMajority = Math.ceil(getConferenceCommitteeCounts().representatives / 2);
+            motionPassed = moduleResult.senateFor >= senateMajority && moduleResult.houseFor >= houseMajority;
+        } else {
+            forVotes = moduleResult.for;
+            againstVotes = moduleResult.against;
+            neutralVotes = moduleResult.neutral;
+            motionPassed = forVotes > againstVotes;
+        }
+    
+        const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
+    
+        const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
+        let tableHtml = '<table><thead><tr><th>Senators</th><th>Vote</th></tr></thead><tbody>';
+    
+        if (currentBillType === 'Conference Committee') {
+            const votes = moduleResult.votes;
+            members.forEach(member => {
+                const vote = votes[member.fullName] || 'A';
+                tableHtml += `<tr><td>${member.fullName}</td><td>${vote}</td></tr>`;
+            });
+        } else {
+            members.forEach(member => {
+                const fullName = getFullMemberName(member);
+                tableHtml += `<tr><td>${fullName}</td><td>Y</td></tr>`;
+            });
+        }
+    
+        tableHtml += '</tbody></table>';
+        tableHtml += `<p>${motionText}</p>`;
+    
+        return tableHtml;
+    }
+
+    function generateVoteTablePlainText(entry) {
+        const path = entry.path;
+        const voteModule = path.find(p => p.step === 'voteModule');
+        if (!voteModule) return '';
+    
+        const moduleResult = JSON.parse(voteModule.value);
+        let forVotes, againstVotes, neutralVotes;
+        let motionPassed;
+    
+        if (currentBillType === 'Conference Committee') {
+            forVotes = moduleResult.senateFor + moduleResult.houseFor;
+            againstVotes = moduleResult.senateAgainst + moduleResult.houseAgainst;
+            neutralVotes = moduleResult.senateNeutral + moduleResult.houseNeutral;
+            const senateMajority = Math.ceil(getConferenceCommitteeCounts().senators / 2);
+            const houseMajority = Math.ceil(getConferenceCommitteeCounts().representatives / 2);
+            motionPassed = moduleResult.senateFor >= senateMajority && moduleResult.houseFor >= houseMajority;
+        } else {
+            forVotes = moduleResult.for;
+            againstVotes = moduleResult.against;
+            neutralVotes = moduleResult.neutral;
+            motionPassed = forVotes > againstVotes;
+        }
+    
+        const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
+    
         const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
         let tableString = 'Senators\tVote\n';
     
         if (currentBillType === 'Conference Committee') {
-            // For conference committees, use actual vote data if available
-            const voteData = JSON.parse(voteModule.value);
+            const votes = moduleResult.votes;
             members.forEach(member => {
-                const vote = voteData[member.fullName] || 'A'; // Default to 'A' if not found
+                const vote = votes[member.fullName] || 'A';
                 tableString += `${member.fullName}\t${vote}\n`;
             });
         } else {
-            // For non-conference committees, assume all 'Y' for now
             members.forEach(member => {
-                tableString += `${member}\tY\n`;
+                const fullName = getFullMemberName(member);
+                tableString += `${fullName}\tY\n`;
             });
         }
+    
+        tableString += `\n${motionText}`;
     
         return tableString;
     }
@@ -2195,6 +2263,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { name, lastName, title: null };
     }
 
+    function getFullMemberName(memberString) {
+        const namePart = memberString.split(' - ')[0].trim();
+        const lastName = namePart.split(' ').pop();
+        const matchingMembers = allMembers.filter(m => m.fullName.endsWith(' ' + lastName));
+        if (matchingMembers.length === 1) {
+            return matchingMembers[0].fullName;
+        } else {
+            console.warn('Multiple or no matches for member:', memberString);
+            return namePart; // Fallback to name part
+        }
+    }
+
     function getFullName(name) {
         console.log('getFullName called with:', name);
         const parts = name.split(' ').map(s => s.trim());
@@ -2252,7 +2332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isRollCallVote = path[0].step === 'voteType' && path[0].value === 'Roll Call Vote';
     
         if (isRollCallVote) {
-            // For roll call votes, create a statement box with a button to copy the table
             const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
             const specialFormat = `${formattedTime} | ${statementText.trim()} | |`;
             statementHtml = `
@@ -2385,11 +2464,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             copyTableBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const entry = history[index];
-                const tableString = generateVoteTable(entry);
-                navigator.clipboard.writeText(tableString).then(() => {
-                    console.log('Table copied to clipboard:', tableString);
+                const htmlContent = generateVoteTable(entry);
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const clipboardItem = new ClipboardItem({ 'text/html': blob });
+                navigator.clipboard.write([clipboardItem]).then(() => {
+                    console.log('HTML table copied to clipboard');
                     copyTableBtn.classList.add('copied');
                     setTimeout(() => copyTableBtn.classList.remove('copied'), 500);
+                }).catch(err => {
+                    console.error('Failed to copy HTML to clipboard:', err);
+                    const plainText = generateVoteTablePlainText(entry);
+                    navigator.clipboard.writeText(plainText).then(() => {
+                        console.log('Plain text table copied to clipboard');
+                        copyTableBtn.classList.add('copied');
+                        setTimeout(() => copyTableBtn.classList.remove('copied'), 500);
+                    });
                 });
             });
         }
