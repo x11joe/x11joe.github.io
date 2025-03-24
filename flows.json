@@ -54,7 +54,13 @@
                     { "name": "against", "type": "number" },
                     { "name": "neutral", "type": "number" }
                 ], "next": "carryBillPrompt" },
-                { "step": "carryBillPrompt", "type": "select", "options": ["X and Y Carried the Bill", "No Carriers"], "next": { "X and Y Carried the Bill": "senateBillCarrier", "No Carriers": null } },
+                { "step": "carryBillPrompt", "type": "select", "options": ["X Carried the Bill", "No Carrier", "X and Y Carried the Bill", "No Carriers"], "next": { 
+                    "X Carried the Bill": "billCarrierOptional", 
+                    "No Carrier": null, 
+                    "X and Y Carried the Bill": "senateBillCarrier", 
+                    "No Carriers": null 
+                } },
+                { "step": "billCarrierOptional", "type": "select", "options": "committeeMembers", "next": null },
                 { "step": "senateBillCarrier", "type": "select", "options": "committeeMembers", "next": "houseBillCarrier" },
                 { "step": "houseBillCarrier", "type": "select", "options": "committeeMembers", "next": null },
                 { "step": "voiceVoteOn", "type": "select", "options": ["Amendment", "Reconsider"], "next": "voiceVoteOutcome" },

@@ -2,6 +2,7 @@
 let allMembers = []; // Global array to store all members parsed from allMember.xml
 let markedTime = null; // Global variable to store a marked time for timestamping events
 let fullNames = new Set();
+let flowMapping = {};
 
 // DOMContentLoaded event listener to initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
@@ -73,6 +74,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error loading flows.json or allMember.xml:', error);
         return;
     }
+
+    // Initialize flowMapping
+    flowMapping = {
+        'voteType': jsonStructure.flows.voteActionFlow,
+        'member': jsonStructure.flows.committeeMemberFlow,
+        'meetingAction': jsonStructure.flows.meetingActionFlow,
+        'introducedBill': jsonStructure.flows.committeeMemberFlow // Adjust if a separate flow exists
+    };
+    console.log('flowMapping initialized:', flowMapping);
 
     // Populate committee dropdown
     Object.keys(committees).forEach(committee => {
@@ -460,6 +470,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Get available options for a specific step in a flow
     function getOptionsForStep(stepType, flow) {
+        if (stepType === 'carryBillPrompt') {
+            if (currentBillType === 'Conference Committee') {
+                return ['X and Y Carried the Bill', 'No Carriers'];
+            } else {
+                return ['X Carried the Bill', 'No Carrier'];
+            }
+        }
         const stepConfig = flow.steps.find(step => step.step === stepType);
         if (!stepConfig) return [];
         let options = [];
@@ -474,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (stepConfig.options === "suggestMotionType") options = suggestMotionType();
         else if (stepConfig.options === "suggestFailedReason") options = suggestFailedReason();
         else if (Array.isArray(stepConfig.options)) {
-            options = stepConfig.options.slice(); // Copy the array to avoid mutating the original
+            options = stepConfig.options.slice();
             if (flow === jsonStructure.flows.committeeMemberFlow) {
                 if (stepType === 'action') {
                     if (currentBillType !== 'Conference Committee') {
@@ -484,11 +501,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         options = options.filter(opt => opt !== 'Introduced Bill');
                     }
                     if (currentBillType === 'Conference Committee') {
-                        // Reorder options to have 'Accept' as 3rd, 'Reject' as 4th, 'In Place Of' as 5th
                         const preferredOrder = ['Moved', 'Seconded', 'Accept', 'Reject', 'In Place Of', 'Discharged', 'Withdrew', 'Proposed Amendment', 'Introduced Amendment'];
                         options = preferredOrder.filter(opt => stepConfig.options.includes(opt));
                     }
-                    // Possibly reorder based on lastAction, etc.
                 } else if (stepType === 'movedDetail' && currentBillType === 'Conference Committee') {
                     options = options.filter(opt => opt !== 'Without Committee Recommendation');
                 } else if (stepType === 'acceptDetail') {
@@ -1040,7 +1055,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show options for editing a tag in the input
     function showTagOptions(tagElement, stepType, pathIndex) {
         console.log('showTagOptions - stepType:', stepType, 'pathIndex:', pathIndex);
-        const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === stepType)?.flow];
+        let flow;
+        if (path.length > 0) {
+            const startingStep = path[0].step;
+            flow = flowMapping[startingStep] || currentFlow;
+        } else {
+            flow = currentFlow;
+        }
         if (!flow) {
             console.warn('No flow found for stepType:', stepType);
             return;
@@ -1048,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const stepConfig = flow.steps.find(step => step.step === stepType);
         if (stepConfig && stepConfig.type === 'module') {
             const moduleResult = JSON.parse(path[pathIndex].value);
-            handleModule(stepConfig, moduleResult, pathIndex); // Pass pathIndex for editing
+            handleModule(stepConfig, moduleResult, pathIndex);
         } else if (stepType === 'testimony') {
             const part = path[pathIndex];
             populateTestimonyModal(part);
@@ -1276,55 +1297,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remove the last tag from the input and update the flow
     function removeLastTag() {
         if (path.length > 0) {
-            path.pop();
-            console.log('removeLastTag - After pop, path:', path);
+            const removed = path.pop();
+            console.log('removeLastTag - Removed tag:', removed);
             if (path.length > 0) {
-                const firstPart = path[0];
-                const startingPoint = jsonStructure.startingPoints.find(sp => {
-                    if (sp.options === "committeeMembers") {
-                        const members = currentBillType === 'Conference Committee' ? getLegendMembers().map(m => m.fullName) : getCommitteeMembers();
-                        return members.includes(firstPart.value);
-                    } else if (Array.isArray(sp.options)) {
-                        return sp.options.includes(firstPart.value);
-                    }
-                    return false;
-                });
-                if (startingPoint) {
-                    currentFlow = jsonStructure.flows[startingPoint.flow];
-                    console.log('currentFlow set to:', startingPoint.flow);
-                    const lastPart = path[path.length - 1];
-                    const stepConfig = currentFlow.steps.find(step => step.step === lastPart.step);
+                const lastPart = path[path.length - 1];
+                const flow = currentFlow || jsonStructure.flows[jsonStructure.startingPoints.find(sp => sp.type === path[0].step || sp.options.includes(path[0].value))?.flow];
+                if (flow) {
+                    const stepConfig = flow.steps.find(step => step.step === lastPart.step);
                     if (stepConfig && stepConfig.next) {
-                        currentStep = typeof stepConfig.next === 'string' ? stepConfig.next : stepConfig.next[lastPart.value] || stepConfig.next.default || null;
-                        console.log('currentStep set to:', currentStep);
+                        if (typeof stepConfig.next === 'string') {
+                            currentStep = stepConfig.next;
+                        } else {
+                            currentStep = stepConfig.next[lastPart.value] || stepConfig.next.default;
+                        }
+                        console.log('removeLastTag - Updated currentStep to:', currentStep);
                     } else {
                         currentStep = null;
-                        console.log('No next step found, currentStep set to null');
-                    }
-                    // Special logic for modules
-                    if (stepConfig && stepConfig.type === 'module' && currentStep === null) {
-                        if (lastPart.step === 'voteModule') {
-                            const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                            if (motionType && motionType !== 'Reconsider' && motionType !== 'Amendment') {
-                                currentStep = 'carryBillPrompt';
-                                console.log('Special logic for voteModule: set currentStep to carryBillPrompt');
-                            }
-                        }
-                        // Add similar logic for other modules if needed
+                        console.log('removeLastTag - No next step, currentStep set to null');
                     }
                 } else {
-                    currentFlow = null;
                     currentStep = null;
-                    console.log('No starting point found for first part:', firstPart);
+                    console.log('removeLastTag - No flow determined, currentStep set to null');
                 }
             } else {
-                currentFlow = null;
                 currentStep = null;
-                console.log('Path is empty, currentFlow and currentStep set to null');
+                currentFlow = null;
+                console.log('removeLastTag - Path empty, reset currentStep and currentFlow');
             }
             updateInput();
-            const text = getCurrentText();
-            showSuggestions(text);
+            showSuggestions('');
         }
     }
 
