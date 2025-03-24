@@ -1001,21 +1001,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inputRect = inputDiv.getBoundingClientRect();
         const containerRect = document.querySelector('.container').getBoundingClientRect();
         const modalHeight = modal.offsetHeight;
-        
-        // Check if there's enough space above the input field in the viewport
-        if (inputRect.top >= modalHeight) {
-            // Place above the input
-            modal.style.top = (inputRect.top - containerRect.top - modalHeight) + 'px';
-        } else {
-            // Place below the input
-            modal.style.top = (inputRect.bottom - containerRect.top) + 'px';
+        const viewportHeight = window.innerHeight;
+    
+        // Always position the modal above the input
+        let topPosition = inputRect.top - modalHeight - 10; // 10px offset from the input
+    
+        // Ensure the modal doesn't go above the viewport
+        if (topPosition < 0) {
+            topPosition = 0; // Align to the top of the viewport
         }
-        
-        // Align modal with the input field's left edge and match its width
-        modal.style.left = '0';
-        modal.style.width = inputRect.width + 'px';
-        modal.style.maxHeight = '80vh'; // Ensure modal doesn't exceed 80% of viewport height
-        modal.style.overflowY = 'auto'; // Allow scrolling if content overflows
+    
+        // Set the modal's position
+        modal.style.top = `${topPosition}px`;
+        modal.style.left = '0'; // Align with the left of the input
+        modal.style.width = `${inputRect.width}px`; // Match input width
     }
 
     // Update highlighting for suggestion options
