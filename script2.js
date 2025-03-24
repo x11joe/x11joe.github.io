@@ -295,6 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (currentBillType !== 'Conference Committee') {
                         options = options.filter(opt => !['Accept', 'Reject', 'In Place Of', 'Discharged'].includes(opt));
                     }
+                    if (currentBillType !== 'Hearing') {
+                        options = options.filter(opt => opt !== 'Introduced Bill');
+                    }
+                    if (currentBillType === 'Conference Committee') {
+                        // Reorder options to have 'Accept' as 3rd, 'Reject' as 4th, 'In Place Of' as 5th
+                        const preferredOrder = ['Moved', 'Seconded', 'Accept', 'Reject', 'In Place Of', 'Discharged', 'Withdrew', 'Proposed Amendment', 'Introduced Amendment'];
+                        options = preferredOrder.filter(opt => stepConfig.options.includes(opt));
+                    }
                     // Possibly reorder based on lastAction, etc.
                 } else if (stepType === 'movedDetail' && currentBillType === 'Conference Committee') {
                     options = options.filter(opt => opt !== 'Without Committee Recommendation');
@@ -2855,13 +2863,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle key presses in the input div in particular
     inputDiv.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace') {
+        if (e.key === 'Backspace' || e.key === 'Delete') {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                if (range.collapsed && range.startContainer === inputDiv.lastChild && range.startOffset === inputDiv.lastChild.textContent.length && path.length > 0) {
-                    e.preventDefault();
-                    removeLastTag();
+                if (range.collapsed) {
+                    const lastChild = inputDiv.lastChild;
+                    if (lastChild.nodeType === Node.TEXT_NODE) {
+                        const textContent = lastChild.textContent.trim();
+                        if (textContent.length > 0) {
+                            // There is text, allow default delete behavior
+                            return;
+                        }
+                    }
+                    // No text or empty text, remove last tag
+                    if (path.length > 0) {
+                        e.preventDefault();
+                        removeLastTag();
+                    }
                 }
             }
         } else if (e.key === 'Tab' || e.key === 'ArrowRight') {
@@ -3099,6 +3118,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Window resize handling
     window.addEventListener('resize', adjustHistoryLayout);
+    window.addEventListener('resize', () => {
+        if (modal.classList.contains('active')) {
+            positionModal();
+        }
+    });
     inputDiv.addEventListener('input', adjustHistoryLayout);
 
     // Initialize legends and layout
