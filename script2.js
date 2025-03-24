@@ -2284,51 +2284,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
 
+    function createGroupHeader(groupKey, entries) {
+        const [billName, sessionType] = groupKey.split(' - ');
+        const headerRow = document.createElement('tr');
+        headerRow.className = 'bill-header';
+        headerRow.innerHTML = `<td colspan="4">${billName} - ${sessionType} [click to collapse/expand]</td>`;
+        headerRow.setAttribute('data-bill-name', billName);
+        headerRow.setAttribute('data-session-type', sessionType);
+        headerRow.addEventListener('click', () => {
+            let nextRow = headerRow.nextElementSibling;
+            while (nextRow && !nextRow.classList.contains('bill-header')) {
+                nextRow.style.display = nextRow.style.display === 'none' ? '' : 'none';
+                nextRow = nextRow.nextElementSibling;
+            }
+        });
+        headerRow.addEventListener('dblclick', () => editBillName(headerRow, billName, sessionType));
+        historyTableBody.appendChild(headerRow);
+    
+        entries.forEach(entry => {
+            const isNew = (entry === newEntry);
+            const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry), isNew);
+            historyTableBody.appendChild(row);
+        });
+    }
+    
     // Update the history table with grouped entries by bill
     function updateHistoryTable(newEntry = null) {
-        history.sort((a, b) => b.time - a.time);
+        // Sort history by timestamp in ascending order
+        history.sort((a, b) => a.time - b.time);
         historyTableBody.innerHTML = '';
-        const groupedHistory = history.reduce((acc, entry) => {
+    
+        // Initialize variables for grouping
+        let currentGroup = null;
+        let groupRows = [];
+    
+        history.forEach((entry, index) => {
             const billName = entry.bill.name || 'Uncategorized';
             const sessionType = entry.bill.type || 'Hearing';
-            const key = `${billName} - ${sessionType}`;
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(entry);
-            return acc;
-        }, {});
-        const billGroupsWithTimes = Object.keys(groupedHistory).map(key => {
-            const firstEntry = groupedHistory[key][0];
-            const billName = firstEntry.bill.name;
-            const sessionType = firstEntry.bill.type;
-            return {
-                key,
-                billName,
-                sessionType,
-                earliestTime: Math.min(...groupedHistory[key].map(entry => entry.time.getTime()))
-            };
-        });
-        billGroupsWithTimes.sort((a, b) => b.earliestTime - a.earliestTime);
-        billGroupsWithTimes.forEach(group => {
-            const headerRow = document.createElement('tr');
-            headerRow.className = 'bill-header';
-            headerRow.innerHTML = `<td colspan="4">${group.billName} - ${group.sessionType} [click to collapse/expand]</td>`;
-            headerRow.setAttribute('data-bill-name', group.billName);
-            headerRow.setAttribute('data-session-type', group.sessionType);
-            headerRow.addEventListener('click', () => {
-                let nextRow = headerRow.nextElementSibling;
-                while (nextRow && !nextRow.classList.contains('bill-header')) {
-                    nextRow.style.display = nextRow.style.display === 'none' ? '' : 'none';
-                    nextRow = nextRow.nextElementSibling;
+            const groupKey = `${billName} - ${sessionType}`;
+    
+            // Check if the current entry belongs to the same group as the previous one
+            if (currentGroup !== groupKey) {
+                // If a new group starts, create a header for the previous group if it exists
+                if (currentGroup !== null) {
+                    createGroupHeader(currentGroup, groupRows);
                 }
-            });
-            headerRow.addEventListener('dblclick', () => editBillName(headerRow, group.billName, group.sessionType));
-            historyTableBody.appendChild(headerRow);
-            groupedHistory[group.key].forEach(entry => {
-                const isNew = (entry === newEntry);
-                const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry), isNew);
-                historyTableBody.appendChild(row);
-            });
+                // Start a new group
+                currentGroup = groupKey;
+                groupRows = [];
+            }
+            // Add the entry to the current group
+            groupRows.push(entry);
         });
+    
+        // Create the header for the last group
+        if (currentGroup !== null) {
+            createGroupHeader(currentGroup, groupRows);
+        }
+    
+        // Handle new entry highlighting and clipboard copy
         if (newEntry) {
             const newRow = historyTableBody.querySelector('tr.new-entry');
             if (newRow) {
@@ -2355,7 +2369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
-        console.log('History table updated with bill grouping sorted by earliest time');
+        console.log('History table updated with chronological grouping by bill and type');
     }
 
     // Edit the name of a bill in the history table
