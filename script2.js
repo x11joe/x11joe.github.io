@@ -2224,10 +2224,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const visibleTags = path.filter(p => p.step !== 'carryBillPrompt' && p.value !== 'Take the Vote');
         const tagsHtml = visibleTags.map(p => `<span class="token">${p.display || getTagText(p.step, p.value)}</span>`).join(' ');
         let statementHtml = '';
-        const isRollCallVote = path[0].step === 'voteType' && path[0].value === 'Roll Call Vote';
+        const isVoteAction = path[0].step === 'voteType' && (path[0].value === 'Roll Call Vote' || path[0].value === 'Voice Vote');
     
-        if (isRollCallVote) {
-            // For roll call votes, create a single statement box with special copy support
+        if (isVoteAction) {
+            // For vote actions (roll call or voice votes), create a single statement box with special copy support
             const formattedTime = time.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' });
             const specialFormat = `${formattedTime} | ${statementText.trim()} | |`;
             statementHtml = `
