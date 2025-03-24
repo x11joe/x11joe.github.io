@@ -289,47 +289,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     
         const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
-    
         const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
-        let tableHtml = '<table style="border-collapse: collapse; width: 100%;">';
-        tableHtml += '<thead><tr>';
-        tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Senators</th>';
-        tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Vote</th>';
-        tableHtml += '</tr></thead><tbody>';
     
-        if (currentBillType === 'Conference Committee') {
-            const votes = moduleResult.votes;
-            for (let i = 0; i < members.length; i++) {
-                const member = members[i];
-                let vote = votes[member.fullName] || 'A';
-                if (vote === 'for') vote = 'Y';
-                else if (vote === 'against') vote = 'N';
-                else if (vote === 'neutral') vote = 'A';
-                const fullName = member.fullName;
+        if (moduleResult.votes) {
+            let tableHtml = '<table style="border-collapse: collapse; width: 100%;">';
+            tableHtml += '<thead><tr>';
+            tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Members</th>';
+            tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Vote</th>';
+            tableHtml += '</tr></thead><tbody>';
+    
+            members.forEach((member, i) => {
+                const fullName = member.fullName || getFullMemberName(member);
+                let vote = moduleResult.votes[fullName] || 'A';
+                vote = vote === 'for' ? 'Y' : vote === 'against' ? 'N' : 'A';
                 const isLast = i === members.length - 1;
                 const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
                 tableHtml += `<tr>`;
                 tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
                 tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
                 tableHtml += `</tr>`;
-            }
+            });
+    
+            tableHtml += '</tbody></table>';
+            tableHtml += `<p style="margin: 5pt 0 0 0; text-align: left; font-size: 12pt;">${motionText}</p>`;
+            return tableHtml;
         } else {
-            for (let i = 0; i < members.length; i++) {
-                const member = members[i];
-                const fullName = getFullMemberName(member);
-                const isLast = i === members.length - 1;
-                const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
-                tableHtml += `<tr>`;
-                tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
-                tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">Y</td>`;
-                tableHtml += `</tr>`;
-            }
+            return `<p style="font-size: 12pt;">Vote: ${forVotes} for, ${againstVotes} against, ${neutralVotes} neutral</p>`;
         }
+    }
+
+    function renderSimpleVoteForm(existingValues = {}) {
+        const form = document.createElement('div');
+        form.className = 'regular-vote-form';
+        form.innerHTML = `
+            <div><label>For:</label><input type="number" id="module-for" value="${existingValues.for || 0}" min="0"></div>
+            <div><label>Against:</label><input type="number" id="module-against" value="${existingValues.against || 0}" min="0"></div>
+            <div><label>Neutral:</label><input type="number" id="module-neutral" value="${existingValues.neutral || 0}" min="0"></div>
+        `;
+        return form;
+    }
+
+    function renderDetailedVoteForm(members, existingVotes = {}) {
+        const form = document.createElement('div');
+        form.className = 'conference-vote-form';
     
-        tableHtml += '</tbody></table>';
-        tableHtml += `<p style="margin: 5pt 0 0 0; text-align: left; font-size: 12pt;">${motionText}</p>`;
+        const table = document.createElement('table');
+        table.className = 'vote-table';
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>Member</th>
+                <th>For</th>
+                <th>Against</th>
+                <th>Neutral</th>
+            </tr>
+        `;
+        table.appendChild(thead);
     
-        return tableHtml;
+        const tbody = document.createElement('tbody');
+        members.forEach(member => {
+            const fullName = member.fullName || getFullMemberName(member);
+            const vote = existingVotes[fullName] || 'neutral';
+            const tr = document.createElement('tr');
+            tr.className = 'member-row';
+            tr.setAttribute('data-member', fullName);
+            tr.innerHTML = `
+                <td>${fullName}</td>
+                <td><input type="radio" name="${fullName}" value="for" ${vote === 'for' ? 'checked' : ''}></td>
+                <td><input type="radio" name="${fullName}" value="against" ${vote === 'against' ? 'checked' : ''}></td>
+                <td><input type="radio" name="${fullName}" value="neutral" ${vote === 'neutral' ? 'checked' : ''}></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        form.appendChild(table);
+    
+        return form;
     }
 
     function generateVoteTablePlainText(entry) {
@@ -1263,140 +1298,168 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Handle module input (e.g., vote counts, amendment text)
-    function handleModule(stepConfig, existingValues = null) {
-        if (currentBillType === 'Conference Committee' && stepConfig.step === 'voteModule') {
-            handleConferenceVoteModule(stepConfig, existingValues);
-        } else {
-            modal.innerHTML = '';
-            const form = document.createElement('div');
-            form.className = 'module-form regular-vote-form'; // Added specific class
-            const moduleValues = existingValues ? { ...existingValues } : {};
-            
-            stepConfig.fields.forEach(field => {
-                const container = document.createElement('div');
-                const label = document.createElement('label');
-                label.textContent = field.label || `${field.name}: `;
-                
-                if (field.type === 'text') {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = `module-${field.name}`;
-                    let defaultValue = field.default || '';
-                    if (defaultValue.includes("current_year")) {
-                        const currentYear = new Date().getFullYear().toString().slice(-2);
-                        defaultValue = defaultValue.replace("current_year", currentYear);
-                    }
-                    input.value = moduleValues[field.name] || defaultValue;
-                    input.placeholder = field.placeholder || '';
-                    if (field.maxlength) input.maxLength = field.maxlength;
-                    if (field.name === 'lcNumber') {
-                        input.classList.add('lc-number-input');
-                        input.addEventListener('input', formatLcNumber);
-                        label.style.width = 'auto';
-                        setTimeout(() => {
-                            const firstPeriodIndex = input.value.indexOf('.');
-                            if (firstPeriodIndex !== -1) {
-                                input.setSelectionRange(firstPeriodIndex + 1, firstPeriodIndex + 1);
-                            } else {
-                                input.setSelectionRange(0, 0);
-                            }
-                            input.focus();
-                        }, 0);
-                        input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Tab' && !e.shiftKey) {
-                                e.preventDefault();
-                                const currentPos = input.selectionStart;
-                                const periods = input.value.split('.').length - 1;
-                                const nextPeriod = input.value.indexOf('.', currentPos);
-                                if (nextPeriod !== -1) {
-                                    input.setSelectionRange(nextPeriod + 1, nextPeriod + 1);
-                                } else {
-                                    const submitButton = document.getElementById('module-submit');
-                                    if (submitButton) submitButton.click();
-                                }
-                            } else if (e.key === 'Tab' && e.shiftKey) {
-                                e.preventDefault();
-                                const currentPos = input.selectionStart;
-                                const periods = input.value.split('.').length - 1;
-                                const previousPeriod = input.value.lastIndexOf('.', currentPos - 2);
-                                if (previousPeriod !== -1) {
-                                    input.setSelectionRange(previousPeriod + 1, previousPeriod + 1);
-                                } else {
-                                    input.setSelectionRange(0, 0);
-                                }
-                            }
+    function handleModule(stepConfig, existingValues) {
+        modal.innerHTML = '';
+        if (stepConfig.step === 'voteModule') {
+            const modalContent = document.createElement('div');
+            modalContent.className = 'vote-module';
+    
+            let useDetailedVoting = currentBillType === 'Conference Committee';
+            const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
+            const parsedExistingValues = existingValues ? JSON.parse(existingValues) : {};
+    
+            // Add "Detailed" button for non-conference modes
+            if (!useDetailedVoting) {
+                const detailedButton = document.createElement('button');
+                detailedButton.textContent = 'Detailed';
+                detailedButton.style.cssText = 'position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;';
+                detailedButton.onclick = () => {
+                    useDetailedVoting = true;
+                    renderVoteForm();
+                };
+                modalContent.appendChild(detailedButton);
+            }
+    
+            function renderVoteForm() {
+                modalContent.innerHTML = ''; // Clear previous content except the button
+                if (!useDetailedVoting) modalContent.appendChild(detailedButton); // Re-append button if in simple mode
+    
+                const formContainer = document.createElement('div');
+                if (useDetailedVoting) {
+                    const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
+                    formContainer.appendChild(detailedForm);
+                } else {
+                    const simpleForm = renderSimpleVoteForm(parsedExistingValues);
+                    formContainer.appendChild(simpleForm);
+                }
+    
+                const submitButton = document.createElement('button');
+                submitButton.id = 'module-submit';
+                submitButton.textContent = 'Submit';
+                submitButton.onclick = () => {
+                    let moduleResult;
+                    if (useDetailedVoting) {
+                        const votes = {};
+                        members.forEach(member => {
+                            const fullName = member.fullName || getFullMemberName(member);
+                            const selected = modalContent.querySelector(`input[name="${fullName}"]:checked`);
+                            votes[fullName] = selected ? selected.value : 'neutral';
                         });
+                        if (currentBillType === 'Conference Committee') {
+                            let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
+                            let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
+                            members.forEach(member => {
+                                const fullName = member.fullName || getFullMemberName(member);
+                                const vote = votes[fullName];
+                                const side = getMemberSide(fullName);
+                                if (side === 'Senate') {
+                                    if (vote === 'for') senateFor++;
+                                    else if (vote === 'against') senateAgainst++;
+                                    else senateNeutral++;
+                                } else if (side === 'House') {
+                                    if (vote === 'for') houseFor++;
+                                    else if (vote === 'against') houseAgainst++;
+                                    else houseNeutral++;
+                                }
+                            });
+                            moduleResult = { votes, senateFor, senateAgainst, senateNeutral, houseFor, houseAgainst, houseNeutral };
+                        } else {
+                            const forCount = Object.values(votes).filter(v => v === 'for').length;
+                            const againstCount = Object.values(votes).filter(v => v === 'against').length;
+                            const neutralCount = Object.values(votes).filter(v => v === 'neutral').length;
+                            moduleResult = { votes, for: forCount, against: againstCount, neutral: neutralCount };
+                        }
+                    } else {
+                        const forCount = parseInt(modalContent.querySelector('#module-for').value, 10) || 0;
+                        const againstCount = parseInt(modalContent.querySelector('#module-against').value, 10) || 0;
+                        const neutralCount = parseInt(modalContent.querySelector('#module-neutral').value, 10) || 0;
+                        moduleResult = { for: forCount, against: againstCount, neutral: neutralCount };
                     }
-                    container.appendChild(label);
-                    container.appendChild(input);
-                } else if (field.type === 'number') {
-                    const input = document.createElement('input');
+                    const displayText = constructVoteTagText(moduleResult);
+                    const stepIndex = path.findIndex(p => p.step === currentStep);
+                    if (stepIndex !== -1) {
+                        path[stepIndex] = { step: currentStep, value: JSON.stringify(moduleResult), display: displayText };
+                    } else {
+                        path.push({ step: currentStep, value: JSON.stringify(moduleResult), display: displayText });
+                    }
+                    const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
+                    const motionPassed = didMotionPass(moduleResult);
+                    const carrierMotionTypes = ['Do Pass', 'Do Not Pass'];
+                    if (carrierMotionTypes.includes(motionType) && motionPassed) {
+                        currentStep = 'carryBillPrompt';
+                    } else {
+                        currentStep = null;
+                    }
+                    modal.classList.remove('active');
+                    updateInput();
+                    showSuggestions('');
+                };
+                formContainer.appendChild(submitButton);
+                modalContent.appendChild(formContainer);
+            }
+    
+            renderVoteForm();
+            modal.appendChild(modalContent);
+            modal.classList.add('active');
+            positionModal();
+        } else {
+            // Handle other modules (unchanged logic)
+            const fields = stepConfig.fields || [];
+            const modalContent = document.createElement('div');
+            const form = document.createElement('form');
+            const parsedExistingValues = existingValues ? JSON.parse(existingValues) : {};
+    
+            fields.forEach(field => {
+                const div = document.createElement('div');
+                const label = document.createElement('label');
+                label.textContent = field.label || `${field.name.charAt(0).toUpperCase() + field.name.slice(1)}:`;
+                let input;
+                if (field.type === 'number') {
+                    input = document.createElement('input');
                     input.type = 'number';
                     input.id = `module-${field.name}`;
-                    if (moduleValues[field.name] === undefined) moduleValues[field.name] = 0;
-                    input.value = moduleValues[field.name];
-                    input.min = '0';
-                    const decrement = document.createElement('button');
-                    decrement.textContent = '-';
-                    decrement.onclick = () => {
-                        if (moduleValues[field.name] > 0) {
-                            moduleValues[field.name]--;
-                            input.value = moduleValues[field.name];
-                        }
-                    };
-                    const increment = document.createElement('button');
-                    increment.textContent = '+';
-                    increment.onclick = () => {
-                        moduleValues[field.name]++;
-                        input.value = moduleValues[field.name];
-                    };
-                    input.addEventListener('input', () => {
-                        const value = parseInt(input.value, 10);
-                        if (isNaN(value) || value < 0) {
-                            input.value = 0;
-                            moduleValues[field.name] = 0;
-                        } else {
-                            moduleValues[field.name] = value;
-                        }
-                    });
-                    container.appendChild(label);
-                    container.appendChild(decrement);
-                    container.appendChild(input);
-                    container.appendChild(increment);
-                }
-                form.appendChild(container);
-            });
-            
-            const submit = document.createElement('button');
-            submit.id = 'module-submit';
-            submit.textContent = 'Submit';
-            submit.onclick = () => {
-                const moduleResult = {};
-                stepConfig.fields.forEach(field => {
-                    const input = document.getElementById(`module-${field.name}`);
-                    if (field.type === 'number') {
-                        const value = parseInt(input.value, 10);
-                        moduleResult[field.name] = isNaN(value) ? 0 : value;
-                    } else if (field.type === 'text') {
-                        moduleResult[field.name] = input.value;
-                    }
-                });
-                const resultStr = JSON.stringify(moduleResult);
-                if (currentStep === stepConfig.step) {
-                    selectOption(resultStr);
+                    input.value = parsedExistingValues[field.name] || 0;
                 } else {
-                    const moduleIndex = path.findIndex(p => p.step === stepConfig.step);
-                    if (moduleIndex !== -1) {
-                        path[moduleIndex].value = resultStr;
-                        path[moduleIndex].display = getModuleDisplayText(stepConfig.step, moduleResult);
-                        updateInput();
-                        showSuggestions('');
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `module-${field.name}`;
+                    input.value = parsedExistingValues[field.name] || field.default || '';
+                    if (field.name === 'lcNumber') {
+                        input.className = 'lc-number-input';
+                        input.placeholder = field.placeholder || '';
+                        input.addEventListener('input', formatLcNumber);
                     }
                 }
+                div.appendChild(label);
+                div.appendChild(input);
+                form.appendChild(div);
+            });
+    
+            const submitButton = document.createElement('button');
+            submitButton.id = 'module-submit';
+            submitButton.textContent = 'Submit';
+            submitButton.onclick = (e) => {
+                e.preventDefault();
+                const moduleResult = {};
+                fields.forEach(field => {
+                    const input = modal.querySelector(`#module-${field.name}`);
+                    moduleResult[field.name] = field.type === 'number' ? parseInt(input.value, 10) || 0 : input.value;
+                });
+                const displayText = getModuleDisplayText(stepConfig.step, moduleResult);
+                const stepIndex = path.findIndex(p => p.step === currentStep);
+                if (stepIndex !== -1) {
+                    path[stepIndex] = { step: currentStep, value: JSON.stringify(moduleResult), display: displayText };
+                } else {
+                    path.push({ step: currentStep, value: JSON.stringify(moduleResult), display: displayText });
+                }
+                currentStep = stepConfig.next;
                 modal.classList.remove('active');
+                updateInput();
+                showSuggestions('');
             };
-            form.appendChild(submit);
-            modal.appendChild(form);
+            form.appendChild(submitButton);
+            modalContent.appendChild(form);
+            modal.appendChild(modalContent);
             modal.classList.add('active');
             positionModal();
         }

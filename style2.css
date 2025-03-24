@@ -211,7 +211,7 @@ body {
     background-color: #d0d0d0;
 }
 
-/* Modal (Suggestions) */
+/* Modal (Suggestions and Vote Module) */
 .modal {
     position: fixed; /* Changed from absolute to fixed */
     background: white;
@@ -219,10 +219,11 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     width: 100%; /* Take full width of container */
     max-width: 798px; /* Maximum width */
-    max-height: 255px; /* Default maximum height */
+    max-height: 80vh; /* Adjusted to accommodate detailed voting */
     overflow-y: auto; /* Scrollbar if content overflows */
     display: none;
     z-index: 10000;
+    padding: 10px; /* Added padding for content spacing */
 }
 
 .modal.active {
@@ -240,6 +241,29 @@ body {
 
 .option.highlighted {
     background-color: #e0e0e0;
+}
+
+/* Vote Module Specific Styling */
+.vote-module {
+    position: relative; /* For positioning the Detailed button */
+    width: 100%;
+}
+
+/* Detailed Button */
+.vote-module button.detailed {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.vote-module button.detailed:hover {
+    background-color: #218838;
 }
 
 /* Tokens */
@@ -445,24 +469,8 @@ label {
     overflow-y: auto; /* Allow scrolling if content exceeds max-height */
 }
 
-.conference-vote-form .vote-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between; /* Better alignment */
-    gap: 20px;
-    flex-wrap: nowrap; /* Prevent wrapping to keep sections side-by-side */
-}
-
-.conference-vote-form .vote-section {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex: 1; /* Allow sections to grow equally */
-    min-width: 250px; /* Ensure sections don't get too narrow */
-}
-
 .conference-vote-form .vote-table {
-    width: 100%; /* Make tables take full width of their section */
+    width: 100%; /* Make tables take full width */
     border-collapse: collapse;
     margin-bottom: 10px;
 }
