@@ -374,36 +374,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.createElement('div');
         form.className = 'conference-vote-form';
     
-        const table = document.createElement('table');
-        table.className = 'vote-table';
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-            <tr>
-                <th>Member</th>
-                <th>For</th>
-                <th>Against</th>
-                <th>Neutral</th>
-            </tr>
-        `;
-        table.appendChild(thead);
+        const senators = members.filter(m => getMemberSide(m.fullName) === 'Senate');
+        const representatives = members.filter(m => getMemberSide(m.fullName) === 'House');
     
-        const tbody = document.createElement('tbody');
-        members.forEach(member => {
-            const fullName = member.fullName || getFullMemberName(member);
-            const vote = existingVotes[fullName] || 'neutral';
-            const tr = document.createElement('tr');
-            tr.className = 'member-row';
-            tr.setAttribute('data-member', fullName);
-            tr.innerHTML = `
-                <td>${fullName}</td>
-                <td><input type="radio" name="${fullName}" value="for" ${vote === 'for' ? 'checked' : ''}></td>
-                <td><input type="radio" name="${fullName}" value="against" ${vote === 'against' ? 'checked' : ''}></td>
-                <td><input type="radio" name="${fullName}" value="neutral" ${vote === 'neutral' ? 'checked' : ''}></td>
+        // Function to create a table for a group
+        const createTable = (groupMembers) => {
+            const table = document.createElement('table');
+            table.className = 'vote-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Member</th>
+                    <th>For</th>
+                    <th>Against</th>
+                    <th>Neutral</th>
+                </tr>
             `;
-            tbody.appendChild(tr);
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            groupMembers.forEach(member => {
+                const fullName = member.fullName || getFullMemberName(member);
+                const vote = existingVotes[fullName] || 'neutral';
+                const tr = document.createElement('tr');
+                tr.className = 'member-row';
+                tr.setAttribute('data-member', fullName);
+                tr.tabIndex = 0; // Make row focusable
+                tr.innerHTML = `
+                    <td>${fullName}</td>
+                    <td><input type="radio" name="${fullName}" value="for" ${vote === 'for' ? 'checked' : ''}></td>
+                    <td><input type="radio" name="${fullName}" value="against" ${vote === 'against' ? 'checked' : ''}></td>
+                    <td><input type="radio" name="${fullName}" value="neutral" ${vote === 'neutral' ? 'checked' : ''}></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            return table;
+        };
+    
+        // Add Senators section
+        if (senators.length > 0) {
+            const senatorsHeader = document.createElement('h4');
+            senatorsHeader.textContent = 'Senators';
+            form.appendChild(senatorsHeader);
+            const senatorsTable = createTable(senators);
+            form.appendChild(senatorsTable);
+        }
+    
+        // Add Representatives section
+        if (representatives.length > 0) {
+            const repsHeader = document.createElement('h4');
+            repsHeader.textContent = 'Representatives';
+            form.appendChild(repsHeader);
+            const repsTable = createTable(representatives);
+            form.appendChild(repsTable);
+        }
+    
+        // Focus on the first member row
+        const firstRow = form.querySelector('.member-row');
+        if (firstRow) {
+            firstRow.focus();
+        }
+    
+        // Add keydown event listener for vote selection
+        form.addEventListener('keydown', function(e) {
+            if (e.key >= '1' && e.key <= '3') {
+                const focusedRow = document.activeElement;
+                if (focusedRow && focusedRow.classList.contains('member-row')) {
+                    const voteValue = e.key === '1' ? 'for' : e.key === '2' ? 'against' : 'neutral';
+                    const radio = focusedRow.querySelector(`input[value="${voteValue}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
+            }
         });
-        table.appendChild(tbody);
-        form.appendChild(table);
     
         return form;
     }
@@ -1330,138 +1374,110 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Handle module input (e.g., vote counts, amendment text)
-    function handleModule(stepConfig, existingValues, pathIndex = null) {
+    function handleModule(stepConfig, existingValues = {}, pathIndex = null) {
+        console.log('handleModule - stepConfig:', stepConfig, 'existingValues:', existingValues, 'pathIndex:', pathIndex);
         modal.innerHTML = '';
-        const modalContent = document.createElement('div');
+        modal.classList.add('active');
+        const closeModal = () => modal.classList.remove('active');
+        let form;
         if (stepConfig.step === 'voteModule') {
-            modalContent.className = 'vote-module';
-    
-            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
-    
-            // Determine if we are in Conference Committee mode
             if (currentBillType === 'Conference Committee') {
-                // Use the detailed voting form for Conference Committee
                 const members = getLegendMembers();
-                const detailedForm = renderDetailedVoteForm(members, parsedExistingValues.votes || {});
-                modalContent.appendChild(detailedForm);
+                form = renderDetailedVoteForm(members, existingValues.votes || {});
             } else {
-                // Use the simple voting form for other bill types
-                const simpleForm = renderSimpleVoteForm(parsedExistingValues);
-                modalContent.appendChild(simpleForm);
+                form = renderSimpleVoteForm(existingValues);
             }
-    
-            // Add submit button
-            const submitButton = document.createElement('button');
-            submitButton.id = 'module-submit';
-            submitButton.textContent = 'Submit';
-            submitButton.onclick = () => {
-                let moduleResult;
+        } else if (stepConfig.step === 'lcNumber') {
+            form = document.createElement('div');
+            const lcInput = document.createElement('input');
+            lcInput.type = 'text';
+            lcInput.className = 'lc-number-input';
+            lcInput.placeholder = stepConfig.fields[0].placeholder;
+            lcInput.value = existingValues.lcNumber || stepConfig.fields[0].default;
+            lcInput.addEventListener('input', formatLcNumber);
+            const label = document.createElement('label');
+            label.textContent = stepConfig.fields[0].label;
+            label.appendChild(lcInput);
+            form.appendChild(label);
+        } else if (stepConfig.step === 'providerText') {
+            form = document.createElement('div');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = existingValues.provider || '';
+            input.placeholder = 'Enter provider name';
+            const label = document.createElement('label');
+            label.textContent = 'Provided by: ';
+            label.appendChild(input);
+            form.appendChild(label);
+        } else if (stepConfig.step === 'amendmentModule') {
+            form = document.createElement('div');
+            const textarea = document.createElement('textarea');
+            textarea.value = existingValues.amendmentText || '';
+            textarea.placeholder = 'Enter amendment text';
+            const label = document.createElement('label');
+            label.textContent = 'Amendment Text: ';
+            label.appendChild(textarea);
+            form.appendChild(label);
+        }
+        modal.appendChild(form);
+        const submitButton = document.createElement('button');
+        submitButton.textContent = 'Submit';
+        submitButton.id = 'module-submit';
+        submitButton.onclick = () => {
+            let moduleResult = {};
+            if (stepConfig.step === 'voteModule') {
                 if (currentBillType === 'Conference Committee') {
                     const votes = {};
-                    const members = getLegendMembers();
-                    members.forEach(member => {
-                        const fullName = member.fullName;
-                        const selected = modalContent.querySelector(`input[name="${fullName}"]:checked`);
-                        votes[fullName] = selected ? selected.value : 'neutral';
+                    const memberRows = form.querySelectorAll('.member-row');
+                    memberRows.forEach(row => {
+                        const member = row.getAttribute('data-member');
+                        const selectedVote = row.querySelector('input[type="radio"]:checked');
+                        votes[member] = selectedVote ? selectedVote.value : 'neutral';
                     });
-                    let senateFor = 0, senateAgainst = 0, senateNeutral = 0;
-                    let houseFor = 0, houseAgainst = 0, houseNeutral = 0;
-                    members.forEach(member => {
-                        const fullName = member.fullName;
-                        const vote = votes[fullName];
-                        const side = getMemberSide(fullName);
-                        if (side === 'Senate') {
-                            if (vote === 'for') senateFor++;
-                            else if (vote === 'against') senateAgainst++;
-                            else senateNeutral++;
-                        } else if (side === 'House') {
-                            if (vote === 'for') houseFor++;
-                            else if (vote === 'against') houseAgainst++;
-                            else houseNeutral++;
-                        }
-                    });
-                    moduleResult = { votes, senateFor, senateAgainst, senateNeutral, houseFor, houseAgainst, houseNeutral };
+                    const senateVotes = Object.entries(votes).filter(([member]) => getMemberSide(member) === 'Senate');
+                    const houseVotes = Object.entries(votes).filter(([member]) => getMemberSide(member) === 'House');
+                    moduleResult = {
+                        votes,
+                        senateFor: senateVotes.filter(([_, vote]) => vote === 'for').length,
+                        senateAgainst: senateVotes.filter(([_, vote]) => vote === 'against').length,
+                        senateNeutral: senateVotes.filter(([_, vote]) => vote === 'neutral').length,
+                        houseFor: houseVotes.filter(([_, vote]) => vote === 'for').length,
+                        houseAgainst: houseVotes.filter(([_, vote]) => vote === 'against').length,
+                        houseNeutral: houseVotes.filter(([_, vote]) => vote === 'neutral').length
+                    };
                 } else {
-                    const forCount = parseInt(modalContent.querySelector('#module-for').value, 10) || 0;
-                    const againstCount = parseInt(modalContent.querySelector('#module-against').value, 10) || 0;
-                    const neutralCount = parseInt(modalContent.querySelector('#module-neutral').value, 10) || 0;
-                    moduleResult = { for: forCount, against: againstCount, neutral: forCount };
+                    moduleResult = {
+                        for: parseInt(form.querySelector('#module-for').value, 10) || 0,
+                        against: parseInt(form.querySelector('#module-against').value, 10) || 0,
+                        neutral: parseInt(form.querySelector('#module-neutral').value, 10) || 0
+                    };
                 }
-                const displayText = constructVoteTagText(moduleResult);
-                if (pathIndex !== null) {
-                    path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
-                } else {
-                    path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
-                }
-                const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
-                const motionPassed = didMotionPass(moduleResult);
-                const carrierMotionTypes = ['Do Pass', 'Do Not Pass'];
-                if (carrierMotionTypes.includes(motionType) && motionPassed) {
-                    currentStep = 'carryBillPrompt';
-                } else {
-                    currentStep = null;
-                }
-                modal.classList.remove('active');
-                updateInput();
-                showSuggestions('');
-            };
-            modalContent.appendChild(submitButton);
-        } else {
-            // Handle other modules (unchanged)
-            const fields = stepConfig.fields || [];
-            const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
-    
-            fields.forEach(field => {
-                const div = document.createElement('div');
-                const label = document.createElement('label');
-                label.textContent = field.label || `${field.name.charAt(0).toUpperCase() + field.name.slice(1)}:`;
-                let input;
-                if (field.type === 'number') {
-                    input = document.createElement('input');
-                    input.type = 'number';
-                    input.id = `module-${field.name}`;
-                    input.value = parsedExistingValues[field.name] || 0;
-                } else {
-                    input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = `module-${field.name}`;
-                    input.value = parsedExistingValues[field.name] || field.default || '';
-                    if (field.name === 'lcNumber') {
-                        input.className = 'lc-number-input';
-                        input.placeholder = field.placeholder || '';
-                        input.addEventListener('input', formatLcNumber);
-                    }
-                }
-                div.appendChild(label);
-                div.appendChild(input);
-                modalContent.appendChild(div);
-            });
-    
-            const submitButton = document.createElement('button');
-            submitButton.id = 'module-submit';
-            submitButton.textContent = 'Submit';
-            submitButton.onclick = (e) => {
-                e.preventDefault();
-                const moduleResult = {};
-                fields.forEach(field => {
-                    const input = modal.querySelector(`#module-${field.name}`);
-                    moduleResult[field.name] = field.type === 'number' ? parseInt(input.value, 10) || 0 : input.value;
-                });
+            } else if (stepConfig.step === 'lcNumber') {
+                moduleResult = { lcNumber: form.querySelector('input').value };
+            } else if (stepConfig.step === 'providerText') {
+                moduleResult = { provider: form.querySelector('input').value };
+            } else if (stepConfig.step === 'amendmentModule') {
+                moduleResult = { amendmentText: form.querySelector('textarea').value };
+            }
+            console.log('Module result:', moduleResult);
+            const jsonString = JSON.stringify(moduleResult);
+            if (pathIndex !== null) {
+                path[pathIndex].value = jsonString;
+                path[pathIndex].display = getModuleDisplayText(stepConfig.step, moduleResult);
+                console.log('Updated existing path at index', pathIndex, 'with:', path[pathIndex]);
+            } else {
                 const displayText = getModuleDisplayText(stepConfig.step, moduleResult);
-                if (pathIndex !== null) {
-                    path[pathIndex] = { step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText };
-                } else {
-                    path.push({ step: stepConfig.step, value: JSON.stringify(moduleResult), display: displayText });
-                }
-                currentStep = stepConfig.next;
-                modal.classList.remove('active');
-                updateInput();
-                showSuggestions('');
-            };
-            modalContent.appendChild(submitButton);
-        }
-        modal.appendChild(modalContent);
-        modal.classList.add('active');
+                path.push({ step: stepConfig.step, value: jsonString, display: displayText });
+                console.log('Added to path:', path[path.length - 1]);
+            }
+            closeModal();
+            updateInput();
+            const stepInFlow = currentFlow.steps.find(step => step.step === stepConfig.step);
+            currentStep = stepInFlow.next;
+            console.log('Next step after module:', currentStep);
+            setTimeout(() => showSuggestions(''), 0);
+        };
+        modal.appendChild(submitButton);
         positionModal();
     }
 
