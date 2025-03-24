@@ -219,13 +219,10 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     width: 100%; /* Take full width of container */
     max-width: 798px; /* Maximum width */
-    max-height: 250px; /* Fixed maximum height */
+    max-height: 250px; /* Default maximum height */
     overflow-y: auto; /* Scrollbar if content overflows */
     display: none;
     z-index: 10000;
-    bottom: 100%; /* Anchor to the bottom of the input */
-    left: 0;
-    transform: translateY(-10px); /* Slight offset to avoid overlapping */
 }
 
 .modal.active {
