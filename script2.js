@@ -2311,7 +2311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return row;
     }
 
-    function createGroupHeader(groupKey, entries) {
+    function createGroupHeader(groupKey, entries, newEntry = null) {
         const [billName, sessionType] = groupKey.split(' - ');
         const headerRow = document.createElement('tr');
         headerRow.className = 'bill-header';
@@ -2345,7 +2345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let currentGroup = null;
         let groupRows = [];
     
-        history.forEach((entry, index) => {
+        history.forEach((entry) => {
             const billName = entry.bill.name || 'Uncategorized';
             const sessionType = entry.bill.type || 'Hearing';
             const groupKey = `${billName} - ${sessionType}`;
@@ -2354,7 +2354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentGroup !== groupKey) {
                 // If a new group starts, create a header for the previous group if it exists
                 if (currentGroup !== null) {
-                    createGroupHeader(currentGroup, groupRows);
+                    createGroupHeader(currentGroup, groupRows, newEntry);
                 }
                 // Start a new group
                 currentGroup = groupKey;
@@ -2366,7 +2366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         // Create the header for the last group
         if (currentGroup !== null) {
-            createGroupHeader(currentGroup, groupRows);
+            createGroupHeader(currentGroup, groupRows, newEntry);
         }
     
         // Handle new entry highlighting and clipboard copy
