@@ -2901,6 +2901,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (e.key === 'Escape' && dropdownActive) {
             document.dispatchEvent(new MouseEvent('click'));
             e.preventDefault();
+        } else if (e.key === 'Escape' && path.length > 0) {
+            e.preventDefault();
+            removeLastTag();
         }
     });
 
