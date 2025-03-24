@@ -2291,22 +2291,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         historyTableBody.innerHTML = '';
         const groupedHistory = history.reduce((acc, entry) => {
             const billName = entry.bill.name || 'Uncategorized';
-            if (!acc[billName]) acc[billName] = [];
-            acc[billName].push(entry);
+            const sessionType = entry.bill.type || 'Hearing';
+            const key = `${billName} - ${sessionType}`;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(entry);
             return acc;
         }, {});
-        const billGroupsWithTimes = Object.keys(groupedHistory).map(billName => ({
-            billName,
-            earliestTime: Math.min(...groupedHistory[billName].map(entry => entry.time.getTime()))
-        }));
+        const billGroupsWithTimes = Object.keys(groupedHistory).map(key => {
+            const firstEntry = groupedHistory[key][0];
+            const billName = firstEntry.bill.name;
+            const sessionType = firstEntry.bill.type;
+            return {
+                key,
+                billName,
+                sessionType,
+                earliestTime: Math.min(...groupedHistory[key].map(entry => entry.time.getTime()))
+            };
+        });
         billGroupsWithTimes.sort((a, b) => b.earliestTime - a.earliestTime);
-        billGroupsWithTimes.forEach(({ billName }) => {
-            const firstEntry = groupedHistory[billName][0];
-            const billType = firstEntry.bill.type;
+        billGroupsWithTimes.forEach(group => {
             const headerRow = document.createElement('tr');
             headerRow.className = 'bill-header';
-            headerRow.innerHTML = `<td colspan="4">${billName} - ${billType} [click to collapse/expand]</td>`;
-            headerRow.setAttribute('data-bill-name', billName);
+            headerRow.innerHTML = `<td colspan="4">${group.billName} - ${group.sessionType} [click to collapse/expand]</td>`;
+            headerRow.setAttribute('data-bill-name', group.billName);
+            headerRow.setAttribute('data-session-type', group.sessionType);
             headerRow.addEventListener('click', () => {
                 let nextRow = headerRow.nextElementSibling;
                 while (nextRow && !nextRow.classList.contains('bill-header')) {
@@ -2314,9 +2322,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     nextRow = nextRow.nextElementSibling;
                 }
             });
-            headerRow.addEventListener('dblclick', () => editBillName(headerRow, billName));
+            headerRow.addEventListener('dblclick', () => editBillName(headerRow, group.billName, group.sessionType));
             historyTableBody.appendChild(headerRow);
-            groupedHistory[billName].forEach((entry) => {
+            groupedHistory[group.key].forEach(entry => {
                 const isNew = (entry === newEntry);
                 const row = createHistoryRow(entry.time, entry.text, entry.path, history.indexOf(entry), isNew);
                 historyTableBody.appendChild(row);
@@ -2352,8 +2360,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Edit the name of a bill in the history table
-    function editBillName(headerRow, oldBillName) {
-        const firstEntry = history.find(entry => entry.bill.name === oldBillName);
+    function editBillName(headerRow, oldBillName, oldSessionType) {
+        const firstEntry = history.find(entry => entry.bill.name === oldBillName && entry.bill.type === oldSessionType);
         const oldType = firstEntry ? firstEntry.bill.type : 'Hearing';
         
         // Create input for bill name
@@ -2397,7 +2405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const newBillName = nameInput.value.trim() || 'Uncategorized';
             const newType = typeSelect.value;
             history.forEach(entry => {
-                if (entry.bill.name === oldBillName) {
+                if (entry.bill.name === oldBillName && entry.bill.type === oldSessionType) {
                     entry.bill.name = newBillName;
                     entry.bill.type = newType;
                 }
