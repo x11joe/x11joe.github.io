@@ -1001,47 +1001,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inputRect = inputDiv.getBoundingClientRect();
         const modalHeight = modal.offsetHeight;
         const viewportHeight = window.innerHeight;
-        const scrollY = window.scrollY;
-    
-        console.log('inputRect:', inputRect);
-        console.log('modalHeight:', modalHeight);
-        console.log('viewportHeight:', viewportHeight);
-        console.log('scrollY:', scrollY);
-    
-        const spaceAbove = inputRect.top + scrollY;
-        const spaceBelow = viewportHeight - inputRect.bottom + scrollY;
-    
-        console.log('spaceAbove:', spaceAbove, 'spaceBelow:', spaceBelow);
     
         let topPosition;
-        if (spaceAbove >= modalHeight + 10) {
-            topPosition = inputRect.top + scrollY - modalHeight - 10;
-        } else if (spaceBelow >= modalHeight + 10) {
-            topPosition = inputRect.bottom + scrollY + 10;
+        if (inputRect.top >= modalHeight + 10) {
+            // Position above the input
+            topPosition = inputRect.top - modalHeight - 10;
+        } else if (viewportHeight - inputRect.bottom >= modalHeight + 10) {
+            // Position below the input
+            topPosition = inputRect.bottom + 10;
         } else {
-            if (spaceAbove > spaceBelow) {
-                topPosition = scrollY;
-                modal.style.maxHeight = `${spaceAbove - 10}px`;
+            // Not enough space above or below; adjust height and position
+            if (inputRect.top > viewportHeight - inputRect.bottom) {
+                topPosition = 0;
+                modal.style.maxHeight = `${inputRect.top - 10}px`;
             } else {
-                topPosition = inputRect.bottom + scrollY + 10;
-                modal.style.maxHeight = `${spaceBelow - 10}px`;
+                topPosition = inputRect.bottom + 10;
+                modal.style.maxHeight = `${viewportHeight - inputRect.bottom - 10}px`;
             }
             modal.style.overflowY = 'auto';
         }
     
-        console.log('Calculated topPosition:', topPosition);
-    
-        modal.style.position = 'absolute';
+        // Set modal position relative to the viewport
         modal.style.top = `${topPosition}px`;
-        modal.style.left = `${inputRect.left + scrollX}px`;
+        modal.style.left = `${inputRect.left}px`;
         modal.style.width = `${inputRect.width}px`;
-    
-        console.log('Modal styles applied:', {
-            top: modal.style.top,
-            left: modal.style.left,
-            width: modal.style.width,
-            maxHeight: modal.style.maxHeight
-        });
     }
 
     // Update highlighting for suggestion options
@@ -2337,8 +2320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update the history table with grouped entries by bill
     function updateHistoryTable(newEntry = null) {
-        // Sort history by timestamp in ascending order
-        history.sort((a, b) => a.time - b.time);
+        // Sort history by timestamp in descending order (latest first)
+        history.sort((a, b) => b.time - a.time);
         historyTableBody.innerHTML = '';
     
         // Initialize variables for grouping
