@@ -291,32 +291,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
     
         const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers();
-        // Start the table with double border and cell borders
         let tableHtml = '<table style="border-collapse: collapse; border: 3px double black;">';
-        tableHtml += '<thead><tr style="border-bottom: 1px solid black;"><th style="border-right: 1px solid black; padding: 5px;">Senators</th><th style="padding: 5px;">Vote</th></tr></thead><tbody>';
+        tableHtml += '<thead><tr style="border-bottom: 2px solid black;">';
+        tableHtml += '<th style="border-right: 1px solid black; padding: 2px 5px; text-align: left;">Senators</th>';
+        tableHtml += '<th style="padding: 2px 5px; text-align: center;">Vote</th>';
+        tableHtml += '</tr></thead><tbody>';
     
         if (currentBillType === 'Conference Committee') {
             const votes = moduleResult.votes;
             members.forEach(member => {
-                // Map the vote to Y, N, or A
                 let vote = votes[member.fullName] || 'A';
                 if (vote === 'for') vote = 'Y';
                 else if (vote === 'against') vote = 'N';
                 else if (vote === 'neutral') vote = 'A';
-                // Use the full name with title as provided by getLegendMembers
-                const fullName = member.fullName; // e.g., "Senator John Doe"
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 5px;">${fullName}</td><td style="padding: 5px;">${vote}</td></tr>`;
+                const fullName = member.fullName;
+                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 2px 5px;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">${vote}</td></tr>`;
             });
         } else {
             members.forEach(member => {
-                const fullName = getFullMemberName(member); // Ensures "Senator/Representative Firstname Lastname"
-                // Default to Y as per original logic for non-Conference modes
-                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 5px;">${fullName}</td><td style="padding: 5px;">Y</td></tr>`;
+                const fullName = getFullMemberName(member);
+                tableHtml += `<tr style="border-bottom: 1px solid black;"><td style="border-right: 1px solid black; padding: 2px 5px;">${fullName}</td><td style="padding: 2px 5px; text-align: center;">Y</td></tr>`;
             });
         }
     
         tableHtml += '</tbody></table>';
-        tableHtml += `<p>${motionText}</p>`;
+        tableHtml += `<p style="margin: 5px 0 0 0; text-align: left;">${motionText}</p>`;
     
         return tableHtml;
     }
