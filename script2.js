@@ -1308,21 +1308,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
             const parsedExistingValues = existingValues ? JSON.parse(existingValues) : {};
     
-            // Add "Detailed" button for non-conference modes
-            if (!useDetailedVoting) {
-                const detailedButton = document.createElement('button');
-                detailedButton.textContent = 'Detailed';
-                detailedButton.style.cssText = 'position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;';
-                detailedButton.onclick = () => {
-                    useDetailedVoting = true;
-                    renderVoteForm();
-                };
-                modalContent.appendChild(detailedButton);
-            }
+            // Define detailedButton in the outer scope, always created
+            const detailedButton = document.createElement('button');
+            detailedButton.textContent = 'Detailed';
+            detailedButton.style.cssText = 'position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;';
+            detailedButton.onclick = () => {
+                useDetailedVoting = true;
+                renderVoteForm();
+            };
     
             function renderVoteForm() {
-                modalContent.innerHTML = ''; // Clear previous content except the button
-                if (!useDetailedVoting) modalContent.appendChild(detailedButton); // Re-append button if in simple mode
+                // Clear modalContent, preserving detailedButton if present
+                while (modalContent.firstChild) {
+                    if (modalContent.firstChild !== detailedButton) {
+                        modalContent.removeChild(modalContent.firstChild);
+                    } else {
+                        break;
+                    }
+                }
     
                 const formContainer = document.createElement('div');
                 if (useDetailedVoting) {
@@ -1331,6 +1334,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     const simpleForm = renderSimpleVoteForm(parsedExistingValues);
                     formContainer.appendChild(simpleForm);
+                    // Append detailedButton only in simple mode if not already present
+                    if (!modalContent.contains(detailedButton)) {
+                        modalContent.appendChild(detailedButton);
+                    }
                 }
     
                 const submitButton = document.createElement('button');
@@ -1398,12 +1405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 modalContent.appendChild(formContainer);
             }
     
+            // Initial render
             renderVoteForm();
             modal.appendChild(modalContent);
             modal.classList.add('active');
             positionModal();
         } else {
-            // Handle other modules (unchanged logic)
             const fields = stepConfig.fields || [];
             const modalContent = document.createElement('div');
             const form = document.createElement('form');
