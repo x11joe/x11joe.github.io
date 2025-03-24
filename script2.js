@@ -999,32 +999,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Position the suggestion modal dynamically
     function positionModal() {
         const inputRect = inputDiv.getBoundingClientRect();
+        console.log('inputRect:', inputRect);
         const modalHeight = modal.offsetHeight;
+        console.log('modalHeight:', modalHeight);
         const viewportHeight = window.innerHeight;
+        console.log('viewportHeight:', viewportHeight);
     
         let topPosition;
         if (inputRect.top >= modalHeight + 10) {
             // Position above the input
             topPosition = inputRect.top - modalHeight - 10;
+            console.log('Positioning above input, topPosition:', topPosition);
         } else if (viewportHeight - inputRect.bottom >= modalHeight + 10) {
             // Position below the input
             topPosition = inputRect.bottom + 10;
+            console.log('Positioning below input, topPosition:', topPosition);
         } else {
             // Not enough space above or below; adjust height and position
             if (inputRect.top > viewportHeight - inputRect.bottom) {
                 topPosition = 0;
                 modal.style.maxHeight = `${inputRect.top - 10}px`;
+                console.log('Not enough space, positioning at top: 0, maxHeight:', modal.style.maxHeight);
             } else {
                 topPosition = inputRect.bottom + 10;
                 modal.style.maxHeight = `${viewportHeight - inputRect.bottom - 10}px`;
+                console.log('Not enough space, positioning below input, topPosition:', topPosition, 'maxHeight:', modal.style.maxHeight);
             }
             modal.style.overflowY = 'auto';
         }
     
-        // Set modal position relative to the viewport
+        // Set modal position (only top and width, leaving left to default/CSS)
         modal.style.top = `${topPosition}px`;
-        modal.style.left = `${inputRect.left}px`;
         modal.style.width = `${inputRect.width}px`;
+        console.log('Modal styles set: top:', modal.style.top, 'width:', modal.style.width, 'left (not set):', modal.style.left || 'default');
     }
 
     // Update highlighting for suggestion options
