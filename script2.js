@@ -1339,9 +1339,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const members = useDetailedVoting ? getLegendMembers() : getCommitteeMembers();
             const parsedExistingValues = existingValues ? (typeof existingValues === 'string' ? JSON.parse(existingValues) : existingValues) : {};
     
+            let detailedButton; // Declare detailedButton here to make it accessible in renderVoteForm
+    
             // Add "Detailed" button for non-conference modes if not editing in detailed mode
             if (!useDetailedVoting && (!parsedExistingValues.votes || Object.keys(parsedExistingValues.votes).length === 0)) {
-                const detailedButton = document.createElement('button');
+                detailedButton = document.createElement('button');
                 detailedButton.textContent = 'Detailed';
                 detailedButton.className = 'detailed';
                 detailedButton.onclick = () => {
@@ -1355,7 +1357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 while (modalContent.firstChild) {
                     modalContent.removeChild(modalContent.firstChild);
                 }
-                if (!useDetailedVoting) {
+                if (!useDetailedVoting && detailedButton) { // Check if detailedButton is defined before appending
                     modalContent.appendChild(detailedButton);
                 }
     
