@@ -972,6 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const options = getCurrentOptions();
         const filtered = text ? options.filter(opt => opt.toLowerCase().includes(text.toLowerCase())) : options;
+        document.body.appendChild(modal); // Move modal to body
         modal.innerHTML = '';
         if (filtered.length > 0) {
             filtered.forEach((opt, index) => {
@@ -1004,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('modalHeight:', modalHeight);
         const viewportHeight = window.innerHeight;
         console.log('viewportHeight:', viewportHeight);
-    
+        
         let topPosition;
         if (inputRect.top >= modalHeight + 10) {
             // Position above the input
@@ -1027,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             modal.style.overflowY = 'auto';
         }
-    
+        
         // Set modal position (only top and width, leaving left to default/CSS)
         modal.style.top = `${topPosition}px`;
         modal.style.width = `${inputRect.width}px`;
