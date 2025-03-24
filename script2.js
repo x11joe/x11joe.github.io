@@ -744,7 +744,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (currentStep === 'voteModule') {
                     const motionType = path.find(p => p.step === 'rollCallBaseMotionType')?.value;
                     const motionPassed = didMotionPass(moduleResult);
-                    if (motionType === 'Do Pass' && motionPassed) {
+                    // Define motion types that trigger the carrier prompt when passed
+                    const carrierMotionTypes = ['Do Pass', 'Do Not Pass'];
+                    if (carrierMotionTypes.includes(motionType) && motionPassed) {
                         currentStep = 'carryBillPrompt';
                     } else {
                         currentStep = null;
