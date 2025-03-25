@@ -287,86 +287,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableHtml += '<th style="border-top: 2.25pt double black; border-bottom: 1pt solid black; border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; font-weight: bold;">Vote</th>';
         tableHtml += '</tr></thead><tbody>';
     
-        if (currentBillType === 'Conference Committee') {
-            const members = getLegendMembers();
-            const senators = members.filter(m => getMemberSide(m.fullName) === 'Senate');
-            const representatives = members.filter(m => getMemberSide(m.fullName) === 'House');
-            const sortGroup = (group) => {
-                const chairman = group.find(m => m.role === "Chairman" || m.role === "Chairwoman");
-                const others = group.filter(m => m !== chairman);
-                return chairman ? [chairman, ...others] : others;
-            };
-            const sortedSenators = sortGroup(senators);
-            const sortedRepresentatives = sortGroup(representatives);
-    
-            // Senators
-            if (sortedSenators.length > 0) {
-                tableHtml += '<tr><td colspan="2" style="font-weight: bold; padding: 5pt 0; text-align: center;">Senators</td></tr>';
-                sortedSenators.forEach((member, i) => {
-                    const fullName = member.fullName;
-                    let vote = moduleResult.votes[fullName] || 'A';
-                    vote = vote === 'for' ? 'Y' : vote === 'against' ? 'N' : 'A';
-                    const isLast = i === sortedSenators.length - 1 && sortedRepresentatives.length === 0;
-                    const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
-                    tableHtml += `<tr>`;
-                    tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
-                    tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
-                    tableHtml += `</tr>`;
-                });
-            }
-    
-            // Representatives
-            if (sortedRepresentatives.length > 0) {
-                tableHtml += '<tr><td colspan="2" style="font-weight: bold; padding: 5pt 0; text-align: center;">Representatives</td></tr>';
-                sortedRepresentatives.forEach((member, i) => {
-                    const fullName = member.fullName;
-                    let vote = moduleResult.votes[fullName] || 'A';
-                    vote = vote === 'for' ? 'Y' : vote === 'against' ? 'N' : 'A';
-                    const isLast = i === sortedRepresentatives.length - 1;
-                    const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
-                    tableHtml += `<tr>`;
-                    tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
-                    tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
-                    tableHtml += `</tr>`;
-                });
-            }
+        if (moduleResult.votes) {
+            // Detailed voting
+            const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers().map(m => ({ fullName: m, role: parseMember(m).title }));
+            const sides = ['Senate', 'House'];
+            sides.forEach(side => {
+                const groupMembers = members.filter(m => getMemberSide(m.fullName) === side);
+                if (groupMembers.length > 0) {
+                    tableHtml += `<tr><td colspan="2" style="font-weight: bold; padding: 5pt 0; text-align: center;">${side}s</td></tr>`;
+                    // Sort group: chairman first
+                    const chairman = groupMembers.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+                    const others = groupMembers.filter(m => m !== chairman);
+                    const sortedGroup = chairman ? [chairman, ...others] : others;
+                    sortedGroup.forEach((member, i) => {
+                        const fullName = member.fullName;
+                        let vote = moduleResult.votes[fullName] || 'A';
+                        vote = vote === 'for' ? 'Y' : vote === 'against' ? 'N' : 'A';
+                        const isLast = (side === sides[sides.length - 1]) && (i === sortedGroup.length - 1);
+                        const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
+                        tableHtml += `<tr>`;
+                        tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
+                        tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
+                        tableHtml += `</tr>`;
+                    });
+                }
+            });
             tableHtml += '</tbody></table>';
     
-            // Calculate motion passed: at least 2 senators and 2 representatives must vote "for"
-            const motionPassed = moduleResult.senateFor >= 2 && moduleResult.houseFor >= 2;
-            const motionText = motionPassed
-                ? `Motion Carried - Senate: ${moduleResult.senateFor}-${moduleResult.senateAgainst}-${moduleResult.senateNeutral}, House: ${moduleResult.houseFor}-${moduleResult.houseAgainst}-${moduleResult.houseNeutral}`
-                : `Motion Failed - Senate: ${moduleResult.senateFor}-${moduleResult.senateAgainst}-${moduleResult.senateNeutral}, House: ${moduleResult.houseFor}-${moduleResult.houseAgainst}-${moduleResult.houseNeutral}`;
+            let motionText;
+            if (currentBillType === 'Conference Committee') {
+                const motionPassed = moduleResult.senateFor >= 2 && moduleResult.houseFor >= 2;
+                motionText = motionPassed
+                    ? `Motion Carried - Senate: ${moduleResult.senateFor}-${moduleResult.senateAgainst}-${moduleResult.senateNeutral}, House: ${moduleResult.houseFor}-${moduleResult.houseAgainst}-${moduleResult.houseNeutral}`
+                    : `Motion Failed - Senate: ${moduleResult.senateFor}-${moduleResult.senateAgainst}-${moduleResult.senateNeutral}, House: ${moduleResult.houseFor}-${moduleResult.houseAgainst}-${moduleResult.houseNeutral}`;
+            } else {
+                const forVotes = moduleResult.for;
+                const againstVotes = moduleResult.against;
+                const neutralVotes = moduleResult.neutral;
+                const motionPassed = forVotes > againstVotes;
+                motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
+            }
             tableHtml += `<p style="margin: 5pt 0 0 0; text-align: left; font-size: 12pt;">${motionText}</p>`;
             return tableHtml;
         } else {
-            let forVotes = moduleResult.for;
-            let againstVotes = moduleResult.against;
-            let neutralVotes = moduleResult.neutral;
-            let motionPassed = forVotes > againstVotes;
-    
+            // Simple voting
+            const forVotes = moduleResult.for;
+            const againstVotes = moduleResult.against;
+            const neutralVotes = moduleResult.neutral;
+            const motionPassed = forVotes > againstVotes;
             const motionText = motionPassed ? `Motion Carried ${forVotes}-${againstVotes}-${neutralVotes}` : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
-            const members = getCommitteeMembers();
-    
-            if (moduleResult.votes) {
-                members.forEach((member, i) => {
-                    const fullName = member.fullName || getFullMemberName(member);
-                    let vote = moduleResult.votes[fullName] || 'A';
-                    vote = vote === 'for' ? 'Y' : vote === 'against' ? 'N' : 'A';
-                    const isLast = i === members.length - 1;
-                    const bottomBorder = isLast ? 'border-bottom: 2.25pt double black;' : '';
-                    tableHtml += `<tr>`;
-                    tableHtml += `<td style="border-left: 2.25pt double black; border-right: 1pt solid black; padding: 0pt 3.6pt; text-align: left; font-size: 12pt; ${bottomBorder}">${fullName}</td>`;
-                    tableHtml += `<td style="border-right: 2.25pt double black; padding: 0pt 3.6pt; text-align: center; font-size: 12pt; ${bottomBorder}">${vote}</td>`;
-                    tableHtml += `</tr>`;
-                });
-    
-                tableHtml += '</tbody></table>';
-                tableHtml += `<p style="margin: 5pt 0 0 0; text-align: left; font-size: 12pt;">${motionText}</p>`;
-                return tableHtml;
-            } else {
-                return `<p style="font-size: 12pt;">Vote: ${forVotes} for, ${againstVotes} against, ${neutralVotes} neutral</p>`;
-            }
+            return `<p style="font-size: 12pt;">Vote: ${forVotes} for, ${againstVotes} against, ${neutralVotes} neutral - ${motionText}</p>`;
         }
     }
 
@@ -416,71 +386,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const form = document.createElement('div');
         form.className = 'conference-vote-form';
     
-        // Group members by side
-        const senators = members.filter(m => getMemberSide(m.fullName) === 'Senate');
-        const representatives = members.filter(m => getMemberSide(m.fullName) === 'House');
-    
-        // Function to create table for a group
-        const createGroupTable = (group, title) => {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'member-group';
-            const h4 = document.createElement('h4');
-            h4.textContent = title;
-            groupDiv.appendChild(h4);
-            const table = document.createElement('table');
-            table.className = 'vote-table';
-            const thead = document.createElement('thead');
-            thead.innerHTML = `
-                <tr>
-                    <th>Member</th>
-                    <th>For</th>
-                    <th>Against</th>
-                    <th>Neutral</th>
-                </tr>
-            `;
-            table.appendChild(thead);
-            const tbody = document.createElement('tbody');
-            // Sort group: chairman first
-            const chairman = group.find(m => m.role === "Chairman" || m.role === "Chairwoman");
-            const others = group.filter(m => m !== chairman);
-            const sortedGroup = chairman ? [chairman, ...others] : others;
-            sortedGroup.forEach(member => {
-                const fullName = member.fullName;
-                const vote = existingVotes[fullName] || 'neutral';
-                const tr = document.createElement('tr');
-                tr.className = 'member-row';
-                tr.setAttribute('data-member', fullName);
-                tr.tabIndex = 0;
-                tr.innerHTML = `
-                    <td>${fullName}</td>
-                    <td><input type="radio" name="${fullName}" value="for" class="vote-radio" ${vote === 'for' ? 'checked' : ''}></td>
-                    <td><input type="radio" name="${fullName}" value="against" class="vote-radio" ${vote === 'against' ? 'checked' : ''}></td>
-                    <td><input type="radio" name="${fullName}" value="neutral" class="vote-radio" ${vote === 'neutral' ? 'checked' : ''}></td>
+        const sides = ['Senate', 'House'];
+        sides.forEach(side => {
+            const groupMembers = members.filter(m => getMemberSide(m.fullName) === side);
+            if (groupMembers.length > 0) {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'member-group';
+                const h4 = document.createElement('h4');
+                h4.textContent = side + 's';
+                groupDiv.appendChild(h4);
+                const table = document.createElement('table');
+                table.className = 'vote-table';
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Member</th>
+                        <th>For</th>
+                        <th>Against</th>
+                        <th>Neutral</th>
+                    </tr>
                 `;
-                tr.addEventListener('keydown', (e) => {
-                    if (e.key === '1') {
-                        tr.querySelector('input[value="for"]').checked = true;
-                    } else if (e.key === '2') {
-                        tr.querySelector('input[value="against"]').checked = true;
-                    } else if (e.key === '3') {
-                        tr.querySelector('input[value="neutral"]').checked = true;
-                    }
+                table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                // Sort group: chairman first
+                const chairman = groupMembers.find(m => m.role === "Chairman" || m.role === "Chairwoman");
+                const others = groupMembers.filter(m => m !== chairman);
+                const sortedGroup = chairman ? [chairman, ...others] : others;
+                sortedGroup.forEach(member => {
+                    const fullName = member.fullName;
+                    const vote = existingVotes[fullName] || 'neutral';
+                    const tr = document.createElement('tr');
+                    tr.className = 'member-row';
+                    tr.setAttribute('data-member', fullName);
+                    tr.tabIndex = 0;
+                    tr.innerHTML = `
+                        <td>${fullName}</td>
+                        <td><input type="radio" name="${fullName}" value="for" class="vote-radio" ${vote === 'for' ? 'checked' : ''}></td>
+                        <td><input type="radio" name="${fullName}" value="against" class="vote-radio" ${vote === 'against' ? 'checked' : ''}></td>
+                        <td><input type="radio" name="${fullName}" value="neutral" class="vote-radio" ${vote === 'neutral' ? 'checked' : ''}></td>
+                    `;
+                    tr.addEventListener('keydown', (e) => {
+                        if (e.key === '1') {
+                            tr.querySelector('input[value="for"]').checked = true;
+                        } else if (e.key === '2') {
+                            tr.querySelector('input[value="against"]').checked = true;
+                        } else if (e.key === '3') {
+                            tr.querySelector('input[value="neutral"]').checked = true;
+                        }
+                    });
+                    tbody.appendChild(tr);
                 });
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            groupDiv.appendChild(table);
-            return groupDiv;
-        };
-    
-        if (senators.length > 0) {
-            const senatorsTable = createGroupTable(senators, 'Senators');
-            form.appendChild(senatorsTable);
-        }
-        if (representatives.length > 0) {
-            const repsTable = createGroupTable(representatives, 'Representatives');
-            form.appendChild(repsTable);
-        }
+                table.appendChild(tbody);
+                groupDiv.appendChild(table);
+                form.appendChild(groupDiv);
+            }
+        });
     
         // Focus the first member row
         const firstRow = form.querySelector('.member-row');
@@ -1428,64 +1388,137 @@ document.addEventListener('DOMContentLoaded', async () => {
             existingValues = {};
         }
     
-        if (currentBillType === 'Conference Committee' && stepConfig.step === 'voteModule') {
-            // Render detailed vote form for conference committee
-            const members = getLegendMembers();
-            const form = renderDetailedVoteForm(members, existingVotes);
-            const submitButton = document.createElement('button');
-            submitButton.id = 'module-submit';
-            submitButton.textContent = 'Submit';
-            submitButton.className = 'module-submit';
-            submitButton.onclick = () => {
-                const votes = {};
-                form.querySelectorAll('.member-row').forEach(tr => {
-                    const fullName = tr.getAttribute('data-member');
-                    const voteInput = tr.querySelector('.vote-radio:checked');
-                    const vote = voteInput ? voteInput.value : 'neutral';
-                    votes[fullName] = vote;
-                });
-                const senateFor = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'for').length;
-                const senateAgainst = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'against').length;
-                const senateNeutral = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'neutral').length;
-                const houseFor = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'for').length;
-                const houseAgainst = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'against').length;
-                const houseNeutral = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'neutral').length;
-                const result = {
-                    senateFor,
-                    senateAgainst,
-                    senateNeutral,
-                    houseFor,
-                    houseAgainst,
-                    houseNeutral,
-                    votes
-                };
-                const resultString = JSON.stringify(result);
-                console.log('Votes collected:', votes);
-                console.log('Result:', result);
-                if (pathIndex !== undefined) {
-                    path[pathIndex].value = resultString;
-                    path[pathIndex].display = getModuleDisplayText(stepConfig.step, result);
-                    smartInvalidateSubsequentTags(pathIndex, path[pathIndex].value, resultString);
-                    updateInput();
-                    modal.classList.remove('active');
-                } else {
-                    selectOption(resultString);
-                }
-            };
-            form.appendChild(submitButton);
+        if (stepConfig.step === 'voteModule') {
+            const form = document.createElement('div');
+            form.className = 'vote-module';  // Typo fixed: removed the colon
             modal.appendChild(form);
+    
+            const renderSimple = () => {
+                const simpleForm = renderSimpleVoteForm(existingValues);
+                form.innerHTML = '';
+                form.appendChild(simpleForm);
+                const detailedButton = document.createElement('button');
+                detailedButton.textContent = 'Detailed';
+                detailedButton.className = 'detailed';
+                detailedButton.onclick = () => {
+                    renderDetailed();
+                };
+                form.appendChild(detailedButton);
+                const submitButton = document.createElement('button');
+                submitButton.id = 'module-submit';
+                submitButton.textContent = 'Submit';
+                submitButton.className = 'module-submit';
+                submitButton.onclick = () => {
+                    const forVotes = parseInt(document.getElementById('module-for').value, 10) || 0;
+                    const againstVotes = parseInt(document.getElementById('module-against').value, 10) || 0;
+                    const neutralVotes = parseInt(document.getElementById('module-neutral').value, 10) || 0;
+                    const result = { for: forVotes, against: againstVotes, neutral: neutralVotes, isDetailed: false };
+                    const resultString = JSON.stringify(result);
+                    if (pathIndex !== undefined) {
+                        path[pathIndex].value = resultString;
+                        path[pathIndex].display = getModuleDisplayText(stepConfig.step, result);
+                        smartInvalidateSubsequentTags(pathIndex, path[pathIndex].value, resultString);
+                        updateInput();
+                        modal.classList.remove('active');
+                    } else {
+                        selectOption(resultString);
+                    }
+                };
+                simpleForm.appendChild(submitButton);
+            };
+    
+            const renderDetailed = () => {
+                const members = currentBillType === 'Conference Committee' ? getLegendMembers() : getCommitteeMembers().map(m => ({ fullName: m, role: parseMember(m).title }));
+                const detailedForm = renderDetailedVoteForm(members, existingVotes);
+                form.innerHTML = '';
+                form.appendChild(detailedForm);
+                const submitButton = document.createElement('button');
+                submitButton.id = 'module-submit';
+                submitButton.textContent = 'Submit';
+                submitButton.className = 'module-submit';
+                submitButton.onclick = () => {
+                    const votes = {};
+                    detailedForm.querySelectorAll('.member-row').forEach(tr => {
+                        const fullName = tr.getAttribute('data-member');
+                        const voteInput = tr.querySelector('.vote-radio:checked');
+                        const vote = voteInput ? voteInput.value : 'neutral';
+                        votes[fullName] = vote;
+                    });
+                    let result;
+                    if (currentBillType === 'Conference Committee') {
+                        const senateFor = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'for').length;
+                        const senateAgainst = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'against').length;
+                        const senateNeutral = members.filter(m => getMemberSide(m.fullName) === 'Senate' && votes[m.fullName] === 'neutral').length;
+                        const houseFor = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'for').length;
+                        const houseAgainst = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'against').length;
+                        const houseNeutral = members.filter(m => getMemberSide(m.fullName) === 'House' && votes[m.fullName] === 'neutral').length;
+                        result = {
+                            senateFor,
+                            senateAgainst,
+                            senateNeutral,
+                            houseFor,
+                            houseAgainst,
+                            houseNeutral,
+                            votes,
+                            isDetailed: true
+                        };
+                    } else {
+                        const forVotes = Object.values(votes).filter(v => v === 'for').length;
+                        const againstVotes = Object.values(votes).filter(v => v === 'against').length;
+                        const neutralVotes = Object.values(votes).filter(v => v === 'neutral').length;
+                        result = { for: forVotes, against: againstVotes, neutral: neutralVotes, votes, isDetailed: true };
+                    }
+                    const resultString = JSON.stringify(result);
+                    if (pathIndex !== undefined) {
+                        path[pathIndex].value = resultString;
+                        path[pathIndex].display = getModuleDisplayText(stepConfig.step, result);
+                        smartInvalidateSubsequentTags(pathIndex, path[pathIndex].value, resultString);
+                        updateInput();
+                        modal.classList.remove('active');
+                    } else {
+                        selectOption(resultString);
+                    }
+                };
+                detailedForm.appendChild(submitButton);
+            };
+    
+            if (currentBillType === 'Conference Committee' || (existingValues && existingValues.isDetailed)) {
+                renderDetailed();
+            } else {
+                renderSimple();
+            }
         } else {
-            // Render simple vote form or other modules
-            const form = renderSimpleVoteForm(existingValues);
+            // Other modules
+            const form = document.createElement('div');
+            form.className = 'module-form';
+            stepConfig.fields.forEach(field => {
+                const div = document.createElement('div');
+                const label = document.createElement('label');
+                label.textContent = field.label || field.name;
+                div.appendChild(label);
+                const input = document.createElement('input');
+                input.type = field.type;
+                input.id = `module-${field.name}`;
+                if (field.type === 'text' && field.name === 'lcNumber') {
+                    input.className = 'lc-number-input';
+                    input.value = existingValues[field.name] || field.default || '';
+                    input.addEventListener('input', formatLcNumber);
+                } else {
+                    input.value = existingValues[field.name] || field.default || '';
+                }
+                div.appendChild(input);
+                form.appendChild(div);
+            });
             const submitButton = document.createElement('button');
             submitButton.id = 'module-submit';
             submitButton.textContent = 'Submit';
             submitButton.className = 'module-submit';
             submitButton.onclick = () => {
-                const forVotes = parseInt(document.getElementById('module-for').value, 10) || 0;
-                const againstVotes = parseInt(document.getElementById('module-against').value, 10) || 0;
-                const neutralVotes = parseInt(document.getElementById('module-neutral').value, 10) || 0;
-                const result = { for: forVotes, against: againstVotes, neutral: neutralVotes };
+                const result = {};
+                stepConfig.fields.forEach(field => {
+                    const input = document.getElementById(`module-${field.name}`);
+                    result[field.name] = input.value;
+                });
                 const resultString = JSON.stringify(result);
                 if (pathIndex !== undefined) {
                     path[pathIndex].value = resultString;
