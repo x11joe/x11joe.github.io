@@ -506,18 +506,17 @@ label {
     background-color: #e0f7fa;
 }
 
-.conference-vote-form button {
-    margin-top: 10px;
-    align-self: center;
+.module-submit {
     padding: 5px 10px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    align-self: flex-start;
 }
 
-.conference-vote-form button:hover {
+.module-submit:hover {
     background-color: #0056b3;
 }
 
@@ -740,8 +739,4 @@ label {
     margin: 0;
     font-weight: bold;
     color: #333;
-}
-
-#module-submit {
-    align-self: flex-start;
 }
