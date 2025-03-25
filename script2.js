@@ -382,6 +382,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return form;
     }
 
+    function constructVoteTagText(moduleResult) {
+        if (currentBillType === 'Conference Committee') {
+            const totalFor = moduleResult.senateFor + moduleResult.houseFor;
+            const totalAgainst = moduleResult.senateAgainst + moduleResult.houseAgainst;
+            const totalNeutral = moduleResult.senateNeutral + moduleResult.houseNeutral;
+            const motionPassed = moduleResult.senateFor >= 2 && moduleResult.houseFor >= 2;
+            return motionPassed
+                ? `Motion Passed ${totalFor}-${totalAgainst}-${totalNeutral}`
+                : `Motion Failed ${totalFor}-${totalAgainst}-${totalNeutral}`;
+        } else {
+            const forVotes = moduleResult.for || 0;
+            const againstVotes = moduleResult.against || 0;
+            const neutralVotes = moduleResult.neutral || 0;
+            const motionPassed = forVotes > againstVotes;
+            return motionPassed
+                ? `Motion Passed ${forVotes}-${againstVotes}-${neutralVotes}`
+                : `Motion Failed ${forVotes}-${againstVotes}-${neutralVotes}`;
+        }
+    }
+
     function renderDetailedVoteForm(members, existingVotes = {}) {
         const form = document.createElement('div');
         form.className = 'conference-vote-form';
@@ -1390,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         if (stepConfig.step === 'voteModule') {
             const form = document.createElement('div');
-            form.className = 'vote-module';  // Typo fixed: removed the colon
+            form.className = 'vote-module';
             modal.appendChild(form);
     
             const renderSimple = () => {
