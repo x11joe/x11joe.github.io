@@ -48,4 +48,152 @@
 }
 
 
+{
+    {   
+        "Member" : {
+            "Class": "Member_Module",
+            "Options": ["Do Pass","Do Not Pass","Withdrew","Introduced","Proposed"],
+            "Do Pass" : {
+                "Options" : ["As Amended"]
+            },
+            "Do Not Pass" : {
+                "Options": ["As Amended"]
+            },
+            "Withdrew" : {},
+            "Introduced" : {
+                "Options" : ["Self","Provided By"],
+                "Self": {
+                    "Options": ["Verbal", "LC#"],
+                    "LC#": {
+                        "Class": "LC_Module",
+                        "Options": []
+                    },
+                    "Verbal": {}
+                },
+                "Provided By" : {
+                    "Options": ["Senator or Representative", "External Source"],
+                    "Senator or Representative": {
+                        "Class": "Member_Look_Up_Module",
+                        "Options": ["Verbal", "LC#"],
+                        "LC#": {
+                            "class": "LC_Module",
+                            "Options": []
+                        },
+                        "Verbal": {}
+                    },
+                    "External Source": {
+                        "Class": "External_Source_Module",
+                        "Options": ["Verbal", "LC#"],
+                        "LC#": {
+                            "class": "LC_Module",
+                            "Options": []
+                        },
+                        "Verbal": {}
+                    }
+                }
+            },
+            "Proposed" : {
+                "Options" : ["Self","Provided By"],
+                "Self": {
+                    "Options": ["Verbal", "LC#"],
+                    "LC#": {
+                        "Class": "LC_Module",
+                        "Options": []
+                    },
+                    "Verbal": {}
+                },
+                "Provided By" : {
+                    "Options": ["Senator or Representative", "External Source"],
+                    "Senator or Representative": {
+                        "Class": "Member_Look_Up_Module",
+                        "Options": ["Verbal", "LC#"],
+                        "LC#": {
+                            "class": "LC_Module",
+                            "Options": []
+                        },
+                        "Verbal": {}
+                    },
+                    "External Source": {
+                        "Class": "External_Source_Module",
+                        "Options": ["Verbal", "LC#"],
+                        "LC#": {
+                            "class": "LC_Module",
+                            "Options": []
+                        },
+                        "Verbal": {}
+                    }
+                }
+            }
+        }
+    },
+    {
+        "MeetingAction": {
+            "Class": "Meeting_Actions_Module",
+            "Options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"],
+            "Closed Hearing": {},
+            "Recessed Meeting": {},
+            "Adjourned Meeting": {},
+            "Reconvened Meeting": {}
+        }
+    },
+    {
+        "VoiceVote": {
+            "Class": "Voice_Vote_Module",
+            "Options" : ["on Amendment", "on Reconsider"],
+            "on Amendment": {
+                "Options": ["Passed", "Failed"],
+                "Passed": {},
+                "Failed": {}
+            },
+            "on Reconsider": {
+                "Options": ["Passed", "Failed"],
+                "Passed": {},
+                "Failed": {}
+            }
+        }
+    },
+    {
+        "RollcallVote": {
+            "Class": "Rollcall_Vote_Module",
+            "Options": ["Do Pass","Do Not Pass","Amendment","Reconsider","Without Committee Recommendation"],
+            "Do Pass": {
+                "Options": ["Take the Vote", "as Amended", "and Rereferred"],
+                "Take the Vote": {
+                    "Class": "Vote_Module",
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
+                },
+                "as Amended": {
+                   "Options": ["Take the Vote", "and Rereferred"]
+                },
+                "and Rereferred": {
+                    "Class": "Vote_Module",
+                    "Options": []
+                }
+            },
+            "Do Not Pass":{
+                "Options": ["Take the Vote", "as Amended", "and Rereferred"]
+            },
+            "Amendment":{
+                "Class": "Vote_Module",
+                "Options" : []
+            },
+            "Reconsider":{
+                "Class": "Vote_Module",
+                "Options" : []
+            },
+            "Without Committee Recommendation":{
+                "Options": ["Take the Vote", "as Amended", "and Rereferred"]
+            },
+        }
+    }
 
+    { "type": "MeetingAction", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "flow": "meetingActionFlow" },
+    { "type": "VoteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" },
+    { "type": "ExternalAction", "options": ["Introduced Bill"], "flow": "introducedBillFlow" }
+    { "type": "Testimony" }
+}
