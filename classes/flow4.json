@@ -1,0 +1,51 @@
+{
+    "name": "Start",
+    "type": "select",
+    "options": ["Member", "Meeting", "Vote", "External", "Testimony"],
+    "next": {
+        "Member": "member",
+        "Meeting": "meeting",
+        "Vote": "vote",
+        "External": "external",
+        "Testimony": "testimony"
+    }
+}
+
+{
+    "name": "Member",
+    "type": "select",
+    "options": ["Moved", "Seconded", "Withdrew", "Introduced Amendment", "Proposed Amendment"],
+    "next": {
+        "Moved": "moved",
+        "Seconded": null,
+        "Withdrew": null,
+        "Introduced Amendment": "Introduced_Amendment",
+        "Proposed Amendment": "Proposed_Amendment"
+    }
+}
+
+{
+    "name": "Moved",
+    "type": "select",
+    "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"],
+    "next": {
+        "Do Pass": "Rerefer",
+        "Do Not Pass": "Rerefer",
+        "Amendment": null,
+        "Reconsider": null,
+        "Without Committee Recommendation": "Without_Committee_Recommendation"
+    }
+}
+
+{
+    "name": "Rerefer",
+    "type": "select",
+    "options": ["No rerefer", "Rerefer"],
+    "next": {
+        "No rerefer": null,
+        "Rerefer": "Rerefer_Optional"
+    }
+}
+
+
+
