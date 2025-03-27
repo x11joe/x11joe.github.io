@@ -168,15 +168,77 @@
                     "No Bill Carrier": {}
                 },
                 "as Amended": {
-                   "Options": ["Take the Vote", "and Rereferred"]
+                   "Options": ["Take the Vote", "and Rereferred"],
+                   "Take the Vote": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   },
+                   "and Rereferred": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   }
                 },
                 "and Rereferred": {
                     "Class": "Vote_Module",
-                    "Options": []
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
                 }
             },
             "Do Not Pass":{
-                "Options": ["Take the Vote", "as Amended", "and Rereferred"]
+                "Options": ["Take the Vote", "as Amended", "and Rereferred"],
+                "Take the Vote": {
+                    "Class": "Vote_Module",
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
+                },
+                "as Amended": {
+                   "Options": ["Take the Vote", "and Rereferred"],
+                   "Take the Vote": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   },
+                   "and Rereferred": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   }
+                },
+                "and Rereferred": {
+                    "Class": "Vote_Module",
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
+                }
             },
             "Amendment":{
                 "Class": "Vote_Module",
