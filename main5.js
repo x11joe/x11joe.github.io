@@ -1,3 +1,5 @@
+// main5.js
+
 // Global registry for class renderers.
 var classRegistry = {};
 
@@ -5,71 +7,60 @@ var classRegistry = {};
 var defaultRenderer = new DefaultRenderer();
 classRegistry["DefaultRenderer"] = defaultRenderer;
 
-// Example JSON data structure – for demonstration, we will start with the "Member" branch.
-// (In a full implementation, you could use the entire JSON to drive the dynamic traversal.)
-const flowData = {
-  "Member": {
-    "Options": ["Moved", "Seconded", "Withdrew", "Introduced", "Proposed"],
-    "Moved": {
-      "Options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"],
-      "Do Pass": {
-        "Options": ["No Amendment or Rerefered", "As Amended", "and Rerefered"],
-        "No Amendment or Rerefered": {},
-        "As Amended": {
-          "Options": ["No Referer", "and Rerefered"],
-          "No Referer": {},
-          "and Rerefered": {
-            "Class": "Rerefer_Committee_Module",
-            "Options": []
-          }
-        },
-        "and Rerefered": {
-          "Class": "Rerefer_Committee_Module",
-          "Options": []
-        }
-      }
-      // (Other branches omitted for brevity)
-    }
-    // (Other keys omitted for brevity)
-  }
-};
+// flowData will be loaded externally.
+let flowData = null;
 
-// Array to store tokens (the path of choices)
+// For this prototype, we start with the "Member" branch.
+// Once the JSON is loaded, we extract the "Member" branch from the array.
+fetch("flow5.json")
+  .then(response => response.json())
+  .then(data => {
+    // Assuming the JSON is an array of objects, find the one with the "Member" key.
+    for (let i = 0; i < data.length; i++) {
+      if (data[i]["Member"]) {
+        flowData = data[i]["Member"];
+        break;
+      }
+    }
+    // Initialize suggestions once the flow data is loaded.
+    updateSuggestions();
+  })
+  .catch(error => {
+    console.error("Error loading JSON:", error);
+  });
+
+// Array to store tokens (the path of choices).
 var tokens = [];
 
-// References to DOM elements
-const tokenContainer = document.getElementById('token-container');
-const tokenInput = document.getElementById('token-input');
-const suggestionsContainer = document.getElementById('suggestions-container');
+// References to DOM elements.
+const tokenContainer = document.getElementById("token-container");
+const tokenInput = document.getElementById("token-input");
+const suggestionsContainer = document.getElementById("suggestions-container");
 
-// Get the current options based on the tokens chosen so far.
+// Given the tokens selected so far, traverse the flowData to get the current options.
 function getCurrentOptions() {
-  // For this prototype, we always start with the "Member" branch.
-  let currentData = flowData["Member"];
-  // Traverse the tokens (if any)
+  if (!flowData) return [];
+  let currentData = flowData;
   tokens.forEach(token => {
-    // Only traverse if the property exists.
     if (currentData[token]) {
       currentData = currentData[token];
     } else {
       currentData = {};
     }
   });
-  // Return the options for the current step
   return currentData["Options"] || [];
 }
 
-// Render suggestions based on current input.
+// Render suggestions based on the current input and available options.
 function updateSuggestions() {
   const query = tokenInput.value.trim();
   const options = getCurrentOptions();
-  // Use the default renderer from the registry.
-  // In the future, if a step has a specific class assigned in the JSON, you could
-  // use that renderer instead.
-  const renderer = classRegistry["DefaultRenderer"];
-  const suggestions = renderer.render(options, query);
 
-  // Build suggestions list
+  // Use the default renderer from the registry.
+  // The renderer's render() method here simply filters options based on the query.
+  const suggestions = classRegistry["DefaultRenderer"].render(options, query);
+
+  // Build suggestions list.
   let html = "<ul>";
   suggestions.forEach(option => {
     html += `<li data-value="${option}">${option}</li>`;
@@ -78,68 +69,68 @@ function updateSuggestions() {
   suggestionsContainer.innerHTML = html;
 }
 
-// Add a token (i.e. a confirmed choice)
+// Add a token (a confirmed choice) to the tokenContainer and update our tokens array.
 function addToken(value) {
-  // Create token span
-  const tokenSpan = document.createElement('span');
-  tokenSpan.className = 'token';
+  // Create token span element.
+  const tokenSpan = document.createElement("span");
+  tokenSpan.className = "token";
   tokenSpan.textContent = value;
   tokenSpan.dataset.value = value;
-  tokenSpan.addEventListener('click', tokenClickHandler);
-  
-  // Insert token before the input
+  // When a token is clicked, allow editing.
+  tokenSpan.addEventListener("click", tokenClickHandler);
+
+  // Insert the token before the input field.
   tokenContainer.insertBefore(tokenSpan, tokenInput);
-  
-  // Save token in our array
+
+  // Save token in our tokens array.
   tokens.push(value);
-  
-  // Clear input
+
+  // Clear the input and update suggestions.
   tokenInput.value = "";
   updateSuggestions();
 }
 
-// When a token is clicked, remove it and all tokens after it, and load its text into input for editing.
+// When a token is clicked, remove it and all tokens after it, then set its text into the input for editing.
 function tokenClickHandler(e) {
-  const clickedValue = e.target.dataset.value;
-  // Find index of clicked token in tokens array
-  const index = tokens.indexOf(clickedValue);
-  if (index !== -1) {
-    // Remove tokens from the end down to the clicked one
-    while (tokens.length > index) {
-      tokens.pop();
-      // Also remove token elements (all tokens except the input)
-      if (tokenContainer.firstChild !== tokenInput) {
-        tokenContainer.removeChild(tokenContainer.firstChild);
-      }
-    }
-    // Set the input to the clicked value for editing
-    tokenInput.value = clickedValue;
-    updateSuggestions();
-    tokenInput.focus();
+  // Determine which token element was clicked.
+  const tokenElements = Array.from(tokenContainer.querySelectorAll(".token"));
+  // Find the index of the clicked token.
+  const index = tokenElements.indexOf(e.currentTarget);
+  if (index === -1) return;
+
+  // Remove tokens from the DOM and from the tokens array (from the clicked index to the end).
+  for (let i = tokenElements.length - 1; i >= index; i--) {
+    tokenElements[i].remove();
+    tokens.pop();
   }
+
+  // Set the input field with the clicked token's value for editing.
+  // (We use the dataset value because the textContent might include extra characters.)
+  tokenInput.value = e.currentTarget.dataset.value;
+  updateSuggestions();
+  tokenInput.focus();
 }
 
-// Handle key events for token input.
-tokenInput.addEventListener('keydown', function(e) {
+// Handle key events on the token input.
+tokenInput.addEventListener("keydown", function(e) {
+  // If the input is empty and Backspace is pressed, remove the last token.
   if (e.key === "Backspace" && tokenInput.value === "") {
-    // If input is empty and backspace is pressed, remove the last token.
-    if (tokens.length > 0) {
+    const tokenElements = Array.from(tokenContainer.querySelectorAll(".token"));
+    if (tokenElements.length > 0) {
+      // Remove the last token element.
+      const lastTokenEl = tokenElements[tokenElements.length - 1];
+      lastTokenEl.remove();
       tokens.pop();
-      // Remove the last token element (which is the first child, as tokens are added before input)
-      if (tokenContainer.firstChild !== tokenInput) {
-        tokenContainer.removeChild(tokenContainer.firstChild);
-      }
       updateSuggestions();
     }
     e.preventDefault();
   }
 });
 
-// Handle keyup to update suggestions.
-tokenInput.addEventListener('keyup', function(e) {
-  // If Enter is pressed, add the first suggestion if available.
+// On keyup, update suggestions. If Enter is pressed, add the first suggestion if available.
+tokenInput.addEventListener("keyup", function(e) {
   if (e.key === "Enter") {
-    const firstSuggestion = suggestionsContainer.querySelector('li');
+    const firstSuggestion = suggestionsContainer.querySelector("li");
     if (firstSuggestion) {
       const value = firstSuggestion.dataset.value;
       addToken(value);
@@ -150,20 +141,17 @@ tokenInput.addEventListener('keyup', function(e) {
   updateSuggestions();
 });
 
-// Handle click on suggestion items.
-suggestionsContainer.addEventListener('click', function(e) {
+// Handle clicks on suggestion items.
+suggestionsContainer.addEventListener("click", function(e) {
   if (e.target && e.target.nodeName === "LI") {
     const value = e.target.dataset.value;
     addToken(value);
   }
 });
 
-// Click outside suggestions should hide the list (optional improvement)
-document.addEventListener('click', function(e) {
+// Optional: Hide suggestions if clicking outside the input or suggestions list.
+document.addEventListener("click", function(e) {
   if (!suggestionsContainer.contains(e.target) && e.target !== tokenInput) {
     suggestionsContainer.innerHTML = "";
   }
 });
-
-// Initialize suggestions on page load.
-updateSuggestions();

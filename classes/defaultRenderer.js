@@ -15,8 +15,7 @@ class DefaultRenderer {
       }
       return options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
     }
-  }
+}
   
-  // Expose the class globally.
-  window.DefaultRenderer = DefaultRenderer;
-  
+// Expose the class globally.
+window.DefaultRenderer = DefaultRenderer;
