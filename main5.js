@@ -1,11 +1,17 @@
 // main5.js
 
-// Global registry for class renderers.
-var classRegistry = {};
+import { DefaultRenderer } from "./classes/defaultRenderer.js";
+import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
 
-// For the prototype, we register the default renderer.
-var defaultRenderer = new DefaultRenderer();
+// Global registry for class renderers.
+const classRegistry = {};
+
+// Register the default renderer.
+const defaultRenderer = new DefaultRenderer();
 classRegistry["DefaultRenderer"] = defaultRenderer;
+
+// Register our custom renderer for Rerefer_Committee_Module.
+classRegistry["Rerefer_Committee_Module"] = new RereferCommitteeModule();
 
 // flowData will be loaded externally.
 let flowData = null;
@@ -30,16 +36,19 @@ fetch("flow5.json")
   });
 
 // Array to store tokens (the path of choices).
-var tokens = [];
+let tokens = [];
 
 // References to DOM elements.
 const tokenContainer = document.getElementById("token-container");
 const tokenInput = document.getElementById("token-input");
 const suggestionsContainer = document.getElementById("suggestions-container");
 
-// Given the tokens selected so far, traverse the flowData to get the current options.
-function getCurrentOptions() {
-  if (!flowData) return [];
+/**
+ * Traverse the flowData based on tokens to return the current branch data.
+ * @returns {Object} The current branch data.
+ */
+function getCurrentBranchData() {
+  if (!flowData) return {};
   let currentData = flowData;
   tokens.forEach(token => {
     if (currentData[token]) {
@@ -48,76 +57,81 @@ function getCurrentOptions() {
       currentData = {};
     }
   });
-  return currentData["Options"] || [];
+  return currentData;
 }
 
-// Render suggestions based on the current input and available options.
+/**
+ * Update the suggestions container based on the current branch and input.
+ */
 function updateSuggestions() {
   const query = tokenInput.value.trim();
-  const options = getCurrentOptions();
+  const branchData = getCurrentBranchData();
+  const options = branchData["Options"] || [];
 
-  // Use the default renderer from the registry.
-  // The renderer's render() method simply filters options based on the query.
-  const suggestions = classRegistry["DefaultRenderer"].render(options, query);
+  // Choose renderer: if the branch defines a Class, use that; otherwise, default.
+  let renderer;
+  if (branchData["Class"]) {
+    renderer = classRegistry[branchData["Class"]] || defaultRenderer;
+  } else {
+    renderer = defaultRenderer;
+  }
 
-  // Build suggestions list.
-  let html = "<ul>";
-  suggestions.forEach(option => {
-    html += `<li data-value="${option}">${option}</li>`;
-  });
-  html += "</ul>";
+  // Render the suggestion HTML using the chosen renderer.
+  const html = renderer.render(options, query);
   suggestionsContainer.innerHTML = html;
 }
 
-// Add a token (a confirmed choice) to the tokenContainer and update our tokens array.
+/**
+ * Add a token (a confirmed choice) to the tokenContainer.
+ * @param {string} value - The selected option.
+ */
 function addToken(value) {
   // Create token span element.
   const tokenSpan = document.createElement("span");
   tokenSpan.className = "token";
   tokenSpan.textContent = value;
   tokenSpan.dataset.value = value;
-  // When a token is clicked, allow editing.
+  // Allow editing when the token is clicked.
   tokenSpan.addEventListener("click", tokenClickHandler);
 
   // Insert the token before the input field.
   tokenContainer.insertBefore(tokenSpan, tokenInput);
 
-  // Save token in our tokens array.
+  // Save token.
   tokens.push(value);
 
-  // Clear the input, update suggestions, and re-focus the input.
+  // Clear input, update suggestions, and re-focus.
   tokenInput.value = "";
   updateSuggestions();
   tokenInput.focus();
 }
 
-// When a token is clicked, remove it and all tokens after it, then set its text into the input for editing.
+/**
+ * When a token is clicked, remove it and any tokens after it, then set its value in the input for editing.
+ */
 function tokenClickHandler(e) {
-  // Determine which token element was clicked.
   const tokenElements = Array.from(tokenContainer.querySelectorAll(".token"));
-  // Find the index of the clicked token.
   const index = tokenElements.indexOf(e.currentTarget);
   if (index === -1) return;
 
-  // Remove tokens from the DOM and from the tokens array (from the clicked index to the end).
+  // Remove tokens from the DOM and tokens array.
   for (let i = tokenElements.length - 1; i >= index; i--) {
     tokenElements[i].remove();
     tokens.pop();
   }
 
-  // Set the input field with the clicked token's value for editing.
+  // Place the clicked token's value into the input.
   tokenInput.value = e.currentTarget.dataset.value;
   updateSuggestions();
   tokenInput.focus();
 }
 
-// Handle key events on the token input.
-tokenInput.addEventListener("keydown", function(e) {
-  // If the input is empty and Backspace is pressed, remove the last token.
+// Handle keydown events on the token input.
+tokenInput.addEventListener("keydown", (e) => {
+  // Backspace on empty input removes the last token.
   if (e.key === "Backspace" && tokenInput.value === "") {
     const tokenElements = Array.from(tokenContainer.querySelectorAll(".token"));
     if (tokenElements.length > 0) {
-      // Remove the last token element.
       const lastTokenEl = tokenElements[tokenElements.length - 1];
       lastTokenEl.remove();
       tokens.pop();
@@ -127,13 +141,12 @@ tokenInput.addEventListener("keydown", function(e) {
   }
 });
 
-// On keyup, update suggestions. If Enter is pressed, add the first suggestion if available.
-tokenInput.addEventListener("keyup", function(e) {
+// On keyup, update suggestions. On Enter, add the first suggestion.
+tokenInput.addEventListener("keyup", (e) => {
   if (e.key === "Enter") {
     const firstSuggestion = suggestionsContainer.querySelector("li");
     if (firstSuggestion) {
-      const value = firstSuggestion.dataset.value;
-      addToken(value);
+      addToken(firstSuggestion.dataset.value);
     }
     e.preventDefault();
     return;
@@ -142,16 +155,15 @@ tokenInput.addEventListener("keyup", function(e) {
 });
 
 // Handle clicks on suggestion items.
-suggestionsContainer.addEventListener("click", function(e) {
+suggestionsContainer.addEventListener("click", (e) => {
   if (e.target && e.target.nodeName === "LI") {
-    const value = e.target.dataset.value;
-    addToken(value);
+    addToken(e.target.dataset.value);
   }
 });
 
 // Hide suggestions if clicking outside the input or suggestions list,
 // but only if the tokenInput is not focused.
-document.addEventListener("click", function(e) {
+document.addEventListener("click", (e) => {
   if (!suggestionsContainer.contains(e.target) && e.target !== tokenInput) {
     if (document.activeElement !== tokenInput) {
       suggestionsContainer.innerHTML = "";

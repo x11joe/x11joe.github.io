@@ -1,21 +1,30 @@
-// A generic default renderer that provides suggestions from an options array.
-// It filters the options based on the user's query.
-class DefaultRenderer {
+// classes/defaultRenderer.js
+export class DefaultRenderer {
     constructor() {}
-    
+  
     /**
-     * Render suggestions based on available options and current input.
+     * Render suggestions by filtering the available options based on the query.
+     * This implementation returns HTML for the suggestion list.
      * @param {Array} options - List of possible options.
      * @param {string} query - The current user input.
-     * @returns {Array} - Filtered list of suggestions.
+     * @returns {string} - HTML string for the suggestion list.
      */
     render(options, query) {
+      let filtered;
       if (!query) {
-        return options;
+        filtered = options;
+      } else {
+        filtered = options.filter(opt =>
+          opt.toLowerCase().includes(query.toLowerCase())
+        );
       }
-      return options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
+      // Build HTML list from filtered options.
+      let html = "<ul>";
+      filtered.forEach(option => {
+        html += `<li data-value="${option}">${option}</li>`;
+      });
+      html += "</ul>";
+      return html;
     }
-}
+  }
   
-// Expose the class globally.
-window.DefaultRenderer = DefaultRenderer;
