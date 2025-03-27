@@ -1,0 +1,75 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 700px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .token-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 4px;
+    min-height: 40px;
+    background: #fff;
+  }
+  
+  .token {
+    background: #e0e0e0;
+    border-radius: 3px;
+    padding: 5px 10px;
+    margin: 3px;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .token:hover {
+    background: #d0d0d0;
+  }
+  
+  #token-input {
+    border: none;
+    flex-grow: 1;
+    min-width: 150px;
+    padding: 5px;
+    font-size: 14px;
+    outline: none;
+  }
+  
+  .suggestions-container {
+    position: relative;
+    width: 100%;
+    margin-top: 5px;
+  }
+  
+  .suggestions-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .suggestions-container li {
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+  
+  .suggestions-container li:hover {
+    background: #f0f0f0;
+  }
+  

@@ -1,65 +1,59 @@
-{
-    "name": "Start",
-    "type": "select",
-    "options": ["Member", "Meeting", "Vote", "External", "Testimony"],
-    "next": {
-        "Member": "member",
-        "Meeting": "meeting",
-        "Vote": "vote",
-        "External": "external",
-        "Testimony": "testimony"
-    }
-}
 
-{
-    "name": "Member",
-    "type": "select",
-    "options": ["Moved", "Seconded", "Withdrew", "Introduced Amendment", "Proposed Amendment"],
-    "next": {
-        "Moved": "moved",
-        "Seconded": null,
-        "Withdrew": null,
-        "Introduced Amendment": "Introduced_Amendment",
-        "Proposed Amendment": "Proposed_Amendment"
-    }
-}
-
-{
-    "name": "Moved",
-    "type": "select",
-    "options": ["Do Pass", "Do Not Pass", "Amendment", "Reconsider", "Without Committee Recommendation"],
-    "next": {
-        "Do Pass": "Rerefer",
-        "Do Not Pass": "Rerefer",
-        "Amendment": null,
-        "Reconsider": null,
-        "Without Committee Recommendation": "Without_Committee_Recommendation"
-    }
-}
-
-{
-    "name": "Rerefer",
-    "type": "select",
-    "options": ["No rerefer", "Rerefer"],
-    "next": {
-        "No rerefer": null,
-        "Rerefer": "Rerefer_Optional"
-    }
-}
-
-
-{
+[
     {   
         "Member" : {
             "Class": "Member_Module",
-            "Options": ["Do Pass","Do Not Pass","Withdrew","Introduced","Proposed"],
-            "Do Pass" : {
-                "Options" : ["As Amended"]
+            "Options": ["Moved","Seconded","Withdrew","Introduced","Proposed"],
+            "Moved": {
+                "Options": ["Do Pass","Do Not Pass","Amendment","Reconsider","Without Committee Recommendation"],
+                "Do Pass" : {
+                    "Options" : ["No Amendment or Rereferred","As Amended", "and Rereferred"],
+                    "No Amendment or Rereferred": {},
+                    "As Amended": {
+                        "Options": ["No Referer","and Rereferred"],
+                        "No Referer": {},
+                        "and Rereferred":{
+                            "Class": "Rerefer_Committee_Module",
+                            "Options": []
+                        }
+                    },
+                    "and Rereferred": {
+                        "Class": "Rerefer_Committee_Module",
+                        "Options": []
+                    }
+                },
+                "Do Not Pass" : {
+                    "Options" : ["No Amendment or Rereferred","As Amended", "and Rereferred"],
+                    "No Amendment or Rereferred": {},
+                    "As Amended": {
+                        "Options": ["No Referer","and Rereferred"],
+                        "No Referer": {},
+                        "and Rereferred":{
+                            "Class": "Rerefer_Committee_Module",
+                            "Options": []
+                        }
+                    },
+                    "and Rereferred": {
+                        "Class": "Rerefer_Committee_Module",
+                        "Options": []
+                    }
+                },
+                "Amendment": {
+                    "Options": ["No LC", "LC#"],
+                    "No LC": {},
+                    "LC#": {
+                        "Class": "LC_Module",
+                        "Options": []
+                    }
+                },
+                "Reconsider": {},
+                "Without Committee Recommendation": {}
             },
-            "Do Not Pass" : {
-                "Options": ["As Amended"]
+            "Withdrew" : {
+                "Options": ["Motion", "Second"],
+                "Motion": {},
+                "Second": {}
             },
-            "Withdrew" : {},
             "Introduced" : {
                 "Options" : ["Self","Provided By"],
                 "Self": {
@@ -249,13 +243,53 @@
                 "Options" : []
             },
             "Without Committee Recommendation":{
-                "Options": ["Take the Vote", "as Amended", "and Rereferred"]
+                "Options": ["Take the Vote", "as Amended", "and Rereferred"],
+                "Take the Vote": {
+                    "Class": "Vote_Module",
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
+                },
+                "as Amended": {
+                   "Options": ["Take the Vote", "and Rereferred"],
+                   "Take the Vote": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   },
+                   "and Rereferred": {
+                        "Class": "Vote_Module",
+                        "Options": ["X Carried the Bill","No Bill Carrier"],
+                        "X Carried the Bill": {
+                            "Class": "Committee_Member_Select_Module",
+                            "Options": []
+                        },
+                        "No Bill Carrier": {}
+                   }
+                },
+                "and Rereferred": {
+                    "Class": "Vote_Module",
+                    "Options": ["X Carried the Bill","No Bill Carrier"],
+                    "X Carried the Bill": {
+                        "Class": "Committee_Member_Select_Module",
+                        "Options": []
+                    },
+                    "No Bill Carrier": {}
+                }
             },
         }
+    },
+    {
+        "Testimony": {
+            "Class": "Testimony_Module",
+            "Options": []
+        }
     }
-
-    { "type": "MeetingAction", "options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"], "flow": "meetingActionFlow" },
-    { "type": "VoteAction", "options": ["Roll Call Vote", "Voice Vote", "Motion Failed"], "flow": "voteActionFlow" },
-    { "type": "ExternalAction", "options": ["Introduced Bill"], "flow": "introducedBillFlow" }
-    { "type": "Testimony" }
-}
+]
