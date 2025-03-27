@@ -57,7 +57,7 @@ function updateSuggestions() {
   const options = getCurrentOptions();
 
   // Use the default renderer from the registry.
-  // The renderer's render() method here simply filters options based on the query.
+  // The renderer's render() method simply filters options based on the query.
   const suggestions = classRegistry["DefaultRenderer"].render(options, query);
 
   // Build suggestions list.
@@ -85,9 +85,10 @@ function addToken(value) {
   // Save token in our tokens array.
   tokens.push(value);
 
-  // Clear the input and update suggestions.
+  // Clear the input, update suggestions, and re-focus the input.
   tokenInput.value = "";
   updateSuggestions();
+  tokenInput.focus();
 }
 
 // When a token is clicked, remove it and all tokens after it, then set its text into the input for editing.
@@ -105,7 +106,6 @@ function tokenClickHandler(e) {
   }
 
   // Set the input field with the clicked token's value for editing.
-  // (We use the dataset value because the textContent might include extra characters.)
   tokenInput.value = e.currentTarget.dataset.value;
   updateSuggestions();
   tokenInput.focus();
@@ -149,9 +149,12 @@ suggestionsContainer.addEventListener("click", function(e) {
   }
 });
 
-// Optional: Hide suggestions if clicking outside the input or suggestions list.
+// Hide suggestions if clicking outside the input or suggestions list,
+// but only if the tokenInput is not focused.
 document.addEventListener("click", function(e) {
   if (!suggestionsContainer.contains(e.target) && e.target !== tokenInput) {
-    suggestionsContainer.innerHTML = "";
+    if (document.activeElement !== tokenInput) {
+      suggestionsContainer.innerHTML = "";
+    }
   }
 });
