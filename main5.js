@@ -3,7 +3,7 @@
 import { DefaultRenderer } from "./classes/defaultRenderer.js";
 import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
 // Import the flow data. Adjust the import method if needed by your environment.
-import flowDataRaw from "./flow5.json" assert { type: "json" };
+import flowDataRaw from "./flow5.json" with { type: "json" };
 
 // Global registry for class renderers.
 const classRegistry = {};
