@@ -15,14 +15,8 @@ classRegistry["DefaultRenderer"] = defaultRenderer;
 // Register our custom renderer for Rerefer_Committee_Module.
 classRegistry["Rerefer_Committee_Module"] = new RereferCommitteeModule();
 
-// For this prototype, we extract the "Member" branch from the JSON array.
-let flowData = null;
-for (let i = 0; i < flowDataRaw.length; i++) {
-  if (flowDataRaw[i]["Member"]) {
-    flowData = flowDataRaw[i]["Member"];
-    break;
-  }
-}
+// Instead of extracting only the "Member" branch, use the complete flow data.
+const flowData = flowDataRaw;
 
 // Instantiate TokenSystem once DOM content is loaded.
 document.addEventListener("DOMContentLoaded", () => {

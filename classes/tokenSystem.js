@@ -1,11 +1,10 @@
 // classes/tokenSystem.js
-
 export class TokenSystem {
     /**
      * @param {HTMLElement} tokenContainer - The container for token elements.
      * @param {HTMLInputElement} tokenInput - The input element for token entry.
      * @param {HTMLElement} suggestionsContainer - The container for suggestions.
-     * @param {Object} flowData - The flow definition data.
+     * @param {Array} flowData - The full flow definition (an array of module objects).
      * @param {Object} classRegistry - Registry mapping class names to renderers.
      * @param {Object} defaultRenderer - The default renderer instance.
      */
@@ -18,6 +17,8 @@ export class TokenSystem {
       this.defaultRenderer = defaultRenderer;
       this.tokens = [];
       this._bindEvents();
+      // Also update suggestions on focus.
+      this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
       this.updateSuggestions();
     }
     
@@ -44,24 +45,45 @@ export class TokenSystem {
     }
     
     /**
-     * Traverse the flowData based on the current tokens.
-     * @returns {Object} The current branch of the flow data.
+     * Get the current branch of the flow data based on the selected tokens.
+     * If no token is selected, return an object whose Options property is an array
+     * of all starting module names.
+     * @returns {Object} The current branch data.
      */
     getCurrentBranchData() {
-      if (!this.flowData) return {};
-      let currentData = this.flowData;
-      this.tokens.forEach(token => {
+      // No tokens? Return an object with starting module names.
+      if (this.tokens.length === 0) {
+        // Each item in the flow array is an object with a single key.
+        const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
+        return { Options: startingModules };
+      }
+      
+      // Otherwise, find the branch corresponding to the tokens.
+      // The first token should match one of the modules.
+      const moduleName = this.tokens[0];
+      let currentData = null;
+      for (let i = 0; i < this.flowData.length; i++) {
+        if (this.flowData[i][moduleName]) {
+          currentData = this.flowData[i][moduleName];
+          break;
+        }
+      }
+      if (!currentData) return {};
+      
+      // Traverse deeper if more tokens exist.
+      for (let i = 1; i < this.tokens.length; i++) {
+        const token = this.tokens[i];
         if (currentData[token]) {
           currentData = currentData[token];
         } else {
           currentData = {};
         }
-      });
+      }
       return currentData;
     }
     
     /**
-     * Update the suggestions container based on the current branch and input.
+     * Update the suggestions based on the current branch and input.
      */
     updateSuggestions() {
       const query = this.tokenInput.value.trim();
@@ -95,7 +117,7 @@ export class TokenSystem {
     }
     
     /**
-     * Handle clicking on a token: remove it and tokens after it, then load its value into the input.
+     * Handle clicking on a token: remove it and any tokens after it, then load its value into the input.
      */
     tokenClickHandler(e) {
       const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
