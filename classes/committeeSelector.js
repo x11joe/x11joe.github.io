@@ -11,7 +11,8 @@ export class CommitteeSelector {
       this.committeesData = committeesData;
       this.selectedCommitteeKey = "selectedCommittee";
       this.favoritesKey = "favoriteCommittees";
-      this.preventClose = false; // Flag to indicate a checkbox click.
+      // Flag to indicate a checkbox click (to prevent dropdown closing)
+      this.preventClose = false;
       console.log("CommitteeSelector constructor called");
       this.init();
     }
@@ -58,8 +59,11 @@ export class CommitteeSelector {
       html += `<div class="dropdown-list" style="display:none;">`;
       sorted.forEach(committee => {
         html += `<div class="dropdown-item" data-committee="${committee}">`;
+        // Wrap checkbox and name inside a label.
+        html += `<label>`;
         html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
-        html += `<span>${committee}</span>`;
+        html += `<span class="committee-name">${committee}</span>`;
+        html += `</label>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -74,27 +78,19 @@ export class CommitteeSelector {
         console.log("Dropdown selected clicked. List display:", listDiv.style.display);
       });
       
-      // Add click event for each dropdown item.
-      const items = this.containerElement.querySelectorAll(".dropdown-item");
-      items.forEach(item => {
-        item.addEventListener("click", (e) => {
-          // If preventClose flag is set, skip processing.
-          if (this.preventClose) {
-            console.log("preventClose flag is true; skipping dropdown item click");
-            return;
-          }
-          // If the clicked element (or its ancestor) is a checkbox, do not close the dropdown.
-          if (e.target.matches("input.fav-checkbox") || e.target.closest("input.fav-checkbox")) {
-            console.log("Checkbox click detected inside dropdown item; not closing dropdown.");
-            return;
-          }
-          const committee = item.getAttribute("data-committee");
-          console.log("Setting selected committee to:", committee);
+      // Attach click event only to the committee name spans.
+      const nameSpans = this.containerElement.querySelectorAll(".committee-name");
+      nameSpans.forEach(span => {
+        span.addEventListener("click", (e) => {
+          // This handler only fires when the committee name is clicked.
+          const committee = span.textContent;
+          console.log("Committee name clicked. Setting selected committee to:", committee);
           this.selectedCommittee = committee;
           localStorage.setItem(this.selectedCommitteeKey, committee);
           listDiv.style.display = "none";
           this.renderDropdown();
           this.renderLegend();
+          e.stopPropagation();
         });
       });
       
@@ -137,8 +133,8 @@ export class CommitteeSelector {
           return;
         }
         if (!this.containerElement.contains(e.target)) {
-           listDiv.style.display = "none";
-           console.log("Clicked outside dropdown. Hiding dropdown list.");
+          listDiv.style.display = "none";
+          console.log("Clicked outside dropdown. Hiding dropdown list.");
         }
       });
     }
