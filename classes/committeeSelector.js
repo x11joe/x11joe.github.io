@@ -11,8 +11,6 @@ export class CommitteeSelector {
       this.committeesData = committeesData;
       this.selectedCommitteeKey = "selectedCommittee";
       this.favoritesKey = "favoriteCommittees";
-      // Flag to indicate a checkbox click (to prevent dropdown closing)
-      this.preventClose = false;
       console.log("CommitteeSelector constructor called");
       this.init();
     }
@@ -59,11 +57,10 @@ export class CommitteeSelector {
       html += `<div class="dropdown-list" style="display:none;">`;
       sorted.forEach(committee => {
         html += `<div class="dropdown-item" data-committee="${committee}">`;
-        // Wrap checkbox and name inside a label.
-        html += `<label>`;
-        html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
+        // Committee name is in its own span.
         html += `<span class="committee-name">${committee}</span>`;
-        html += `</label>`;
+        // Checkbox is placed separately.
+        html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -78,11 +75,11 @@ export class CommitteeSelector {
         console.log("Dropdown selected clicked. List display:", listDiv.style.display);
       });
       
-      // Attach click event only to the committee name spans.
+      // Attach click event ONLY to the committee name spans.
       const nameSpans = this.containerElement.querySelectorAll(".committee-name");
       nameSpans.forEach(span => {
         span.addEventListener("click", (e) => {
-          // This handler only fires when the committee name is clicked.
+          e.stopPropagation();
           const committee = span.textContent;
           console.log("Committee name clicked. Setting selected committee to:", committee);
           this.selectedCommittee = committee;
@@ -90,20 +87,18 @@ export class CommitteeSelector {
           listDiv.style.display = "none";
           this.renderDropdown();
           this.renderLegend();
-          e.stopPropagation();
         });
       });
       
-      // Add event for checkboxes in capture phase.
+      // Attach click event for checkboxes.
       const checkboxes = this.containerElement.querySelectorAll(".fav-checkbox");
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener("click", (e) => {
           console.log("Checkbox event triggered. Target:", e.target);
+          // Prevent the checkbox click from bubbling up.
           e.stopPropagation();
           e.preventDefault();
-          this.preventClose = true;
-          console.log("preventClose set to true");
-          // Toggle the checked state manually.
+          // Toggle the checkbox manually.
           checkbox.checked = !checkbox.checked;
           console.log("Checkbox new state:", checkbox.checked);
           const committee = checkbox.getAttribute("data-committee");
@@ -117,24 +112,18 @@ export class CommitteeSelector {
             console.log("Removed", committee, "from favorites");
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
+          // Re-render the dropdown and legend.
           this.renderDropdown();
-          // Reset the preventClose flag after a short delay.
-          setTimeout(() => {
-            this.preventClose = false;
-            console.log("preventClose reset to false");
-          }, 150);
-        }, true);
+          this.renderLegend();
+        });
       });
       
       // Hide dropdown when clicking outside.
       document.addEventListener("click", (e) => {
-        if (this.preventClose) {
-          console.log("preventClose is true; not closing dropdown");
-          return;
-        }
+        // Only close if the click is outside the container.
         if (!this.containerElement.contains(e.target)) {
-          listDiv.style.display = "none";
-          console.log("Clicked outside dropdown. Hiding dropdown list.");
+           listDiv.style.display = "none";
+           console.log("Clicked outside dropdown. Hiding dropdown list.");
         }
       });
     }
