@@ -48,9 +48,9 @@ export class CommitteeSelector {
       html += `<div class="dropdown-list" style="display:${this.isDropdownOpen ? 'block' : 'none'};">`;
       sorted.forEach(committee => {
         html += `<div class="dropdown-item" data-committee="${committee}">`;
-        // Wrap committee name and checkbox in separate elements.
-        html += `<span class="committee-name">${committee}</span>`;
+        // Checkbox is now rendered first.
         html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
+        html += `<span class="committee-name">${committee}</span>`;
         html += `</div>`;
       });
       html += `</div>`;
@@ -86,11 +86,9 @@ export class CommitteeSelector {
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener("click", (e) => {
           console.log("Checkbox event triggered. Target:", e.target);
-          // Stop propagation so parent's click doesn't fire.
           e.stopPropagation();
-          // Do not call e.preventDefault() here so the default toggle occurs.
+          // Do not call e.preventDefault() so that the default checkbox toggle occurs.
           const committee = checkbox.getAttribute("data-committee");
-          // The checkbox's checked state will update automatically; read it.
           console.log("Checkbox state before update:", checkbox.checked);
           if (checkbox.checked) {
             if (!this.favoriteCommittees.includes(committee)) {
@@ -102,7 +100,6 @@ export class CommitteeSelector {
             console.log("Removed", committee, "from favorites");
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
-          // Re-render dropdown without closing it.
           this.renderDropdown();
           this.renderLegend();
         });
