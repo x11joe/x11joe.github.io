@@ -11,6 +11,7 @@ export class CommitteeSelector {
       this.committeesData = committeesData;
       this.selectedCommitteeKey = "selectedCommittee";
       this.favoritesKey = "favoriteCommittees";
+      this.preventClose = false; // Flag to prevent closing when checkbox is clicked.
       console.log("CommitteeSelector constructor called");
       this.init();
     }
@@ -100,6 +101,9 @@ export class CommitteeSelector {
           console.log("Checkbox event triggered. Target:", e.target);
           e.stopPropagation();
           e.preventDefault();
+          // Set flag so document click doesn't close dropdown.
+          this.preventClose = true;
+          console.log("preventClose set to true");
           // Toggle the checked state manually.
           checkbox.checked = !checkbox.checked;
           console.log("Checkbox new state:", checkbox.checked);
@@ -114,12 +118,21 @@ export class CommitteeSelector {
             console.log("Removed", committee, "from favorites");
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
+          // Delay resetting the flag to ensure the document click doesn't fire immediately.
+          setTimeout(() => {
+            this.preventClose = false;
+            console.log("preventClose reset to false");
+          }, 100);
           this.renderDropdown();
         }, true);
       });
       
       // Hide dropdown when clicking outside.
       document.addEventListener("click", (e) => {
+        if (this.preventClose) {
+          console.log("preventClose is true; not closing dropdown");
+          return;
+        }
         if (!this.containerElement.contains(e.target)) {
            listDiv.style.display = "none";
            console.log("Clicked outside dropdown. Hiding dropdown list.");
