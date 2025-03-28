@@ -2,7 +2,7 @@ import { DefaultRenderer } from "./classes/defaultRenderer.js";
 import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
 import { MemberModule } from "./classes/memberModule.js";
 import { TokenSystem } from "./classes/tokenSystem.js";
-import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./classes/defaultCommittees.js";
+import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./classes/defaultCommittees5.js";
 import { CommitteeSelector } from "./classes/committeeSelector.js";
 
 // Import the flow data. (Using 'with' syntax for your environment.)
