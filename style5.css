@@ -14,10 +14,12 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
   
+  /* Controls layout */
   .controls {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    margin-top: 15px;
   }
   
   /* Token system styles */
@@ -82,22 +84,62 @@ body {
   
   /* Committee selector styles */
   .committee-selector {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
+    margin-bottom: 15px;
+    position: relative;
+    max-width: 700px;
   }
   
-  #committee-dropdown {
+  .committee-selector label {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .committee-selector .dropdown-selected {
     padding: 5px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
     font-size: 14px;
   }
   
+  .committee-selector .dropdown-list {
+    position: absolute;
+    z-index: 1000;
+    top: 100%;
+    left: 0;
+    right: 0;
+    border: 1px solid #ccc;
+    background: #fff;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+  }
+  
+  .committee-selector .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    cursor: pointer;
+  }
+  
+  .committee-selector .dropdown-item:hover {
+    background: #f0f0f0;
+  }
+  
+  .committee-selector .fav-checkbox {
+    margin-right: 5px;
+  }
+  
+  /* Fixed committee legend on the right */
   .committee-legend {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 250px;
     border: 1px solid #ccc;
     padding: 10px;
     background: #fafafa;
     border-radius: 4px;
-    flex-grow: 1;
   }
   
   .committee-legend ul {

@@ -8,22 +8,20 @@
 <body>
   <div class="container">
     <h1>Legislative Events Scriber Prototype V.1.0.0</h1>
+    <!-- Committee selector is at the top -->
+    <div id="committee-selector" class="committee-selector"></div>
+    <!-- Controls for token system -->
     <div class="controls">
-      <!-- Token input field and suggestions -->
       <div id="token-container" class="token-container">
         <!-- Tokens will be added here -->
         <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
       </div>
       <div id="suggestions-container" class="suggestions-container"></div>
-      
-      <!-- Committee selector control -->
-      <div id="committee-selector" class="committee-selector">
-        <label for="committee-dropdown">Select Committee:</label>
-        <select id="committee-dropdown"></select>
-        <div id="committee-legend" class="committee-legend"></div>
-      </div>
     </div>
   </div>
+  
+  <!-- Fixed committee legend on the far right -->
+  <div id="committee-legend" class="committee-legend"></div>
   
   <!-- Main app logic loaded as a module -->
   <script type="module" src="main5.js"></script>

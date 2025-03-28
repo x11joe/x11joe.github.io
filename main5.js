@@ -2,7 +2,7 @@ import { DefaultRenderer } from "./classes/defaultRenderer.js";
 import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
 import { MemberModule } from "./classes/memberModule.js";
 import { TokenSystem } from "./classes/tokenSystem.js";
-import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./defaultCommittees5.js";
+import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./classes/defaultCommittees.js";
 import { CommitteeSelector } from "./classes/committeeSelector.js";
 
 // Import the flow data. (Using 'with' syntax for your environment.)
@@ -19,13 +19,14 @@ classRegistry["Member_Module"] = new MemberModule();
 const flowData = flowDataRaw;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Instantiate TokenSystem.
   const tokenContainer = document.getElementById("token-container");
   const tokenInput = document.getElementById("token-input");
   const suggestionsContainer = document.getElementById("suggestions-container");
   new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer);
   
-  // Instantiate the committee selector.
-  const committeeDropdown = document.getElementById("committee-dropdown");
+  // Instantiate the CommitteeSelector.
+  const committeeSelectorContainer = document.getElementById("committee-selector");
   const committeeLegend = document.getElementById("committee-legend");
-  new CommitteeSelector(committeeDropdown, committeeLegend, DEFAULT_COMMITTEES);
+  new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES);
 });
