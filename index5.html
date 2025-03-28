@@ -8,13 +8,21 @@
 <body>
   <div class="container">
     <h1>Legislative Event Scribe</h1>
-    <!-- The token input field -->
-    <div id="token-container" class="token-container">
-      <!-- Tokens will be added here -->
-      <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
+    <div class="controls">
+      <!-- Token input field and suggestions -->
+      <div id="token-container" class="token-container">
+        <!-- Tokens will be added here -->
+        <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
+      </div>
+      <div id="suggestions-container" class="suggestions-container"></div>
+      
+      <!-- Committee selector control -->
+      <div id="committee-selector" class="committee-selector">
+        <label for="committee-dropdown">Select Committee:</label>
+        <select id="committee-dropdown"></select>
+        <div id="committee-legend" class="committee-legend"></div>
+      </div>
     </div>
-    <!-- Suggestions dropdown -->
-    <div id="suggestions-container" class="suggestions-container"></div>
   </div>
   
   <!-- Main app logic loaded as a module -->

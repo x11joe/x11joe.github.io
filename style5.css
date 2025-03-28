@@ -3,18 +3,25 @@ body {
     background: #f7f7f7;
     margin: 0;
     padding: 20px;
-}
+  }
   
-.container {
+  .container {
     max-width: 700px;
     margin: auto;
     background: #fff;
     padding: 20px;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+  }
   
-.token-container {
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  /* Token system styles */
+  .token-container {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -23,37 +30,37 @@ body {
     border-radius: 4px;
     min-height: 40px;
     background: #fff;
-}
+  }
   
-.token {
+  .token {
     background: #e0e0e0;
     border-radius: 3px;
     padding: 5px 10px;
     margin: 3px;
     cursor: pointer;
     user-select: none;
-}
+  }
   
-.token:hover {
+  .token:hover {
     background: #d0d0d0;
-}
+  }
   
-#token-input {
+  #token-input {
     border: none;
     flex-grow: 1;
     min-width: 150px;
     padding: 5px;
     font-size: 14px;
     outline: none;
-}
+  }
   
-.suggestions-container {
+  .suggestions-container {
     position: relative;
     width: 100%;
     margin-top: 5px;
-}
+  }
   
-.suggestions-container ul {
+  .suggestions-container ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -62,13 +69,44 @@ body {
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
-}
+  }
   
-.suggestions-container li {
+  .suggestions-container li {
     padding: 8px 10px;
     cursor: pointer;
-}
+  }
   
-.suggestions-container li:hover {
+  .suggestions-container li:hover {
     background: #f0f0f0;
-}
+  }
+  
+  /* Committee selector styles */
+  .committee-selector {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  #committee-dropdown {
+    padding: 5px;
+    font-size: 14px;
+  }
+  
+  .committee-legend {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: #fafafa;
+    border-radius: 4px;
+    flex-grow: 1;
+  }
+  
+  .committee-legend ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .committee-legend li {
+    padding: 4px 0;
+  }
+  
