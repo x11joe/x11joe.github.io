@@ -15,7 +15,7 @@ export class CommitteeSelector {
       console.log("CommitteeSelector constructor called");
       this.init();
     }
-  
+    
     init() {
       this.committeeNames = Object.keys(this.committeesData);
       console.log("Available committees:", this.committeeNames);
@@ -33,41 +33,44 @@ export class CommitteeSelector {
       this.renderDropdown();
       this.renderLegend();
     }
-  
+    
     renderDropdown() {
-      const favorites = this.committeeNames.filter(name => this.favoriteCommittees.includes(name)).sort();
-      const nonFavorites = this.committeeNames.filter(name => !this.favoriteCommittees.includes(name)).sort();
+      // Separate favorites and non-favorites.
+      const favorites = this.committeeNames.filter(name => this.favoriteCommittees.includes(name));
+      const nonFavorites = this.committeeNames.filter(name => !this.favoriteCommittees.includes(name));
+      favorites.sort();
+      nonFavorites.sort();
       const sorted = favorites.concat(nonFavorites);
       console.log("Sorted committee list:", sorted);
-  
+      
+      // Build custom dropdown HTML.
       let html = `<div class="dropdown-selected">${this.selectedCommittee} ▾</div>`;
       html += `<div class="dropdown-list" style="display:${this.isDropdownOpen ? 'block' : 'none'};">`;
       sorted.forEach(committee => {
         html += `<div class="dropdown-item" data-committee="${committee}">`;
-        html += `<label>`;
-        html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
+        // Wrap committee name and checkbox in separate elements.
         html += `<span class="committee-name">${committee}</span>`;
-        html += `</label>`;
+        html += `<input type="checkbox" class="fav-checkbox" data-committee="${committee}" ${this.favoriteCommittees.includes(committee) ? "checked" : ""}>`;
         html += `</div>`;
       });
       html += `</div>`;
       this.containerElement.innerHTML = html;
-  
+      
       const selectedDiv = this.containerElement.querySelector(".dropdown-selected");
       const listDiv = this.containerElement.querySelector(".dropdown-list");
-  
-      // Toggle dropdown visibility
+      
       selectedDiv.addEventListener("click", (e) => {
         e.stopPropagation();
         this.isDropdownOpen = !this.isDropdownOpen;
         listDiv.style.display = this.isDropdownOpen ? "block" : "none";
         console.log("Dropdown selected clicked. isDropdownOpen:", this.isDropdownOpen);
       });
-  
-      // Handle committee selection
+      
+      // Attach click event ONLY to the committee name spans.
       const nameSpans = this.containerElement.querySelectorAll(".committee-name");
       nameSpans.forEach(span => {
         span.addEventListener("click", (e) => {
+          e.stopPropagation();
           const committee = span.textContent;
           console.log("Committee name clicked. Setting selected committee to:", committee);
           this.selectedCommittee = committee;
@@ -75,18 +78,20 @@ export class CommitteeSelector {
           this.isDropdownOpen = false; // Close dropdown on selection
           this.renderDropdown();
           this.renderLegend();
-          e.stopPropagation();
         });
       });
-  
-      // Handle checkbox clicks
+      
+      // Attach click event for checkboxes.
       const checkboxes = this.containerElement.querySelectorAll(".fav-checkbox");
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener("click", (e) => {
+          console.log("Checkbox event triggered. Target:", e.target);
+          // Stop propagation so parent's click doesn't fire.
           e.stopPropagation();
-          e.preventDefault();
-          checkbox.checked = !checkbox.checked; // Toggle manually
+          // Do not call e.preventDefault() here so the default toggle occurs.
           const committee = checkbox.getAttribute("data-committee");
+          // The checkbox's checked state will update automatically; read it.
+          console.log("Checkbox state before update:", checkbox.checked);
           if (checkbox.checked) {
             if (!this.favoriteCommittees.includes(committee)) {
               this.favoriteCommittees.push(committee);
@@ -97,22 +102,22 @@ export class CommitteeSelector {
             console.log("Removed", committee, "from favorites");
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
-          this.renderDropdown(); // Re-render, preserving isDropdownOpen state
+          // Re-render dropdown without closing it.
+          this.renderDropdown();
+          this.renderLegend();
         });
       });
-  
-      // Close dropdown when clicking outside
+      
+      // Hide dropdown when clicking outside.
       document.addEventListener("click", (e) => {
         if (!this.containerElement.contains(e.target)) {
           this.isDropdownOpen = false;
-          if (listDiv) {
-            listDiv.style.display = "none";
-          }
+          listDiv.style.display = "none";
           console.log("Clicked outside dropdown. Hiding dropdown list.");
         }
       });
     }
-  
+    
     renderLegend() {
       console.log("Rendering legend for committee:", this.selectedCommittee);
       const members = this.committeesData[this.selectedCommittee] || [];
@@ -123,8 +128,9 @@ export class CommitteeSelector {
       html += "</ul>";
       this.legendElement.innerHTML = html;
     }
-  
+    
     getSelectedCommittee() {
       return this.selectedCommittee;
     }
-}
+  }
+  
