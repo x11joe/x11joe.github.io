@@ -1,6 +1,6 @@
 [
     {   
-        "Member" : {
+        "Member Action" : {
             "Class": "Member_Module",
             "Options": ["Moved","Seconded","Withdrew","Introduced","Proposed"],
             "Moved": {
