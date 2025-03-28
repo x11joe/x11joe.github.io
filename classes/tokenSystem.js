@@ -51,36 +51,45 @@ export class TokenSystem {
      * @returns {Object} The current branch data.
      */
     getCurrentBranchData() {
-      // No tokens? Return an object with starting module names.
-      if (this.tokens.length === 0) {
-        // Each item in the flow array is an object with a single key.
-        const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
-        return { Options: startingModules };
-      }
-      
-      // Otherwise, find the branch corresponding to the tokens.
-      // The first token should match one of the modules.
-      const moduleName = this.tokens[0];
-      let currentData = null;
-      for (let i = 0; i < this.flowData.length; i++) {
-        if (this.flowData[i][moduleName]) {
-          currentData = this.flowData[i][moduleName];
-          break;
+        // No tokens? Return an object with starting module names.
+        if (this.tokens.length === 0) {
+          const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
+          return { Options: startingModules };
         }
-      }
-      if (!currentData) return {};
-      
-      // Traverse deeper if more tokens exist.
-      for (let i = 1; i < this.tokens.length; i++) {
-        const token = this.tokens[i];
-        if (currentData[token]) {
-          currentData = currentData[token];
-        } else {
-          currentData = {};
+        
+        // Otherwise, traverse the flow.
+        let currentData = null;
+        // The first token should match one of the modules.
+        const moduleName = this.tokens[0];
+        for (let i = 0; i < this.flowData.length; i++) {
+          if (this.flowData[i][moduleName]) {
+            currentData = this.flowData[i][moduleName];
+            break;
+          }
         }
-      }
-      return currentData;
+        if (!currentData) return {};
+      
+        // Traverse deeper if more tokens exist.
+        for (let i = 1; i < this.tokens.length; i++) {
+          const token = this.tokens[i];
+          if (currentData[token]) {
+            currentData = currentData[token];
+          } else {
+            currentData = {};
+          }
+        }
+        
+        // If we're just one level deep (i.e. custom module completed),
+        // remove the custom "Class" property so that default rendering is used next.
+        if (this.tokens.length === 1 && currentData.hasOwnProperty("Options")) {
+          // Create a shallow copy without the "Class" property.
+          const { Class, ...rest } = currentData;
+          currentData = rest;
+        }
+        
+        return currentData;
     }
+      
     
     /**
      * Update the suggestions based on the current branch and input.
