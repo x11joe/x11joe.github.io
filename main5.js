@@ -1,6 +1,6 @@
-//main5.js
 import { DefaultRenderer } from "./classes/defaultRenderer.js";
 import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
+import { MemberModule } from "./classes/memberModule.js";
 import { TokenSystem } from "./classes/tokenSystem.js";
 
 // Import the flow data. (Using 'with' syntax for your environment.)
@@ -13,10 +13,11 @@ const classRegistry = {};
 const defaultRenderer = new DefaultRenderer();
 classRegistry["DefaultRenderer"] = defaultRenderer;
 
-// Register our custom renderer for Rerefer_Committee_Module.
+// Register our custom renderers.
 classRegistry["Rerefer_Committee_Module"] = new RereferCommitteeModule();
+classRegistry["Member_Module"] = new MemberModule();
 
-// Instead of extracting only the "Member" branch, use the complete flow data.
+// Instead of extracting only one branch, use the complete flow data.
 const flowData = flowDataRaw;
 
 // Instantiate TokenSystem once DOM content is loaded.
