@@ -1,4 +1,4 @@
-// classes/defaultCommittees.js
+// defaultCommittees.js
 export const FEMALE_NAMES = [
     "Diane Larson",
     "Kathy Hogan",
