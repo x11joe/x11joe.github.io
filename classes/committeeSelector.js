@@ -1,8 +1,8 @@
 // classes/committeeSelector.js
 export class CommitteeSelector {
     /**
-     * @param {HTMLElement} containerElement - The container element that will hold the custom dropdown.
-     * @param {HTMLElement} legendElement - The container element for the committee legend.
+     * @param {HTMLElement} containerElement - The container element where the custom dropdown will be rendered.
+     * @param {HTMLElement} legendElement - The container element for the fixed committee legend.
      * @param {Object} committeesData - An object mapping committee names to arrays of member strings.
      */
     constructor(containerElement, legendElement, committeesData) {
@@ -48,7 +48,6 @@ export class CommitteeSelector {
       const sorted = favorites.concat(nonFavorites);
       
       // Build custom dropdown HTML.
-      // We'll build a div with a "selected" header and a hidden list.
       let html = `<div class="dropdown-selected">${this.selectedCommittee} &#9662;</div>`;
       html += `<div class="dropdown-list" style="display:none;">`;
       sorted.forEach(committee => {
@@ -71,8 +70,8 @@ export class CommitteeSelector {
       const items = this.containerElement.querySelectorAll(".dropdown-item");
       items.forEach(item => {
         item.addEventListener("click", (e) => {
-          // If click is on checkbox, don't change the selected committee.
-          if(e.target.classList.contains("fav-checkbox")) return;
+          // If the clicked element (or its ancestor) is a checkbox, do not close the dropdown.
+          if(e.target.closest(".fav-checkbox")) return;
           const committee = item.getAttribute("data-committee");
           this.selectedCommittee = committee;
           localStorage.setItem(this.selectedCommitteeKey, committee);
@@ -113,7 +112,7 @@ export class CommitteeSelector {
       const members = this.committeesData[this.selectedCommittee] || [];
       let html = "<ul>";
       members.forEach(member => {
-        // Later we can check FEMALE_NAMES to change titles.
+        // Later, we can check FEMALE_NAMES to update titles (e.g., 'Chairman' to 'Chairwoman').
         html += `<li>${member}</li>`;
       });
       html += "</ul>";
