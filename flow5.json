@@ -120,7 +120,7 @@
         }
     },
     {
-        "MeetingAction": {
+        "Meeting Action": {
             "Class": "Meeting_Actions_Module",
             "Options": ["Closed Hearing", "Recessed Meeting", "Adjourned Meeting", "Reconvened Meeting"],
             "Closed Hearing": {},
@@ -130,7 +130,7 @@
         }
     },
     {
-        "VoiceVote": {
+        "Voice Vote": {
             "Class": "Voice_Vote_Module",
             "Options" : ["on Amendment", "on Reconsider"],
             "on Amendment": {
@@ -146,7 +146,7 @@
         }
     },
     {
-        "RollcallVote": {
+        "Roll Call Vote": {
             "Class": "Rollcall_Vote_Module",
             "Options": ["Do Pass","Do Not Pass","Amendment","Reconsider","Without Committee Recommendation"],
             "Do Pass": {
