@@ -11,7 +11,7 @@ export class CommitteeSelector {
       this.committeesData = committeesData;
       this.selectedCommitteeKey = "selectedCommittee";
       this.favoritesKey = "favoriteCommittees";
-      this.preventClose = false; // Flag to prevent closing when checkbox is clicked.
+      this.preventClose = false; // Flag to indicate a checkbox click.
       console.log("CommitteeSelector constructor called");
       this.init();
     }
@@ -78,7 +78,11 @@ export class CommitteeSelector {
       const items = this.containerElement.querySelectorAll(".dropdown-item");
       items.forEach(item => {
         item.addEventListener("click", (e) => {
-          console.log("Dropdown item clicked. Event target:", e.target);
+          // If preventClose flag is set, skip processing.
+          if (this.preventClose) {
+            console.log("preventClose flag is true; skipping dropdown item click");
+            return;
+          }
           // If the clicked element (or its ancestor) is a checkbox, do not close the dropdown.
           if (e.target.matches("input.fav-checkbox") || e.target.closest("input.fav-checkbox")) {
             console.log("Checkbox click detected inside dropdown item; not closing dropdown.");
@@ -101,7 +105,6 @@ export class CommitteeSelector {
           console.log("Checkbox event triggered. Target:", e.target);
           e.stopPropagation();
           e.preventDefault();
-          // Set flag so document click doesn't close dropdown.
           this.preventClose = true;
           console.log("preventClose set to true");
           // Toggle the checked state manually.
@@ -118,12 +121,12 @@ export class CommitteeSelector {
             console.log("Removed", committee, "from favorites");
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
-          // Delay resetting the flag to ensure the document click doesn't fire immediately.
+          this.renderDropdown();
+          // Reset the preventClose flag after a short delay.
           setTimeout(() => {
             this.preventClose = false;
             console.log("preventClose reset to false");
-          }, 100);
-          this.renderDropdown();
+          }, 150);
         }, true);
       });
       
