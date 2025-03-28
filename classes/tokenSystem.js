@@ -88,7 +88,8 @@ export class TokenSystem {
         }
         
         return currentData;
-    }
+      }
+      
       
     
     /**
