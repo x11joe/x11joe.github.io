@@ -51,16 +51,16 @@ export class TokenSystem {
      * @returns {Object} The current branch data.
      */
     getCurrentBranchData() {
-        // No tokens? Return an object with starting module names.
+        // If no tokens are selected, return an object whose Options property
+        // contains all the starting module names.
         if (this.tokens.length === 0) {
           const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
           return { Options: startingModules };
         }
         
-        // Otherwise, traverse the flow.
-        let currentData = null;
-        // The first token should match one of the modules.
+        // The first token is the chosen module name.
         const moduleName = this.tokens[0];
+        let currentData = null;
         for (let i = 0; i < this.flowData.length; i++) {
           if (this.flowData[i][moduleName]) {
             currentData = this.flowData[i][moduleName];
@@ -69,8 +69,26 @@ export class TokenSystem {
         }
         if (!currentData) return {};
       
-        // Traverse deeper if more tokens exist.
-        for (let i = 1; i < this.tokens.length; i++) {
+        // Case 1: Only one token is selected.
+        // In this case, the branch likely includes a "Class" property (e.g. "Member_Module")
+        // so the custom renderer will be used to display suggestions (A, B, C).
+        if (this.tokens.length === 1) {
+          return currentData;
+        }
+        
+        // Case 2: Exactly two tokens are selected.
+        // The second token is a custom module selection (e.g. one of A, B, or C).
+        // For the next step, we want to ignore that custom token for branch traversal
+        // so that the branch's own Options (e.g. "Moved", "Seconded", etc.) are used.
+        if (this.tokens.length === 2) {
+          // Remove the custom module indicator by creating a shallow copy without "Class".
+          const { Class, ...rest } = currentData;
+          return rest;
+        }
+        
+        // Case 3: More than two tokens – traverse normally.
+        // (This handles deeper levels in your JSON structure.)
+        for (let i = 2; i < this.tokens.length; i++) {
           const token = this.tokens[i];
           if (currentData[token]) {
             currentData = currentData[token];
@@ -78,20 +96,9 @@ export class TokenSystem {
             currentData = {};
           }
         }
-        
-        // If we're just one level deep (i.e. custom module completed),
-        // remove the custom "Class" property so that default rendering is used next.
-        if (this.tokens.length === 1 && currentData.hasOwnProperty("Options")) {
-          // Create a shallow copy without the "Class" property.
-          const { Class, ...rest } = currentData;
-          currentData = rest;
-        }
-        
         return currentData;
-      }
-      
-      
-    
+    }   
+
     /**
      * Update the suggestions based on the current branch and input.
      */
