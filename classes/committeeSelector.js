@@ -71,7 +71,7 @@ export class CommitteeSelector {
       items.forEach(item => {
         item.addEventListener("click", (e) => {
           // If the clicked element (or its ancestor) is a checkbox, do not close the dropdown.
-          if(e.target.closest(".fav-checkbox")) return;
+          if (e.target.closest(".fav-checkbox")) return;
           const committee = item.getAttribute("data-committee");
           this.selectedCommittee = committee;
           localStorage.setItem(this.selectedCommitteeKey, committee);
@@ -81,14 +81,15 @@ export class CommitteeSelector {
         });
       });
       
-      // Add event for checkboxes.
+      // Add event for checkboxes in capture phase.
       const checkboxes = this.containerElement.querySelectorAll(".fav-checkbox");
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener("click", (e) => {
+          // Stop propagation so that the dropdown item click does not fire.
           e.stopPropagation();
           const committee = checkbox.getAttribute("data-committee");
-          if(checkbox.checked) {
-            if(!this.favoriteCommittees.includes(committee)) {
+          if (checkbox.checked) {
+            if (!this.favoriteCommittees.includes(committee)) {
               this.favoriteCommittees.push(committee);
             }
           } else {
@@ -96,12 +97,12 @@ export class CommitteeSelector {
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
           this.renderDropdown();
-        });
+        }, true);
       });
       
       // Hide dropdown when clicking outside.
       document.addEventListener("click", (e) => {
-        if(!this.containerElement.contains(e.target)) {
+        if (!this.containerElement.contains(e.target)) {
            listDiv.style.display = "none";
         }
       });
