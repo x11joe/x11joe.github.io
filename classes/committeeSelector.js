@@ -42,7 +42,6 @@ export class CommitteeSelector {
       // Separate favorites and non-favorites.
       const favorites = this.committeeNames.filter(name => this.favoriteCommittees.includes(name));
       const nonFavorites = this.committeeNames.filter(name => !this.favoriteCommittees.includes(name));
-      // Sort each group alphabetically.
       favorites.sort();
       nonFavorites.sort();
       const sorted = favorites.concat(nonFavorites);
@@ -62,7 +61,8 @@ export class CommitteeSelector {
       const selectedDiv = this.containerElement.querySelector(".dropdown-selected");
       const listDiv = this.containerElement.querySelector(".dropdown-list");
       
-      selectedDiv.addEventListener("click", () => {
+      selectedDiv.addEventListener("click", (e) => {
+        e.stopPropagation();
         listDiv.style.display = listDiv.style.display === "none" ? "block" : "none";
       });
       
@@ -71,7 +71,11 @@ export class CommitteeSelector {
       items.forEach(item => {
         item.addEventListener("click", (e) => {
           // If the clicked element (or its ancestor) is a checkbox, do not close the dropdown.
-          if (e.target.closest(".fav-checkbox")) return;
+          if (e.target.matches("input.fav-checkbox") || e.target.closest("input.fav-checkbox")) {
+            // Debug: Uncomment the next line to log checkbox clicks.
+            // console.log("Checkbox clicked; not closing dropdown");
+            return;
+          }
           const committee = item.getAttribute("data-committee");
           this.selectedCommittee = committee;
           localStorage.setItem(this.selectedCommitteeKey, committee);
@@ -81,12 +85,15 @@ export class CommitteeSelector {
         });
       });
       
-      // Add event for checkboxes in capture phase.
+      // Add event for checkboxes.
       const checkboxes = this.containerElement.querySelectorAll(".fav-checkbox");
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener("click", (e) => {
-          // Stop propagation so that the dropdown item click does not fire.
+          // Prevent the checkbox click from triggering the parent's click event.
           e.stopPropagation();
+          e.preventDefault();
+          // Toggle the checked state manually.
+          checkbox.checked = !checkbox.checked;
           const committee = checkbox.getAttribute("data-committee");
           if (checkbox.checked) {
             if (!this.favoriteCommittees.includes(committee)) {
@@ -97,7 +104,7 @@ export class CommitteeSelector {
           }
           localStorage.setItem(this.favoritesKey, JSON.stringify(this.favoriteCommittees));
           this.renderDropdown();
-        }, true);
+        });
       });
       
       // Hide dropdown when clicking outside.
@@ -109,11 +116,9 @@ export class CommitteeSelector {
     }
     
     renderLegend() {
-      // Render the committee members in a fixed legend.
       const members = this.committeesData[this.selectedCommittee] || [];
       let html = "<ul>";
       members.forEach(member => {
-        // Later, we can check FEMALE_NAMES to update titles (e.g., 'Chairman' to 'Chairwoman').
         html += `<li>${member}</li>`;
       });
       html += "</ul>";
