@@ -118,24 +118,51 @@ export class CommitteeSelector {
     
     renderLegend() {
       const members = this.committeesData[this.selectedCommittee] || [];
-      let html = "<ul>";
-      members.forEach(memberStr => {
-          let name, title;
+      const isSenate = this.selectedCommittee.toLowerCase().startsWith('senate');
+      const header = isSenate ? 'Senators' : 'Representatives';
+  
+      // Function to parse member string into name and title
+      const parseMember = (memberStr) => {
           if (memberStr.includes(" - ")) {
-              [name, title] = memberStr.split(" - ");
+              const [name, title] = memberStr.split(" - ");
               const isFemale = this.femaleNames.includes(name);
-              if (isFemale) {
-                  title = title.replace("Chairman", "Chairwoman").replace("Vice Chairman", "Vice Chairwoman");
-              }
-              html += `<li class="member-item" data-member="${name}">${title} ${name}</li>`;
+              const adjustedTitle = isFemale
+                  ? title.replace("Chairman", "Chairwoman").replace("Vice Chairman", "Vice Chairwoman")
+                  : title;
+              return { name, title: adjustedTitle };
           } else {
-              name = memberStr;
-              html += `<li class="member-item" data-member="${name}">${name}</li>`;
+              return { name: memberStr, title: null };
           }
+      };
+  
+      // Identify Chairman/Chairwoman and Vice Chairman/Vice Chairwoman
+      const parsedMembers = members.map(parseMember);
+      const chairman = parsedMembers.find(member => 
+          member.title && (member.title.includes("Chairman") || member.title.includes("Chairwoman"))
+      );
+      const viceChairman = parsedMembers.find(member => 
+          member.title && (member.title.includes("Vice Chairman") || member.title.includes("Vice Chairwoman"))
+      );
+      const others = parsedMembers.filter(member => member !== chairman && member !== viceChairman);
+  
+      // Build the HTML
+      let html = `<h3>${header}</h3><ul>`;
+      if (chairman) {
+          html += `<li class="member-item" data-member="${chairman.name}">${chairman.title} ${chairman.name}</li>`;
+      }
+      if (viceChairman) {
+          html += `<li class="member-item" data-member="${viceChairman.name}">${viceChairman.title} ${viceChairman.name}</li>`;
+      }
+      if (chairman || viceChairman) {
+          html += `<hr class="member-separator">`;
+      }
+      others.forEach(member => {
+          html += `<li class="member-item" data-member="${member.name}">${member.name}</li>`;
       });
       html += "</ul>";
       this.legendElement.innerHTML = html;
-
+  
+      // Add click event listener for member items
       this.legendElement.addEventListener('click', (e) => {
           const memberItem = e.target.closest('.member-item');
           if (memberItem && this.tokenSystem) {

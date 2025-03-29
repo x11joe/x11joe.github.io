@@ -159,6 +159,12 @@ body {
     text-decoration: none;
 }
 
+.committee-legend .member-separator {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 5px 0;
+}
+
 .shortcut-legend {
     position: fixed;
     top: 20px;

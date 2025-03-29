@@ -106,18 +106,25 @@ export class TokenSystem {
   /**
    * Update the suggestions based on the current branch and input.
    */
+  // classes/tokenSystem.js
   updateSuggestions() {
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
     const options = branchData["Options"] || [];
     let renderer;
     if (branchData["Class"]) {
-      renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
-      renderer = this.defaultRenderer;
+        renderer = this.defaultRenderer;
     }
     const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
-    const context = { members: currentMembers };
+    const allCommittees = Object.keys(this.committeeSelector.committeesData);
+    const selectedCommittee = this.committeeSelector.getSelectedCommittee();
+    const context = {
+        members: currentMembers,
+        allCommittees: allCommittees,
+        selectedCommittee: selectedCommittee
+    };
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
   }
