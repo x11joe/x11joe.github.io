@@ -59,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   committeeSelector.setTokenSystem(tokenSystem);
   historyManager.setTokenSystem(tokenSystem);
+  historyManager.render(); // Call render after setting tokenSystem
 
   const shortcutLegendContainer = document.getElementById("shortcut-legend");
   new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);

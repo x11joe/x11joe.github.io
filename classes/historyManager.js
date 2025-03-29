@@ -19,7 +19,6 @@ export class HistoryManager {
             this.historyData = {};
             this.nextId = 0;
         }
-        this.render();
     }
 
     addEntry(tokens, bill, billType) {
@@ -83,7 +82,10 @@ export class HistoryManager {
                 tbody.appendChild(row);
     
                 const editBtn = row.querySelector('.edit-btn');
-                const isEditingThis = this.tokenSystem.isEditing && this.tokenSystem.editingEntry && this.tokenSystem.editingEntry.key === key && this.tokenSystem.editingEntry.id === entry.id;
+                let isEditingThis = false;
+                if (this.tokenSystem && this.tokenSystem.isEditing && this.tokenSystem.editingEntry) {
+                    isEditingThis = this.tokenSystem.editingEntry.key === key && this.tokenSystem.editingEntry.id === entry.id;
+                }
                 if (isEditingThis) {
                     editBtn.textContent = '❌';
                     editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
