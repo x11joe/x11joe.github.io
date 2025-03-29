@@ -307,11 +307,43 @@ body {
     color: blue;
     cursor: pointer;
     text-decoration: underline;
+    font-size: 16px;
+    padding: 2px;
 }
 
 .edit-btn:hover,
 .delete-btn:hover {
     color: darkblue;
+}
+
+.tokens-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.tech-clerk, .procedural-clerk {
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.tech-clerk label, .procedural-clerk label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.bill-group th:nth-child(3), .bill-group th:nth-child(4) {
+    width: 40px;
+    text-align: center;
+}
+
+.bill-group td:nth-child(3), .bill-group td:nth-child(4) {
+    text-align: center;
 }
 
 @media (max-width: 900px) {

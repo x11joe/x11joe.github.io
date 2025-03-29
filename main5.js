@@ -43,31 +43,32 @@ const shortcuts = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-    const tokenContainer = document.getElementById("token-container");
-    const tokenInput = document.getElementById("token-input");
-    const suggestionsContainer = document.getElementById("suggestions-container");
+  const tokenContainer = document.getElementById("token-container");
+  const tokenInput = document.getElementById("token-input");
+  const suggestionsContainer = document.getElementById("suggestions-container");
 
-    const committeeSelectorContainer = document.getElementById("committee-selector");
-    const committeeLegend = document.getElementById("committee-legend");
+  const committeeSelectorContainer = document.getElementById("committee-selector");
+  const committeeLegend = document.getElementById("committee-legend");
 
-    const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES, FEMALE_NAMES);
+  const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES, FEMALE_NAMES);
 
-    const historyContainer = document.getElementById("history-table");
-    const historyManager = new HistoryManager(historyContainer, committeeSelector);
+  const historyContainer = document.getElementById("history-table");
+  const historyManager = new HistoryManager(historyContainer, committeeSelector);
 
-    const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager);
+  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager);
 
-    committeeSelector.setTokenSystem(tokenSystem);
+  committeeSelector.setTokenSystem(tokenSystem);
+  historyManager.setTokenSystem(tokenSystem);
 
-    const shortcutLegendContainer = document.getElementById("shortcut-legend");
-    new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
+  const shortcutLegendContainer = document.getElementById("shortcut-legend");
+  new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
 
-    document.querySelectorAll('.copy-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const targetId = button.dataset.target;
-            const textField = document.getElementById(targetId);
-            const text = textField.value;
-            Utils.copyWithGlow(textField, text);
-        });
-    });
+  document.querySelectorAll('.copy-button').forEach(button => {
+      button.addEventListener('click', () => {
+          const targetId = button.dataset.target;
+          const textField = document.getElementById(targetId);
+          const text = textField.value;
+          Utils.copyWithGlow(textField, text);
+      });
+  });
 });

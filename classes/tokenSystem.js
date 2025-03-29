@@ -24,10 +24,12 @@ export class TokenSystem {
     this.highlightedIndex = -1;
     this.techTextField = document.getElementById("tech-text");
     this.procedureTextField = document.getElementById("procedure-text");
+    this.isEditing = false;
+    this.editingEntry = null;
     this._bindEvents();
     this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
     this.updateSuggestions();
-}
+  }
   
   _bindEvents() {
     // Bind key events on the token input.
@@ -235,12 +237,19 @@ export class TokenSystem {
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (e.key === "Enter") {
-        if (this.tokens.length > 0) {
+        if (this.isEditing) {
+            const {key, id} = this.editingEntry;
+            this.historyManager.updateEntry(key, id, this.tokens);
+            this.cancelEdit();
+        } else if (this.tokens.length > 0) {
             const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
             const billType = document.getElementById('bill-type').value;
             this.historyManager.addEntry(this.tokens, bill, billType);
             this.setTokens([]);
         }
+        e.preventDefault();
+    } else if (e.key === "Escape" && this.isEditing) {
+        this.cancelEdit();
         e.preventDefault();
     } else if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -294,6 +303,18 @@ export class TokenSystem {
       }
     }
     this.updateSuggestions();
+  }
+
+  startEdit(key, id, tokens) {
+    this.isEditing = true;
+    this.editingEntry = {key, id};
+    this.setTokens(tokens);
+  }
+
+  cancelEdit() {
+    this.isEditing = false;
+    this.editingEntry = null;
+    this.setTokens([]);
   }
 }
   

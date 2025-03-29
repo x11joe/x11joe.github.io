@@ -5,8 +5,20 @@ export class HistoryManager {
     constructor(containerElement, committeeSelector) {
         this.containerElement = containerElement;
         this.committeeSelector = committeeSelector;
-        this.historyData = {}; // { "bill-billType": [{ id, time, tokens, techText, baseProcedureText }] }
-        this.nextId = 0;
+        const storedData = localStorage.getItem("historyData");
+        if (storedData) {
+            this.historyData = JSON.parse(storedData);
+            let maxId = 0;
+            for (const key in this.historyData) {
+                const entries = this.historyData[key];
+                const maxInGroup = Math.max(...entries.map(entry => entry.id));
+                if (maxInGroup > maxId) maxId = maxInGroup;
+            }
+            this.nextId = maxId + 1;
+        } else {
+            this.historyData = {};
+            this.nextId = 0;
+        }
         this.render();
     }
 
@@ -20,6 +32,7 @@ export class HistoryManager {
         const baseProcedureText = TextConstructor.getProcedureText(tokens, this.committeeSelector);
         const entry = { id: this.nextId++, time, tokens, techText, baseProcedureText };
         this.historyData[key].push(entry);
+        this.saveToStorage();
         this.render();
     }
 
@@ -45,7 +58,8 @@ export class HistoryManager {
                 <tbody></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            this.historyData[key].forEach(entry => {
+            const sortedEntries = this.historyData[key].sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
+            sortedEntries.forEach(entry => {
                 const row = document.createElement('tr');
                 row.dataset.id = entry.id;
                 row.dataset.key = key;
@@ -53,45 +67,48 @@ export class HistoryManager {
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">
-                        <div>Tokens: ${entry.tokens.join(' -> ')}</div>
-                        <div class="copyable">Tech Clerk: ${entry.techText}</div>
-                        <div class="copyable">Procedure Clerk: ${procedureWithTime}</div>
+                        <div class="tokens-container">${entry.tokens.map(token => `<span class="token">${token}</span>`).join('')}</div>
+                        <div class="tech-clerk">
+                            <label>Tech Clerk</label>
+                            <div class="copyable">${entry.techText}</div>
+                        </div>
+                        <div class="procedural-clerk">
+                            <label>Procedural Clerk</label>
+                            <div class="copyable">${procedureWithTime}</div>
+                        </div>
                     </td>
-                    <td><button class="edit-btn">Edit</button></td>
-                    <td><button class="delete-btn">Delete</button></td>
+                    <td><button class="edit-btn"></button></td>
+                    <td><button class="delete-btn">🗑️</button></td>
                 `;
                 tbody.appendChild(row);
+    
+                const editBtn = row.querySelector('.edit-btn');
+                const isEditingThis = this.tokenSystem.isEditing && this.tokenSystem.editingEntry && this.tokenSystem.editingEntry.key === key && this.tokenSystem.editingEntry.id === entry.id;
+                if (isEditingThis) {
+                    editBtn.textContent = '❌';
+                    editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
+                } else {
+                    editBtn.textContent = '✏️';
+                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(key, entry.id, entry.tokens));
+                }
+                const deleteBtn = row.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, key));
             });
             groupDiv.appendChild(header);
             groupDiv.appendChild(table);
             this.containerElement.appendChild(groupDiv);
-
+    
             header.addEventListener('click', () => {
                 table.style.display = table.style.display === 'none' ? '' : 'none';
             });
-
+    
             groupDiv.querySelectorAll('.copyable').forEach(el => {
                 el.addEventListener('click', () => {
-                    const text = el.textContent.split(': ')[1];
+                    const text = el.textContent;
                     Utils.copyWithGlow(el, text);
                 });
             });
-
-            groupDiv.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = parseInt(btn.closest('tr').dataset.id, 10);
-                    this.editEntry(id);
-                });
-            });
-
-            groupDiv.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = parseInt(btn.closest('tr').dataset.id, 10);
-                    const key = btn.closest('tr').dataset.key;
-                    this.deleteEntry(id, key);
-                });
-            });
-
+    
             groupDiv.querySelectorAll('.time').forEach(timeCell => {
                 timeCell.addEventListener('blur', (e) => {
                     const id = parseInt(e.target.closest('tr').dataset.id, 10);
@@ -107,6 +124,7 @@ export class HistoryManager {
             const entry = this.historyData[key].find(e => e.id === id);
             if (entry) {
                 entry.time = newTime;
+                this.saveToStorage();
                 this.render();
                 break;
             }
@@ -118,11 +136,31 @@ export class HistoryManager {
         if (this.historyData[key].length === 0) {
             delete this.historyData[key];
         }
+        this.saveToStorage();
         this.render();
     }
 
     editEntry(id) {
         // Placeholder for future edit functionality beyond time
         alert('Edit functionality for tokens to be implemented');
+    }
+
+    setTokenSystem(tokenSystem) {
+        this.tokenSystem = tokenSystem;
+    }
+
+    updateEntry(key, id, newTokens) {
+        const entry = this.historyData[key].find(e => e.id === id);
+        if (entry) {
+            entry.tokens = newTokens;
+            entry.techText = TextConstructor.getTechText(newTokens, this.committeeSelector);
+            entry.baseProcedureText = TextConstructor.getProcedureText(newTokens, this.committeeSelector);
+            this.saveToStorage();
+            this.render();
+        }
+    }
+
+    saveToStorage() {
+        localStorage.setItem("historyData", JSON.stringify(this.historyData));
     }
 }
