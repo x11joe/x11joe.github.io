@@ -46,13 +46,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const tokenInput = document.getElementById("token-input");
   const suggestionsContainer = document.getElementById("suggestions-container");
   
-  // Instantiate the CommitteeSelector.
+  // Instantiate the CommitteeSelector and store the instance
   const committeeSelectorContainer = document.getElementById("committee-selector");
   const committeeLegend = document.getElementById("committee-legend");
-  new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES);
+  const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES);
 
-  // Instantiate TokenSystem.
-  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, CommitteeSelector);
+  // Pass the committeeSelector instance to TokenSystem
+  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector);
 
   const shortcutLegendContainer = document.getElementById("shortcut-legend");
   new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
