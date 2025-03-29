@@ -45,8 +45,8 @@ export class TokenSystem {
     }
 
     isMemberName(token) {
-      const allMembers = Object.values(this.committeeSelector.committeesData).flat();
-      return allMembers.includes(token);
+      const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
+      return currentMembers.some(member => member.startsWith(token));
     }
     
     /**
@@ -80,7 +80,7 @@ export class TokenSystem {
           return rest;
       }
 
-      for (let i = 2; i < this.tokens.length; i++) {
+      for (let i = 1; i < this.tokens.length; i++) {
           const token = this.tokens[i];
           if (currentData[token]) {
               currentData = currentData[token];

@@ -3,13 +3,15 @@ export class MemberModule {
   constructor() {}
 
   render(options, query, context = {}) {
-    const filtered = options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
-    let html = "<ul>";
-    filtered.forEach(option => {
-      html += `<li data-value="${option}">${option}</li>`;
-    });
-    html += "</ul>";
-    return html;
+      const members = context.members || [];
+      const filtered = members.filter(member => member.toLowerCase().includes(query.toLowerCase()));
+      let html = "<ul>";
+      filtered.forEach(member => {
+          const name = member.includes(" - ") ? member.split(" - ")[0] : member;
+          html += `<li data-value="${name}">${name}</li>`;
+      });
+      html += "</ul>";
+      return html;
   }
 }
   

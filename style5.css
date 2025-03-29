@@ -1,3 +1,4 @@
+/* style5.css */
 body {
     font-family: Arial, sans-serif;
     background: #f7f7f7;
@@ -6,16 +7,15 @@ body {
 }
 
 .container {
-    max-width: calc(100% - 560px); /* 250px left + 250px right + 60px padding/margins */
-    margin-left: 280px; /* Space for shortcut legend */
-    margin-right: 280px; /* Space for committee legend */
+    max-width: calc(100% - 560px);
+    margin-left: 280px;
+    margin-right: 280px;
     background: #fff;
     padding: 20px;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Controls layout */
 .controls {
     display: flex;
     flex-direction: column;
@@ -23,7 +23,6 @@ body {
     margin-top: 15px;
 }
 
-/* Token system styles */
 .token-container {
     display: flex;
     flex-wrap: wrap;
@@ -83,7 +82,6 @@ body {
     background: #f0f0f0;
 }
 
-/* Committee selector styles */
 .committee-selector {
     margin-bottom: 15px;
     position: relative;
@@ -131,7 +129,6 @@ body {
     margin-right: 5px;
 }
 
-/* Fixed committee legend on the right */
 .committee-legend {
     position: fixed;
     top: 20px;
@@ -151,19 +148,17 @@ body {
     padding: 0;
 }
 
-.committee-legend li {
-    padding: 4px 0;
-}
-
 .committee-legend .member-item {
+    padding: 4px 0;
     cursor: pointer;
-    color: blue;
+    color: inherit;
 }
 
 .committee-legend .member-item:hover {
-    text-decoration: underline;
+    background: #f0f0f0;
+    text-decoration: none;
 }
-  
+
 .shortcut-legend {
     position: fixed;
     top: 20px;
