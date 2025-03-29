@@ -12,14 +12,21 @@ export class DefaultRenderer {
      */
     render(options, query, context = {}) {
       let filtered;
-      if (!query) {
-        filtered = options;
+      if (Array.isArray(options) && options.length > 0 && typeof options[0] === 'object') {
+          // Options are objects with value and optional shortcut
+          filtered = options.filter(option => option.value.toLowerCase().includes(query.toLowerCase()));
       } else {
-        filtered = options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
+          // Options are strings
+          filtered = options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
       }
       let html = "<ul>";
       filtered.forEach(option => {
-        html += `<li data-value="${option}">${option}</li>`;
+          if (typeof option === 'string') {
+              html += `<li data-value="${option}">${option}</li>`;
+          } else {
+              const shortcutAttr = option.shortcut ? ` data-shortcut="${option.shortcut}"` : '';
+              html += `<li data-value="${option.value}"${shortcutAttr}>${option.value}</li>`;
+          }
       });
       html += "</ul>";
       return html;

@@ -30,7 +30,12 @@ export class TokenSystem {
     // Bind click event for suggestions.
     this.suggestionsContainer.addEventListener("click", (e) => {
       if (e.target && e.target.nodeName === "LI") {
-        this.addToken(e.target.dataset.value);
+        const value = e.target.dataset.value;
+        if (e.target.hasAttribute('data-shortcut') && e.target.dataset.shortcut === "member") {
+          this.setTokens(["Member Action", value]);
+        } else {
+          this.addToken(value);
+        }
       }
     });
     
@@ -106,11 +111,18 @@ export class TokenSystem {
   /**
    * Update the suggestions based on the current branch and input.
    */
-  // classes/tokenSystem.js
   updateSuggestions() {
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
-    const options = branchData["Options"] || [];
+    let options = branchData["Options"] || [];
+    if (this.tokens.length === 0) {
+        const startingModules = options.map(module => ({ value: module }));
+        const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
+            const name = member.split(" - ")[0];
+            return { value: name, shortcut: "member" };
+        });
+        options = startingModules.concat(memberNames);
+    }
     let renderer;
     if (branchData["Class"]) {
         renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
