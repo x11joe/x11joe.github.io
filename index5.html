@@ -13,18 +13,16 @@
     <h1>Select Standing Committee</h1>
     <!-- Committee selector is at the top -->
     <div id="committee-selector" class="committee-selector"></div>
-    <!-- Constructed text section -->
-    <div id="constructed-text">
-      <div class="text-section">
-        <label for="tech-text">Tech:</label>
-        <input type="text" id="tech-text" readonly>
-        <button class="copy-button" data-target="tech-text">📋</button>
-      </div>
-      <div class="text-section">
-        <label for="procedure-text">Procedure:</label>
-        <input type="text" id="procedure-text" readonly>
-        <button class="copy-button" data-target="procedure-text">📋</button>
-      </div>
+    <!-- Bill and Bill Type inputs -->
+    <div id="bill-info">
+      <label for="bill">Bill:</label>
+      <input type="text" id="bill" placeholder="e.g., SB 2003">
+      <label for="bill-type">Bill Type:</label>
+      <select id="bill-type">
+        <option value="Hearing">Hearing</option>
+        <option value="Committee Work">Committee Work</option>
+        <option value="Conference Committee">Conference Committee</option>
+      </select>
     </div>
     <!-- Controls for token system -->
     <div class="controls">
@@ -33,6 +31,24 @@
         <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
       </div>
       <div id="suggestions-container" class="suggestions-container"></div>
+    </div>
+    <!-- Constructed text section -->
+    <div id="constructed-text">
+      <div class="text-section">
+        <label for="tech-text">Tech Clerk:</label>
+        <input type="text" id="tech-text" readonly>
+        <button class="copy-button" data-target="tech-text">📋</button>
+      </div>
+      <div class="text-section">
+        <label for="procedure-text">Procedure Clerk:</label>
+        <input type="text" id="procedure-text" readonly>
+        <button class="copy-button" data-target="procedure-text">📋</button>
+      </div>
+    </div>
+    <!-- History section -->
+    <div id="history">
+      <h2>History</h2>
+      <div id="history-table"></div>
     </div>
   </div>
   

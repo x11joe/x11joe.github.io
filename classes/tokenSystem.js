@@ -7,8 +7,10 @@ export class TokenSystem {
    * @param {Array} flowData - The full flow definition (an array of module objects).
    * @param {Object} classRegistry - Registry mapping class names to renderers.
    * @param {Object} defaultRenderer - The default renderer instance.
+   * @param {Object} committeeSelector - The CommitteeSelector instance for managing committee members.
+   * @param {Object} historyManager - History manager instance (if applicable, for managing history of token selections).
    */
-  constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector) {
+  constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager) {
     this.tokenContainer = tokenContainer;
     this.tokenInput = tokenInput;
     this.suggestionsContainer = suggestionsContainer;
@@ -16,6 +18,7 @@ export class TokenSystem {
     this.classRegistry = classRegistry;
     this.defaultRenderer = defaultRenderer;
     this.committeeSelector = committeeSelector;
+    this.historyManager = historyManager;
     this.tokens = [];
     this.highlightedIndex = -1;
     this.techTextField = document.getElementById("tech-text");
@@ -23,7 +26,7 @@ export class TokenSystem {
     this._bindEvents();
     this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
     this.updateSuggestions();
-  }
+}
   
   _bindEvents() {
     // Bind key events on the token input.
@@ -73,7 +76,7 @@ export class TokenSystem {
   shortenCommitteeName(committee) {
     return committee.replace(/^(Senate|House)\s+/i, '').replace(/\s+Committee$/i, '');
   }
-  
+
   /**
    * Get the current branch of the flow data based on the selected tokens.
    * If no token is selected, return an object whose Options property is an array
@@ -227,34 +230,8 @@ export class TokenSystem {
   }
   
   updateConstructedText() {
-    if (this.tokens.length < 4 || this.tokens[0] !== "Member Action" || !this.isMemberName(this.tokens[1])) {
-      this.techTextField.value = "";
-      this.procedureTextField.value = "";
-      return;
-    }
-  
-    const memberTitle = this.getMemberTitle();
-    const lastName = this.getLastName(this.tokens[1]);
-    const action = this.tokens[2].toLowerCase();
-    const motion = this.tokens[3];
-  
-    let techText = `${memberTitle} ${lastName} ${action} ${motion}`;
-    let procedureText = `${memberTitle} ${lastName} ${action} a ${motion.toLowerCase()}`;
-  
-    for (let i = 4; i < this.tokens.length; i++) {
-      const token = this.tokens[i];
-      if (token === "As Amended") {
-        techText += " as Amended";
-        procedureText += " as amended";
-      } else if (token === "and Rereferred" && i + 1 < this.tokens.length) {
-        const committee = this.tokens[i + 1];
-        const shortenedCommittee = this.shortenCommitteeName(committee);
-        techText += ` and Rereferred to ${shortenedCommittee}`;
-        procedureText += ` and rereferred to ${shortenedCommittee.toLowerCase()}`;
-        i++; // Skip the next token since it's the committee
-      }
-    }
-  
+    const techText = TextConstructor.getTechText(this.tokens, this.committeeSelector);
+    const procedureText = TextConstructor.getProcedureText(this.tokens, this.committeeSelector);
     this.techTextField.value = techText;
     this.procedureTextField.value = procedureText;
   }
@@ -278,39 +255,47 @@ export class TokenSystem {
   
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (suggestions.length > 0) {
-        this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
-        this.updateHighlighted();
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (suggestions.length > 0) {
-        this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
-        this.updateHighlighted();
-      }
-    } else if (e.key === "Tab") {
-      if (suggestions.length > 0) {
-        e.preventDefault();
-        const selectedSuggestion = suggestions[this.highlightedIndex];
-        const value = selectedSuggestion.dataset.value;
-        if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
-          this.setTokens(["Member Action", value]);
-        } else {
-          this.addToken(value);
+    if (e.key === "Enter") {
+        if (this.tokens.length > 0) {
+            const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+            const billType = document.getElementById('bill-type').value;
+            this.historyManager.addEntry(this.tokens, bill, billType);
+            this.setTokens([]);
         }
-      }
+        e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
+            this.updateHighlighted();
+        }
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+            this.updateHighlighted();
+        }
+    } else if (e.key === "Tab") {
+        if (suggestions.length > 0) {
+            e.preventDefault();
+            const selectedSuggestion = suggestions[this.highlightedIndex];
+            const value = selectedSuggestion.dataset.value;
+            if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
+                this.setTokens(["Member Action", value]);
+            } else {
+                this.addToken(value);
+            }
+        }
     } else if (e.key === "Backspace" && this.tokenInput.value === "") {
-      const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
-      if (tokenElements.length > 0) {
-        const lastTokenEl = tokenElements[tokenElements.length - 1];
-        lastTokenEl.remove();
-        this.tokens.pop();
-        this.updateSuggestions();
-        this.updateConstructedText();
-      }
-      e.preventDefault();
+        const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
+        if (tokenElements.length > 0) {
+            const lastTokenEl = tokenElements[tokenElements.length - 1];
+            lastTokenEl.remove();
+            this.tokens.pop();
+            this.updateSuggestions();
+            this.updateConstructedText();
+        }
+        e.preventDefault();
     }
   }
     

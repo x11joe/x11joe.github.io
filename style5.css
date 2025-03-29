@@ -92,11 +92,6 @@ body {
     max-width: 700px;
 }
 
-.committee-selector label {
-    font-weight: bold;
-    margin-right: 10px;
-}
-
 .committee-selector .dropdown-selected {
     padding: 5px;
     border: 1px solid #ccc;
@@ -202,8 +197,30 @@ body {
     background: #f0f0f0;
 }
 
+#bill-info {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#bill-info label {
+    font-weight: bold;
+}
+
+#bill-info input,
+#bill-info select {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 #constructed-text {
     margin-top: 20px;
+    padding: 15px;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 .text-section {
@@ -214,6 +231,7 @@ body {
 
 .text-section label {
     margin-right: 10px;
+    font-weight: bold;
 }
 
 .text-section input {
@@ -229,6 +247,71 @@ body {
     background: none;
     border: none;
     cursor: pointer;
+}
+
+.glow {
+    box-shadow: 0 0 5px #00ff00;
+}
+
+#history {
+    margin-top: 20px;
+}
+
+.bill-group {
+    margin-bottom: 20px;
+}
+
+.bill-header {
+    cursor: pointer;
+    background: #e0e0e0;
+    padding: 5px;
+    font-weight: bold;
+}
+
+.bill-header:hover {
+    background: #d0d0d0;
+}
+
+.bill-group table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+}
+
+.bill-group th,
+.bill-group td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+.bill-group th {
+    background: #f0f0f0;
+}
+
+.statements div {
+    margin: 4px 0;
+}
+
+.copyable {
+    cursor: pointer;
+}
+
+.copyable:hover {
+    background: #f0f0f0;
+}
+
+.edit-btn,
+.delete-btn {
+    background: none;
+    border: none;
+    color: blue;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.edit-btn:hover,
+.delete-btn:hover {
+    color: darkblue;
 }
 
 @media (max-width: 900px) {
