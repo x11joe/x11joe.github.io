@@ -43,6 +43,11 @@ export class TokenSystem {
         }
       });
     }
+
+    isMemberName(token) {
+      const allMembers = Object.values(this.committeeSelector.committeesData).flat();
+      return allMembers.includes(token);
+    }
     
     /**
      * Get the current branch of the flow data based on the selected tokens.
@@ -51,53 +56,40 @@ export class TokenSystem {
      * @returns {Object} The current branch data.
      */
     getCurrentBranchData() {
-        // If no tokens are selected, return an object whose Options property
-        // contains all the starting module names.
-        if (this.tokens.length === 0) {
+      if (this.tokens.length === 0) {
           const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
           return { Options: startingModules };
-        }
-        
-        // The first token is the chosen module name.
-        const moduleName = this.tokens[0];
-        let currentData = null;
-        for (let i = 0; i < this.flowData.length; i++) {
+      }
+
+      const moduleName = this.tokens[0];
+      let currentData = null;
+      for (let i = 0; i < this.flowData.length; i++) {
           if (this.flowData[i][moduleName]) {
-            currentData = this.flowData[i][moduleName];
-            break;
+              currentData = this.flowData[i][moduleName];
+              break;
           }
-        }
-        if (!currentData) return {};
-      
-        // Case 1: Only one token is selected.
-        // In this case, the branch likely includes a "Class" property (e.g. "Member_Module")
-        // so the custom renderer will be used to display suggestions (A, B, C).
-        if (this.tokens.length === 1) {
+      }
+      if (!currentData) return {};
+
+      if (this.tokens.length === 1) {
           return currentData;
-        }
-        
-        // Case 2: Exactly two tokens are selected.
-        // The second token is a custom module selection (e.g. one of A, B, or C).
-        // For the next step, we want to ignore that custom token for branch traversal
-        // so that the branch's own Options (e.g. "Moved", "Seconded", etc.) are used.
-        if (this.tokens.length === 2) {
-          // Remove the custom module indicator by creating a shallow copy without "Class".
+      }
+
+      if (this.tokens.length === 2 && this.isMemberName(this.tokens[1])) {
           const { Class, ...rest } = currentData;
           return rest;
-        }
-        
-        // Case 3: More than two tokens – traverse normally.
-        // (This handles deeper levels in your JSON structure.)
-        for (let i = 2; i < this.tokens.length; i++) {
+      }
+
+      for (let i = 2; i < this.tokens.length; i++) {
           const token = this.tokens[i];
           if (currentData[token]) {
-            currentData = currentData[token];
+              currentData = currentData[token];
           } else {
-            currentData = {};
+              currentData = {};
           }
-        }
-        return currentData;
-    }   
+      }
+      return currentData;
+    }  
 
     /**
      * Update the suggestions based on the current branch and input.

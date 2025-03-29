@@ -3,9 +3,9 @@ body {
     background: #f7f7f7;
     margin: 0;
     padding: 20px;
-  }
-  
-  .container {
+}
+
+.container {
     max-width: calc(100% - 560px); /* 250px left + 250px right + 60px padding/margins */
     margin-left: 280px; /* Space for shortcut legend */
     margin-right: 280px; /* Space for committee legend */
@@ -13,18 +13,18 @@ body {
     padding: 20px;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  /* Controls layout */
-  .controls {
+}
+
+/* Controls layout */
+.controls {
     display: flex;
     flex-direction: column;
     gap: 15px;
     margin-top: 15px;
-  }
-  
-  /* Token system styles */
-  .token-container {
+}
+
+/* Token system styles */
+.token-container {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -33,37 +33,37 @@ body {
     border-radius: 4px;
     min-height: 40px;
     background: #fff;
-  }
-  
-  .token {
+}
+
+.token {
     background: #e0e0e0;
     border-radius: 3px;
     padding: 5px 10px;
     margin: 3px;
     cursor: pointer;
     user-select: none;
-  }
-  
-  .token:hover {
+}
+
+.token:hover {
     background: #d0d0d0;
-  }
-  
-  #token-input {
+}
+
+#token-input {
     border: none;
     flex-grow: 1;
     min-width: 150px;
     padding: 5px;
     font-size: 14px;
     outline: none;
-  }
-  
-  .suggestions-container {
+}
+
+.suggestions-container {
     position: relative;
     width: 100%;
     margin-top: 5px;
-  }
-  
-  .suggestions-container ul {
+}
+
+.suggestions-container ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -72,38 +72,38 @@ body {
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
-  }
-  
-  .suggestions-container li {
+}
+
+.suggestions-container li {
     padding: 8px 10px;
     cursor: pointer;
-  }
-  
-  .suggestions-container li:hover {
+}
+
+.suggestions-container li:hover {
     background: #f0f0f0;
-  }
-  
-  /* Committee selector styles */
-  .committee-selector {
+}
+
+/* Committee selector styles */
+.committee-selector {
     margin-bottom: 15px;
     position: relative;
     max-width: 700px;
-  }
-  
-  .committee-selector label {
+}
+
+.committee-selector label {
     font-weight: bold;
     margin-right: 10px;
-  }
-  
-  .committee-selector .dropdown-selected {
+}
+
+.committee-selector .dropdown-selected {
     padding: 5px;
     border: 1px solid #ccc;
     background: #fff;
     cursor: pointer;
     font-size: 14px;
-  }
-  
-  .committee-selector .dropdown-list {
+}
+
+.committee-selector .dropdown-list {
     position: absolute;
     z-index: 1000;
     top: 100%;
@@ -114,25 +114,25 @@ body {
     max-height: 250px;
     overflow-y: auto;
     display: none;
-  }
-  
-  .committee-selector .dropdown-item {
+}
+
+.committee-selector .dropdown-item {
     display: flex;
     align-items: center;
     padding: 5px;
     cursor: pointer;
-  }
-  
-  .committee-selector .dropdown-item:hover {
+}
+
+.committee-selector .dropdown-item:hover {
     background: #f0f0f0;
-  }
-  
-  .committee-selector .fav-checkbox {
+}
+
+.committee-selector .fav-checkbox {
     margin-right: 5px;
-  }
-  
-  /* Fixed committee legend on the right */
-  .committee-legend {
+}
+
+/* Fixed committee legend on the right */
+.committee-legend {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -143,19 +143,28 @@ body {
     border-radius: 4px;
     max-height: 90vh;
     overflow-y: auto;
-  }
-  
-  .committee-legend ul {
+}
+
+.committee-legend ul {
     list-style: none;
     margin: 0;
     padding: 0;
-  }
-  
-  .committee-legend li {
+}
+
+.committee-legend li {
     padding: 4px 0;
-  }
+}
+
+.committee-legend .member-item {
+    cursor: pointer;
+    color: blue;
+}
+
+.committee-legend .member-item:hover {
+    text-decoration: underline;
+}
   
-  .shortcut-legend {
+.shortcut-legend {
     position: fixed;
     top: 20px;
     left: 20px;
@@ -166,44 +175,44 @@ body {
     border-radius: 4px;
     max-height: 90vh;
     overflow-y: auto;
-  }
-  
-  .shortcut-legend h3 {
+}
+
+.shortcut-legend h3 {
     margin: 10px 0 5px;
     font-size: 16px;
-  }
-  
-  .shortcut-legend ul {
+}
+
+.shortcut-legend ul {
     list-style: none;
     margin: 0;
     padding: 0;
-  }
-  
-  .shortcut-legend li {
+}
+
+.shortcut-legend li {
     padding: 4px 0;
     cursor: pointer;
-  }
-  
-  .shortcut-legend li:hover {
-    background: #f0f0f0;
-  }
+}
 
-  @media (max-width: 900px) {
+.shortcut-legend li:hover {
+    background: #f0f0f0;
+}
+
+@media (max-width: 900px) {
     .shortcut-legend {
-      position: static;
-      width: 100%;
-      margin-bottom: 20px;
+        position: static;
+        width: 100%;
+        margin-bottom: 20px;
     }
-  
+
     .committee-legend {
-      position: static;
-      width: 100%;
-      margin-top: 20px;
+        position: static;
+        width: 100%;
+        margin-top: 20px;
     }
-  
+
     .container {
-      margin-left: 0;
-      margin-right: 0;
-      max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        max-width: 100%;
     }
-  }
+}

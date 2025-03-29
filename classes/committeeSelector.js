@@ -9,6 +9,7 @@ export class CommitteeSelector {
       this.containerElement = containerElement;
       this.legendElement = legendElement;
       this.committeesData = committeesData;
+      this.tokenSystem = null; // This will be set externally if needed.
       this.selectedCommitteeKey = "selectedCommittee";
       this.favoritesKey = "favoriteCommittees";
       this.isDropdownOpen = false; // Track dropdown visibility
@@ -32,6 +33,11 @@ export class CommitteeSelector {
       console.log("Favorite committees:", this.favoriteCommittees);
       this.renderDropdown();
       this.renderLegend();
+    }
+
+    // Method to set tokenSystem after creation
+    setTokenSystem(tokenSystem) {
+      this.tokenSystem = tokenSystem;
     }
     
     renderDropdown() {
@@ -116,14 +122,22 @@ export class CommitteeSelector {
     }
     
     renderLegend() {
-      console.log("Rendering legend for committee:", this.selectedCommittee);
       const members = this.committeesData[this.selectedCommittee] || [];
       let html = "<ul>";
       members.forEach(member => {
-        html += `<li>${member}</li>`;
+          html += `<li class="member-item" data-member="${member}">${member}</li>`;
       });
       html += "</ul>";
       this.legendElement.innerHTML = html;
+
+      // Add click handler, but only use tokenSystem if it’s set
+      this.legendElement.addEventListener('click', (e) => {
+          const memberItem = e.target.closest('.member-item');
+          if (memberItem && this.tokenSystem) {
+              const memberName = memberItem.dataset.member;
+              this.tokenSystem.setTokens(["Member Action", memberName]);
+          }
+      });
     }
     
     getSelectedCommittee() {
