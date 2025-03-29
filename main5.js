@@ -4,6 +4,7 @@ import { MemberModule } from "./classes/memberModule.js";
 import { TokenSystem } from "./classes/tokenSystem.js";
 import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./defaultCommittees5.js";
 import { CommitteeSelector } from "./classes/committeeSelector.js";
+import { ShortcutLegend } from "./classes/shortcutLegend.js";
 
 // Import the flow data. (Using 'with' syntax for your environment.)
 import flowDataRaw from "./flow5.json" with { type: "json" };
@@ -18,15 +19,38 @@ classRegistry["Member_Module"] = new MemberModule();
 // Use complete flow data.
 const flowData = flowDataRaw;
 
+const shortcuts = {
+  "Meeting Actions": {
+    "Closed Hearing": ["Meeting Action", "Closed Hearing"],
+    "Recessed Meeting": ["Meeting Action", "Recessed Meeting"],
+    "Adjourned Meeting": ["Meeting Action", "Adjourned Meeting"],
+    "Reconvened Meeting": ["Meeting Action", "Reconvened Meeting"]
+  },
+  "Vote Actions": {
+    "Roll Call Vote": ["Roll Call Vote"],
+    "Voice Vote": ["Voice Vote"],
+    "Motion Failed": ["Voice Vote"] // Simplified for prototype; adjust as needed
+  },
+  "External Actions": {
+    "Add Testimony": ["Testimony"],
+    "Introduced Bill": ["Member Action", "Introduced"],
+    "Proposed Amendment": ["Member Action", "Proposed"],
+    "Introduced Amendment": ["Member Action", "Introduced"] // Assuming similar to Introduced Bill
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   // Instantiate TokenSystem.
   const tokenContainer = document.getElementById("token-container");
   const tokenInput = document.getElementById("token-input");
   const suggestionsContainer = document.getElementById("suggestions-container");
-  new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer);
+  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer);
   
   // Instantiate the CommitteeSelector.
   const committeeSelectorContainer = document.getElementById("committee-selector");
   const committeeLegend = document.getElementById("committee-legend");
   new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES);
+
+  const shortcutLegendContainer = document.getElementById("shortcut-legend");
+  new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
 });

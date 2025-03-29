@@ -132,6 +132,32 @@ export class TokenSystem {
       this.updateSuggestions();
       this.tokenInput.focus();
     }
+
+    /**
+     * Method that clears existing tokens and sets new ones
+     */
+    setTokens(tokenArray) {
+      // Clear existing tokens
+      const tokenElements = this.tokenContainer.querySelectorAll('.token');
+      tokenElements.forEach(el => el.remove());
+      this.tokens = [];
+
+      // Add new tokens
+      tokenArray.forEach(value => {
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'token';
+        tokenSpan.textContent = value;
+        tokenSpan.dataset.value = value;
+        tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
+        this.tokenContainer.insertBefore(tokenSpan, this.tokenInput);
+        this.tokens.push(value);
+      });
+
+      // Clear input and update suggestions
+      this.tokenInput.value = '';
+      this.updateSuggestions();
+      this.tokenInput.focus();
+    }
     
     /**
      * Handle clicking on a token: remove it and any tokens after it, then load its value into the input.
