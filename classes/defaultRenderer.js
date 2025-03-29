@@ -7,18 +7,16 @@ export class DefaultRenderer {
      * This implementation returns HTML for the suggestion list.
      * @param {Array} options - List of possible options.
      * @param {string} query - The current user input.
+     * @param {Object} context - Optional context object.
      * @returns {string} - HTML string for the suggestion list.
      */
-    render(options, query) {
+    render(options, query, context = {}) {
       let filtered;
       if (!query) {
         filtered = options;
       } else {
-        filtered = options.filter(opt =>
-          opt.toLowerCase().includes(query.toLowerCase())
-        );
+        filtered = options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()));
       }
-      // Build HTML list from filtered options.
       let html = "<ul>";
       filtered.forEach(option => {
         html += `<li data-value="${option}">${option}</li>`;

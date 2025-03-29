@@ -1,6 +1,7 @@
 import { DefaultRenderer } from "./classes/defaultRenderer.js";
 import { RereferCommitteeModule } from "./classes/rereferCommitteeModule.js";
 import { MemberModule } from "./classes/memberModule.js";
+import { MemberLookUpModule } from "./classes/memberLookUpModule.js";
 import { TokenSystem } from "./classes/tokenSystem.js";
 import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./defaultCommittees5.js";
 import { CommitteeSelector } from "./classes/committeeSelector.js";
@@ -15,6 +16,7 @@ const defaultRenderer = new DefaultRenderer();
 classRegistry["DefaultRenderer"] = defaultRenderer;
 classRegistry["Rerefer_Committee_Module"] = new RereferCommitteeModule();
 classRegistry["Member_Module"] = new MemberModule();
+classRegistry["Member_Look_Up_Module"] = new MemberLookUpModule();
 
 // Use complete flow data.
 const flowData = flowDataRaw;
@@ -40,16 +42,17 @@ const shortcuts = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Instantiate TokenSystem.
   const tokenContainer = document.getElementById("token-container");
   const tokenInput = document.getElementById("token-input");
   const suggestionsContainer = document.getElementById("suggestions-container");
-  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer);
   
   // Instantiate the CommitteeSelector.
   const committeeSelectorContainer = document.getElementById("committee-selector");
   const committeeLegend = document.getElementById("committee-legend");
   new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES);
+
+  // Instantiate TokenSystem.
+  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, CommitteeSelector);
 
   const shortcutLegendContainer = document.getElementById("shortcut-legend");
   new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);

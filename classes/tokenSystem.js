@@ -8,16 +8,16 @@ export class TokenSystem {
      * @param {Object} classRegistry - Registry mapping class names to renderers.
      * @param {Object} defaultRenderer - The default renderer instance.
      */
-    constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer) {
+    constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector) {
       this.tokenContainer = tokenContainer;
       this.tokenInput = tokenInput;
       this.suggestionsContainer = suggestionsContainer;
       this.flowData = flowData;
       this.classRegistry = classRegistry;
       this.defaultRenderer = defaultRenderer;
+      this.committeeSelector = committeeSelector;
       this.tokens = [];
       this._bindEvents();
-      // Also update suggestions on focus.
       this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
       this.updateSuggestions();
     }
@@ -112,7 +112,9 @@ export class TokenSystem {
       } else {
         renderer = this.defaultRenderer;
       }
-      const html = renderer.render(options, query);
+      const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
+      const context = { members: currentMembers };
+      const html = renderer.render(options, query, context);
       this.suggestionsContainer.innerHTML = html;
     }
     

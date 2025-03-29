@@ -6,8 +6,9 @@ body {
   }
   
   .container {
-    max-width: 700px;
-    margin: auto;
+    max-width: calc(100% - 560px); /* 250px left + 250px right + 60px padding/margins */
+    margin-left: 280px; /* Space for shortcut legend */
+    margin-right: 280px; /* Space for committee legend */
     background: #fff;
     padding: 20px;
     border-radius: 4px;
@@ -140,6 +141,8 @@ body {
     padding: 10px;
     background: #fafafa;
     border-radius: 4px;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   
   .committee-legend ul {
@@ -161,6 +164,8 @@ body {
     padding: 10px;
     background: #fafafa;
     border-radius: 4px;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   
   .shortcut-legend h3 {
@@ -181,4 +186,24 @@ body {
   
   .shortcut-legend li:hover {
     background: #f0f0f0;
+  }
+
+  @media (max-width: 900px) {
+    .shortcut-legend {
+      position: static;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+  
+    .committee-legend {
+      position: static;
+      width: 100%;
+      margin-top: 20px;
+    }
+  
+    .container {
+      margin-left: 0;
+      margin-right: 0;
+      max-width: 100%;
+    }
   }

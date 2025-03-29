@@ -129,5 +129,9 @@ export class CommitteeSelector {
     getSelectedCommittee() {
       return this.selectedCommittee;
     }
+
+    getSelectedCommitteeMembers() {
+      return this.committeesData[this.selectedCommittee] || [];
+    }
   }
   
