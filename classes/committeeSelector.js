@@ -179,5 +179,26 @@ export class CommitteeSelector {
     getSelectedCommitteeMembers() {
       return this.committeesData[this.selectedCommittee] || [];
     }
+
+    isMemberName(token) {
+      const currentMembers = this.getSelectedCommitteeMembers();
+      return currentMembers.some(member => {
+          const name = member.split(" - ")[0];
+          return name === token;
+      });
+    }
+    
+    getMemberTitle() {
+        return this.selectedCommittee.toLowerCase().startsWith('senate') ? "Senator" : "Representative";
+    }
+    
+    getLastName(fullName) {
+        const nameParts = fullName.split(" ");
+        return nameParts[nameParts.length - 1];
+    }
+    
+    shortenCommitteeName(committee) {
+        return committee.replace(/^(Senate|House)\s+/i, '').replace(/\s+Committee$/i, '');
+    }
   }
   

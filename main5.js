@@ -7,6 +7,7 @@ import { DEFAULT_COMMITTEES, FEMALE_NAMES } from "./defaultCommittees5.js";
 import { CommitteeSelector } from "./classes/committeeSelector.js";
 import { ShortcutLegend } from "./classes/shortcutLegend.js";
 import { HistoryManager } from "./classes/historyManager.js";
+// eslint-disable-next-line no-unused-vars
 import { TextConstructor } from "./classes/textConstructor.js";
 import { Utils } from "./classes/utils.js";
 

@@ -1,4 +1,5 @@
 // classes/tokenSystem.js
+import { TextConstructor } from './textConstructor.js';
 export class TokenSystem {
   /**
    * @param {HTMLElement} tokenContainer - The container for token elements.
@@ -55,28 +56,6 @@ export class TokenSystem {
     });
   }
 
-  isMemberName(token) {
-    const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
-    return currentMembers.some(member => {
-        const name = member.split(" - ")[0];
-        return name === token;
-    });
-  }
-
-  getMemberTitle() {
-    const selectedCommittee = this.committeeSelector.getSelectedCommittee();
-    return selectedCommittee.toLowerCase().startsWith('senate') ? "Senator" : "Representative";
-  }
-
-  getLastName(fullName) {
-    const nameParts = fullName.split(" ");
-    return nameParts[nameParts.length - 1];
-  }
-  
-  shortenCommitteeName(committee) {
-    return committee.replace(/^(Senate|House)\s+/i, '').replace(/\s+Committee$/i, '');
-  }
-
   /**
    * Get the current branch of the flow data based on the selected tokens.
    * If no token is selected, return an object whose Options property is an array
@@ -104,7 +83,7 @@ export class TokenSystem {
     }
 
     // Determine if the second token is a member name
-    const isSecondTokenMember = this.tokens.length >= 2 && this.isMemberName(this.tokens[1]);
+    const isSecondTokenMember = this.tokens.length >= 2 && this.committeeSelector.isMemberName(this.tokens[1]);
 
     // If second token is a member name, start navigation from tokens[2]
     let navigationTokens = isSecondTokenMember ? this.tokens.slice(2) : this.tokens.slice(1);
