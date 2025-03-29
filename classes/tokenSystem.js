@@ -201,29 +201,33 @@ export class TokenSystem {
   }
   
   handleKeyDown(e) {
-      // If Tab is pressed, select the first suggestion.
-      if (e.key === "Tab") {
+    // If Tab is pressed, select the first suggestion.
+    if (e.key === "Tab") {
         const firstSuggestion = this.suggestionsContainer.querySelector("li");
         if (firstSuggestion) {
-          e.preventDefault(); // Prevent default tab navigation.
-          this.addToken(firstSuggestion.dataset.value);
-          return;
+            e.preventDefault(); // Prevent default tab navigation.
+            const value = firstSuggestion.dataset.value;
+            if (firstSuggestion.hasAttribute('data-shortcut') && firstSuggestion.dataset.shortcut === "member") {
+                this.setTokens(["Member Action", value]);
+            } else {
+                this.addToken(value);
+            }
+            return;
         }
-      }
-      
-      if (e.key === "Backspace" && this.tokenInput.value === "") {
+    }
+    
+    if (e.key === "Backspace" && this.tokenInput.value === "") {
         const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
         if (tokenElements.length > 0) {
-          const lastTokenEl = tokenElements[tokenElements.length - 1];
-          lastTokenEl.remove();
-          this.tokens.pop();
-          this.updateSuggestions();
+            const lastTokenEl = tokenElements[tokenElements.length - 1];
+            lastTokenEl.remove();
+            this.tokens.pop();
+            this.updateSuggestions();
         }
         e.preventDefault();
-      }
+    }
   }
     
-  
   handleKeyUp(e) {
     if (e.key === "Enter") {
       const firstSuggestion = this.suggestionsContainer.querySelector("li");
