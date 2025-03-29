@@ -82,6 +82,10 @@ body {
     background: #f0f0f0;
 }
 
+.suggestions-container li.highlighted {
+    background: #e0e0e0;
+}
+
 .committee-selector {
     margin-bottom: 15px;
     position: relative;
@@ -196,6 +200,35 @@ body {
 
 .shortcut-legend li:hover {
     background: #f0f0f0;
+}
+
+#constructed-text {
+    margin-top: 20px;
+}
+
+.text-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.text-section label {
+    margin-right: 10px;
+}
+
+.text-section input {
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.copy-button {
+    margin-left: 5px;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 
 @media (max-width: 900px) {

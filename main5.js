@@ -57,4 +57,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const shortcutLegendContainer = document.getElementById("shortcut-legend");
   new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
+
+  // Add event listeners for copy buttons
+  document.querySelectorAll('.copy-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.dataset.target;
+      const textField = document.getElementById(targetId);
+      textField.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard');
+    });
+  });
 });
