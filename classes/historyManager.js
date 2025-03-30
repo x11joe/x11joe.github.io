@@ -34,6 +34,27 @@ export class HistoryManager {
         this.render();
     }
 
+    /**
+     * Add a raw text entry to the history, marked for later review.
+     * @param {string} rawText - The raw input text to store.
+     * @param {string} bill - The bill name.
+     * @param {string} billType - The type of bill (e.g., Hearing).
+     * @param {string} time - The timestamp of the entry.
+     */
+    addRawEntry(rawText, bill, billType, time) {
+        const key = `${bill}-${billType}`;
+        if (!this.historyData[key]) {
+            this.historyData[key] = [];
+        }
+        const entry = { id: this.nextId++, time, rawText, isRaw: true };
+        this.historyData[key].push(entry);
+        this.saveToStorage();
+        this.render();
+    }
+
+    /**
+     * Render the history table, grouping entries by bill and bill type, with raw entries highlighted.
+     */
     render() {
         this.containerElement.innerHTML = '';
         for (const key in this.historyData) {
@@ -73,14 +94,17 @@ export class HistoryManager {
                 const row = document.createElement('tr');
                 row.dataset.id = entry.id;
                 row.dataset.key = key;
-                const procedureWithTime = `${TextConstructor.formatTimeForProcedure(entry.time)} ${entry.baseProcedureText}`;
+                if (entry.isRaw) {
+                    row.style.backgroundColor = 'red'; // Highlight raw entries in red
+                }
+                const procedureWithTime = entry.isRaw ? entry.rawText : `${TextConstructor.formatTimeForProcedure(entry.time)} ${entry.baseProcedureText}`;
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">
-                        <div class="tokens-container">${entry.tokens.map(token => `<span class="history-token">${token}</span>`).join('')}</div>
+                        ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${entry.tokens.map(token => `<span class="history-token">${token}</span>`).join('')}</div>`}
                         <div class="tech-clerk">
                             <label>Tech Clerk</label>
-                            <div class="copyable">${entry.techText}</div>
+                            <div class="copyable">${entry.techText || ''}</div>
                         </div>
                         <div class="procedural-clerk">
                             <label>Procedural Clerk</label>
@@ -91,7 +115,7 @@ export class HistoryManager {
                     <td><button class="delete-btn">🗑️</button></td>
                 `;
                 tbody.appendChild(row);
-    
+
                 const editBtn = row.querySelector('.edit-btn');
                 let isEditingThis = false;
                 if (this.tokenSystem && this.tokenSystem.isEditing && this.tokenSystem.editingEntry) {
@@ -102,7 +126,7 @@ export class HistoryManager {
                     editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
                 } else {
                     editBtn.textContent = '✏️';
-                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(key, entry.id, entry.tokens));
+                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(key, entry.id, entry.tokens || [entry.rawText]));
                 }
                 const deleteBtn = row.querySelector('.delete-btn');
                 deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, key));
@@ -110,7 +134,7 @@ export class HistoryManager {
             groupDiv.appendChild(header);
             groupDiv.appendChild(table);
             this.containerElement.appendChild(groupDiv);
-    
+
             if (this.editingHeaderKey === key) {
                 const saveBtn = header.querySelector('.save-header-btn');
                 const billInput = header.querySelector('.edit-bill');
@@ -135,13 +159,13 @@ export class HistoryManager {
                     this.startEditingHeader(key);
                 });
             }
-    
+
             header.addEventListener('click', () => {
                 if (this.editingHeaderKey !== key) {
                     table.style.display = table.style.display === 'none' ? '' : 'none';
                 }
             });
-    
+
             groupDiv.querySelectorAll('.tech-clerk, .procedural-clerk').forEach(container => {
                 container.addEventListener('click', () => {
                     const copyable = container.querySelector('.copyable');
@@ -149,7 +173,7 @@ export class HistoryManager {
                     Utils.copyWithGlow(container, text);
                 });
             });
-    
+
             groupDiv.querySelectorAll('.time').forEach(timeCell => {
                 timeCell.addEventListener('dblclick', () => {
                     const text = timeCell.textContent;
@@ -182,23 +206,23 @@ export class HistoryManager {
         this.render();
     }
 
-startEditingHeader(key) {
-    this.editingHeaderKey = key;
-    this.render();
-}
-
-saveHeader(key) {
-    const bill = document.querySelector('.edit-bill').value.trim();
-    const billType = document.querySelector('.edit-bill-type').value;
-    const newKey = `${bill}-${billType}`;
-    if (newKey !== key && bill) {
-        this.historyData[newKey] = this.historyData[key];
-        delete this.historyData[key];
-        this.saveToStorage();
+    startEditingHeader(key) {
+        this.editingHeaderKey = key;
+        this.render();
     }
-    this.editingHeaderKey = null;
-    this.render();
-}
+
+    saveHeader(key) {
+        const bill = document.querySelector('.edit-bill').value.trim();
+        const billType = document.querySelector('.edit-bill-type').value;
+        const newKey = `${bill}-${billType}`;
+        if (newKey !== key && bill) {
+            this.historyData[newKey] = this.historyData[key];
+            delete this.historyData[key];
+            this.saveToStorage();
+        }
+        this.editingHeaderKey = null;
+        this.render();
+    }
 
     updateTime(id, newTime) {
         for (const key in this.historyData) {

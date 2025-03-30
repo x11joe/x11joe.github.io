@@ -1,7 +1,9 @@
 // classes/tokenSystem.js
 import { TextConstructor } from './textConstructor.js';
 export class TokenSystem {
+
   /**
+   * Initialize the TokenSystem with necessary elements and configurations.
    * @param {HTMLElement} tokenContainer - The container for token elements.
    * @param {HTMLInputElement} tokenInput - The input element for token entry.
    * @param {HTMLElement} suggestionsContainer - The container for suggestions.
@@ -9,7 +11,7 @@ export class TokenSystem {
    * @param {Object} classRegistry - Registry mapping class names to renderers.
    * @param {Object} defaultRenderer - The default renderer instance.
    * @param {Object} committeeSelector - The CommitteeSelector instance for managing committee members.
-   * @param {Object} historyManager - History manager instance (if applicable, for managing history of token selections).
+   * @param {Object} historyManager - History manager instance for managing history of token selections.
    */
   constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager) {
     this.tokenContainer = tokenContainer;
@@ -29,8 +31,9 @@ export class TokenSystem {
     this.startTime = null;
     this.markedTime = null;
     this._bindEvents();
+    // Bind focus event to show suggestions only when input is clicked
     this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
-    this.updateSuggestions();
+    // Removed initial updateSuggestions() call to prevent suggestions on start
   }
   
   _bindEvents() {
@@ -177,8 +180,8 @@ export class TokenSystem {
   }
 
   /**
-   * Add a token element for a confirmed choice.
-   * @param {string} value - The selected option.
+   * Add a token element to the container with a dropdown for editing.
+   * @param {string} value - The selected option to add as a token.
    */
   addToken(value) {
     if (!this.isEditing && this.tokens.length === 0) {
@@ -190,7 +193,6 @@ export class TokenSystem {
     tokenSpan.dataset.value = value;
     tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
     
-    // Find the input-wrapper to insert before it
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
     this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
     
@@ -202,35 +204,30 @@ export class TokenSystem {
   }
 
   /**
-   * Clears existing tokens and sets new ones from an array.
+   * Clear existing tokens and set new ones from an array, ensuring dropdowns for editing.
    * @param {Array<string>} tokenArray - Array of token values to set.
    */
   setTokens(tokenArray) {
-    // Clear existing tokens
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     this.tokens = [];
 
-    // Find the input-wrapper to insert before it
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
 
-    // Add new tokens
     tokenArray.forEach(value => {
         const tokenSpan = document.createElement('span');
         tokenSpan.className = 'token';
-        tokenSpan.textContent = value;
+        tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
         tokenSpan.dataset.value = value;
         tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
         this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
         this.tokens.push(value);
     });
 
-    // Set startTime if not editing and tokens are added
     if (!this.isEditing && this.tokens.length > 0) {
         this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
 
-    // Clear input and update suggestions
     this.tokenInput.value = '';
     this.updateSuggestions();
     this.updateConstructedText();
@@ -314,6 +311,10 @@ export class TokenSystem {
     this.procedureTextField.value = procedureText;
   }
 
+  /**
+   * Handle clicks on tokens, triggering edit options only when the dropdown arrow is clicked.
+   * @param {Event} e - The click event.
+   */
   tokenClickHandler(e) {
     if (e.target.className === 'dropdown-arrow') {
         const tokenSpan = e.target.parentElement;
@@ -322,21 +323,14 @@ export class TokenSystem {
         if (index !== -1) {
             this.showTokenOptions(index, tokenSpan);
         }
-    } else {
-        const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
-        const index = tokenElements.indexOf(e.currentTarget);
-        if (index === -1) return;
-        for (let i = tokenElements.length - 1; i >= index; i--) {
-            tokenElements[i].remove();
-            this.tokens.pop();
-        }
-        this.tokenInput.value = e.currentTarget.dataset.value;
-        this.updateSuggestions();
-        this.updateConstructedText();
-        this.tokenInput.focus();
     }
+    // Clicking the token body does nothing, preventing deletion
   }
   
+  /**
+   * Handle keydown events for token input, managing token addition, editing, and history storage.
+   * @param {Event} e - The keydown event.
+   */
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (e.key === "Enter") {
@@ -344,23 +338,33 @@ export class TokenSystem {
             const {key, id} = this.editingEntry;
             this.historyManager.updateEntry(key, id, this.tokens);
             this.cancelEdit();
-        } else if (this.tokenInput.value.trim() && this.tokens.length === 0) {
-            const parsedTokens = this.parseTextToTokens(this.tokenInput.value.trim());
+        } else {
+            const inputText = this.tokenInput.value.trim();
+            let parsedTokens = [];
+            if (inputText) {
+                parsedTokens = this.parseTextToTokens(inputText);
+            }
             if (parsedTokens.length > 0) {
                 this.setTokens(parsedTokens);
                 this.tokenInput.value = '';
-                e.preventDefault();
-                return;
+            } else if (inputText) {
+                // Store raw input in history
+                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+                const billType = document.getElementById('bill-type').value;
+                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                this.historyManager.addRawEntry(inputText, bill, billType, time);
+                this.tokenInput.value = '';
+            } else if (this.tokens.length > 0) {
+                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+                const billType = document.getElementById('bill-type').value;
+                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                this.historyManager.addEntry(this.tokens, bill, billType, time);
+                this.setTokens([]); // Clear tokens after adding to history
+                this.suggestionsContainer.innerHTML = ""; // Clear suggestions
+                this.markedTime = null;
+                this.startTime = null;
+                document.body.classList.remove('marking-time');
             }
-        } else if (this.tokens.length > 0) {
-            const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
-            const billType = document.getElementById('bill-type').value;
-            const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-            this.historyManager.addEntry(this.tokens, bill, billType, time);
-            this.setTokens([]);
-            this.markedTime = null;
-            this.startTime = null;
-            document.body.classList.remove('marking-time');
         }
         e.preventDefault();
     } else if (e.key === "Escape" && this.isEditing) {
@@ -492,6 +496,11 @@ export class TokenSystem {
     this.updateSuggestions();
   }
 
+  /**
+   * Edit a token at the specified index and update subsequent tokens and suggestions.
+   * @param {number} index - The index of the token to edit.
+   * @param {string} newValue - The new value to set for the token.
+   */
   editToken(index, newValue) {
     const oldValue = this.tokens[index];
     this.tokens[index] = newValue;
@@ -519,7 +528,14 @@ export class TokenSystem {
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     this.tokens.forEach(value => this.addToken(value));
-    this.updateSuggestions();
+
+    // Show suggestions if further options exist, otherwise clear them
+    const branchData = this.getCurrentBranchData();
+    if (branchData["Options"] && branchData["Options"].length > 0) {
+        this.updateSuggestions();
+    } else {
+        this.suggestionsContainer.innerHTML = "";
+    }
     this.updateConstructedText();
   }
 
