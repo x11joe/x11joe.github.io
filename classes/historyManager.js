@@ -249,18 +249,44 @@ export class HistoryManager {
         this.render();
     }
 
-    startEditingHeader(key) {
-        this.editingHeaderKey = key;
+    /**
+     * Start editing the header for a specific group by setting the editing key to the group's ID.
+     * @param {number} groupId - The ID of the group to edit.
+     */
+    startEditingHeader(groupId) {
+        this.editingHeaderKey = groupId;
         this.render();
     }
 
-    saveHeader(key) {
-        const bill = document.querySelector('.edit-bill').value.trim();
-        const billType = document.querySelector('.edit-bill-type').value;
-        const newKey = `${bill}-${billType}`;
-        if (newKey !== key && bill) {
-            this.historyData[newKey] = this.historyData[key];
-            delete this.historyData[key];
+    /**
+     * Save the edited header (bill and billType) for a group and merge with existing groups if necessary.
+     * Merges occur when the new bill and billType match another group, respecting existing grouping rules.
+     * @param {number} groupId - The ID of the group being edited.
+     */
+    saveHeader(groupId) {
+        const group = this.historyGroups.find(g => g.id === groupId);
+        if (!group) return;
+
+        const billInput = document.querySelector('.edit-bill');
+        const billTypeSelect = document.querySelector('.edit-bill-type');
+        if (!billInput || !billTypeSelect) return;
+
+        const newBill = billInput.value.trim();
+        const newBillType = billTypeSelect.value;
+
+        if (newBill && (newBill !== group.bill || newBillType !== group.billType)) {
+            // Check if there's an existing group with the new bill and billType
+            const existingGroup = this.historyGroups.find(g => g.bill === newBill && g.billType === newBillType && g.id !== groupId);
+            if (existingGroup) {
+                // Merge entries into the existing group, updating groupId for consistency
+                existingGroup.entries = existingGroup.entries.concat(group.entries.map(entry => ({ ...entry, groupId: existingGroup.id })));
+                // Remove the old group
+                this.historyGroups = this.historyGroups.filter(g => g.id !== groupId);
+            } else {
+                // Update the group's bill and billType directly
+                group.bill = newBill;
+                group.billType = newBillType;
+            }
             this.saveToStorage();
         }
         this.editingHeaderKey = null;
