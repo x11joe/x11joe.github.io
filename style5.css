@@ -108,7 +108,7 @@ body {
     max-height: 200px;
     overflow-y: auto;
     display: none; /* Hidden by default */
-    box-sizing: border-box; /* Ensure padding/b mucosaorder don’t affect width */
+    box-sizing: border-box; /* Ensure padding/border don’t affect width */
 }
 
 .suggestions-container:not(:empty) {
@@ -429,12 +429,12 @@ body {
 }
 
 .marking-time {
-    animation: pulse 1s infinite;
+    animation: pulse 2.5s infinite;
 }
 
 @keyframes pulse {
     0% { background-color: #f7f7f7; }
-    50% { background-color: #00ff00; }
+    50% { background-color: #e0ffe0; }
     100% { background-color: #f7f7f7; }
 }
 

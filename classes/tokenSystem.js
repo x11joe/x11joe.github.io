@@ -132,7 +132,8 @@ export class TokenSystem {
 
   /**
    * Update the suggestions based on the current branch and input, relying on CSS for positioning.
-   * Binds events for LCModule if it is the renderer to handle its special input interface.
+   * Uses the default renderer when options are available (e.g., actions after a member), and binds events
+   * for special renderers like LCModule when no options are present.
    */
   updateSuggestions() {
     console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
@@ -148,7 +149,9 @@ export class TokenSystem {
       options = startingModules.concat(memberNames);
     }
     let renderer;
-    if (branchData["Class"]) {
+    if (options.length > 0) {
+      renderer = this.defaultRenderer;
+    } else if (branchData["Class"]) {
       renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
       renderer = this.defaultRenderer;
@@ -164,8 +167,8 @@ export class TokenSystem {
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
 
-    // If the renderer is LCModule, bind its events
-    if (renderer instanceof LCModule) {
+    // If the branch class is LC_Module, bind its events
+    if (branchData["Class"] === 'LC_Module') {
         renderer.bindEvents(this.suggestionsContainer, this);
     }
 
@@ -322,9 +325,17 @@ export class TokenSystem {
     }
   }
 
+  /**
+   * Toggle the mark time feature on or off when the '`' key is pressed, updating the UI accordingly.
+   */
   markTime() {
-    this.markedTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-    document.body.classList.add('marking-time');
+    if (this.markedTime) {
+        this.markedTime = null;
+        document.body.classList.remove('marking-time');
+    } else {
+        this.markedTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+        document.body.classList.add('marking-time');
+    }
   }
   
   updateConstructedText() {
