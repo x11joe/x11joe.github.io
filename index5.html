@@ -28,9 +28,11 @@
     <div class="controls">
       <div id="token-container" class="token-container">
         <!-- Tokens will be added here -->
-        <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
+        <div class="input-wrapper">
+          <input id="token-input" type="text" placeholder="Type to select an option..." autocomplete="off">
+          <div id="suggestions-container" class="suggestions-container"></div>
+        </div>
       </div>
-      <div id="suggestions-container" class="suggestions-container"></div>
     </div>
     <!-- Constructed text section -->
     <div id="constructed-text">

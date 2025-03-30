@@ -33,6 +33,11 @@ body {
     background: #fff;
 }
 
+.input-wrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
 .token {
     background: #e0e0e0;
     border-radius: 3px;
@@ -80,7 +85,7 @@ body {
 
 #token-input {
     border: none;
-    flex-grow: 1;
+    width: 100%;
     min-width: 150px;
     padding: 5px;
     font-size: 14px;
@@ -95,7 +100,7 @@ body {
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
-    width: 300px;
+    width: 100%;
     left: 0;
     top: 100%;
 }
