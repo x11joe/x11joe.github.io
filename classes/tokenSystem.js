@@ -621,10 +621,16 @@ export class TokenSystem {
     this.historyManager.render();
   }
 
+  /**
+   * Cancel the current editing session, clear tokens, and refresh the history display.
+   * Clears suggestions to prevent them from appearing immediately after exiting edit mode,
+   * ensuring they only appear upon active user interaction with the input field.
+   */
   cancelEdit() {
     this.isEditing = false;
     this.editingEntry = null;
     this.setTokens([]);
+    this.suggestionsContainer.innerHTML = ""; // Clear suggestions to prevent immediate display
     this.historyManager.render();
   }
 }
