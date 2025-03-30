@@ -37,6 +37,7 @@ export class TokenSystem {
   /**
    * Bind event listeners to the token input and suggestions container to handle user interactions.
    * Prevents hiding suggestions when a class module is active, ensuring module interfaces remain visible until completed.
+   * Additionally, handles clicks on the token-input to hide the suggestions (e.g., LCModule) and focus the input when clicked while a module is active.
    */
   _bindEvents() {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -82,6 +83,12 @@ export class TokenSystem {
                 console.log('Clicked outside - hiding suggestions');
                 this.suggestionsContainer.innerHTML = "";
                 this.suggestionsContainer.removeAttribute('data-editing-index');
+            } else if (e.target === this.tokenInput && isClassModuleActive) {
+                // If clicking on token-input while a class module is active, hide suggestions and focus input
+                console.log('Clicked token-input while class module active - hiding suggestions and focusing input');
+                this.suggestionsContainer.innerHTML = "";
+                this.suggestionsContainer.removeAttribute('data-editing-index');
+                this.tokenInput.focus();
             } else {
                 console.log('Editing or class module active - keeping suggestions visible');
             }

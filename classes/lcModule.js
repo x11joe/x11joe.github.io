@@ -40,8 +40,8 @@ export class LCModule {
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
      * Manages input formatting, tracks cursor position dynamically, adjusts cursor to valid digit positions,
-     * submits on Enter/Tab or button click, and cancels on Escape. Prevents event bubbling to maintain the
-     * editing interface, ensuring edits update existing tokens correctly.
+     * submits on Enter/Tab or button click, and cancels on Escape with focus returned to token-input.
+     * Ensures Backspace focuses token-input after deleting a token for continued deletion.
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
@@ -113,7 +113,7 @@ export class LCModule {
                 console.log('Keydown Enter/Tab - Submitting LC number');
                 this.submitLCNumber(tokenSystem);
             } else if (e.key === 'Escape') {
-                // Cancel LCModule interface and return focus to token-input
+                // Cancel LCModule interface, hide suggestions, and return focus to token-input
                 tokenSystem.suggestionsContainer.innerHTML = '';
                 tokenSystem.tokenInput.focus();
                 console.log('LCModule Escape - Interface cancelled, focus returned to token-input');
@@ -127,6 +127,7 @@ export class LCModule {
                     tokenSystem.updateConstructedText();
                     console.log('LCModule Backspace - Last token removed, tokens:', tokenSystem.tokens);
                 }
+                // After deleting, focus the token-input to allow further deletions
                 tokenSystem.tokenInput.focus();
             }
         });
@@ -137,13 +138,7 @@ export class LCModule {
             this.submitLCNumber(tokenSystem);
         });
 
-        // Allow clicking outside to focus token-input without closing suggestions
-        document.addEventListener('click', (e) => {
-            if (!container.contains(e.target) && e.target === tokenSystem.tokenInput) {
-                tokenSystem.tokenInput.focus();
-                console.log('Clicked token-input while LCModule active - focus returned, suggestions kept');
-            }
-        }, { once: false });
+        // Allow clicking outside to focus token-input without closing suggestions (handled in TokenSystem)
     }
 
     /**
