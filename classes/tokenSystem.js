@@ -332,11 +332,13 @@ export class TokenSystem {
 
   /**
    * Display editing options for a token at the specified index, dynamically using module interfaces for class-based tokens.
-   * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value for editing.
+   * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value for editing,
+   * and sets the editing index for subsequent actions to recognize the edit context.
    * @param {number} index - The index of the token to edit.
    * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
    */
   showTokenOptions(index, tokenElement) {
+    console.log('showTokenOptions called - Index:', index, 'Token:', this.tokens[index]);
     const existingDropdown = document.querySelector('.token-dropdown');
     if (existingDropdown) existingDropdown.remove();
 
@@ -354,6 +356,7 @@ export class TokenSystem {
         const html = renderer.render([], '', context);
         this.suggestionsContainer.innerHTML = html;
         this.suggestionsContainer.setAttribute('data-editing-index', index); // Set editing flag
+        console.log('Set data-editing-index to:', index);
         if (typeof renderer.bindEvents === 'function') {
             renderer.bindEvents(this.suggestionsContainer, this);
             const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;

@@ -39,10 +39,9 @@ export class LCModule {
 
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
-     * Manages input formatting, tracks cursor position dynamically as the user types or deletes,
-     * adjusts cursor to valid digit positions, allows focus to return to token-input when clicking
-     * outside, and cancels the interface on Escape. Ensures intuitive cursor movement starting
-     * from the pre-filled value (e.g., "25.0000.00000").
+     * Manages input formatting, tracks cursor position dynamically, adjusts cursor to valid digit positions,
+     * submits on Enter/Tab or button click, and cancels on Escape. Prevents event bubbling to maintain the
+     * editing interface, ensuring edits update existing tokens correctly.
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
@@ -92,6 +91,7 @@ export class LCModule {
         });
 
         this.inputElement.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent bubbling to document
             const pos = e.target.selectionStart;
             const digitPositions = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12];
             if (!digitPositions.includes(pos)) {
@@ -110,6 +110,7 @@ export class LCModule {
         this.inputElement.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
+                console.log('Keydown Enter/Tab - Submitting LC number');
                 this.submitLCNumber(tokenSystem);
             } else if (e.key === 'Escape') {
                 // Cancel LCModule interface and return focus to token-input
@@ -130,7 +131,9 @@ export class LCModule {
             }
         });
 
-        this.submitButton.addEventListener('click', () => {
+        this.submitButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent bubbling to document
+            console.log('Submit button clicked - Submitting LC number');
             this.submitLCNumber(tokenSystem);
         });
 
@@ -180,12 +183,24 @@ export class LCModule {
     }
 
     /**
-     * Submit the LC number and add it as a token to the token system.
-     * @param {TokenSystem} tokenSystem - The TokenSystem instance to add the token.
+     * Submit the LC number to the token system, either adding a new token or editing an existing one based on the editing context.
+     * Checks the 'data-editing-index' attribute on the suggestions container to determine the action, logging the process for debugging.
+     * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or edit tokens.
      */
     submitLCNumber(tokenSystem) {
         const lcNumber = this.inputElement.value;
-        tokenSystem.addToken(lcNumber);
-        tokenSystem.suggestionsContainer.innerHTML = ''; // Clear suggestions
+        const suggestionsContainer = tokenSystem.suggestionsContainer;
+        const editingIndex = suggestionsContainer.getAttribute('data-editing-index');
+        console.log('submitLCNumber called - editingIndex:', editingIndex, 'lcNumber:', lcNumber);
+        if (editingIndex !== null) {
+            const index = parseInt(editingIndex, 10);
+            console.log('Editing token at index:', index, 'with value:', lcNumber);
+            tokenSystem.editToken(index, lcNumber);
+            suggestionsContainer.removeAttribute('data-editing-index');
+        } else {
+            console.log('Adding new token:', lcNumber);
+            tokenSystem.addToken(lcNumber);
+        }
+        suggestionsContainer.innerHTML = ''; // Clear suggestions
     }
 }
