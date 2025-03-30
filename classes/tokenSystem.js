@@ -38,8 +38,8 @@ export class TokenSystem {
   /**
    * Bind event listeners to the token input and suggestions container to handle user interactions.
    * Prevents hiding suggestions when a class module is active, ensuring module interfaces remain visible until completed.
-   * Additionally, handles clicks on the token-input to hide the suggestions (e.g., LCModule) and focus the input when clicked while a module is active.
-   * Introduces a suppressSuggestions flag to prevent immediate re-rendering of the LCModule after dismissal (or other modules in the future)
+   * Handles clicks on the token-input to hide suggestions and suppress re-rendering when a class module is active,
+   * focusing the input afterward to allow seamless user interaction.
    */
   _bindEvents() {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -80,20 +80,22 @@ export class TokenSystem {
         const branchData = this.getCurrentBranchData();
         const isClassModuleActive = branchData["Class"] && this.suggestionsContainer.innerHTML !== "";
         const isEditingModule = this.suggestionsContainer.getAttribute('data-editing-index') !== null;
-        if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
+        console.log('Document click - Target:', e.target, 'isClassModuleActive:', isClassModuleActive, 'isEditingModule:', isEditingModule, 'Suggestions content exists:', this.suggestionsContainer.innerHTML !== '');
+        
+        if (e.target === this.tokenInput && isClassModuleActive) {
+            // Clicking token-input while a class module is active: hide suggestions and suppress re-render
+            console.log('Clicked token-input while class module active - Hiding suggestions and setting suppressSuggestions to true');
+            this.suggestionsContainer.innerHTML = "";
+            this.suggestionsContainer.removeAttribute('data-editing-index');
+            this.suppressSuggestions = true;
+            this.tokenInput.focus();
+        } else if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
             if (!isEditingModule && !isClassModuleActive) {
-                console.log('Clicked outside - hiding suggestions');
+                console.log('Clicked outside - Hiding suggestions');
                 this.suggestionsContainer.innerHTML = "";
                 this.suggestionsContainer.removeAttribute('data-editing-index');
-            } else if (e.target === this.tokenInput && isClassModuleActive) {
-                // If clicking on token-input while a class module is active, hide suggestions, set suppress flag, and focus input
-                console.log('Clicked token-input while class module active - hiding suggestions and suppressing re-render');
-                this.suggestionsContainer.innerHTML = "";
-                this.suggestionsContainer.removeAttribute('data-editing-index');
-                this.suppressSuggestions = true; // Prevent immediate re-render
-                this.tokenInput.focus();
             } else {
-                console.log('Editing or class module active - keeping suggestions visible');
+                console.log('Editing or class module active - Keeping suggestions visible');
             }
         }
     });
@@ -154,16 +156,16 @@ export class TokenSystem {
 
   /**
    * Update the suggestions based on the current branch and input, prioritizing module renderers when a "Class" is specified.
-   * Dynamically handles the flow by rendering a module's interface first if "Class" exists, then showing options after module completion.
-   * Respects the suppressSuggestions flag to prevent immediate re-rendering after dismissal.
+   * Respects the suppressSuggestions flag to prevent re-rendering after dismissal, resetting the flag after skipping.
+   * Logs detailed state for debugging to ensure correct behavior when interacting with class modules like LCModule.
    */
   updateSuggestions() {
     if (this.suppressSuggestions) {
-        console.log('Suppressing suggestions due to recent dismissal');
-        this.suppressSuggestions = false; // Reset flag after skipping once
+        console.log('Suppressing suggestions - Flag is true, resetting to false');
+        this.suppressSuggestions = false;
         return;
     }
-    console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
+    console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value, 'suppressSuggestions:', this.suppressSuggestions);
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
     let options = branchData["Options"] || [];
