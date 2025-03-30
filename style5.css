@@ -370,14 +370,8 @@ body {
     border: none;
     color: blue;
     cursor: pointer;
-    text-decoration: underline;
     font-size: 16px;
     padding: 2px;
-}
-
-.edit-btn:hover,
-.delete-btn:hover {
-    color: darkblue;
 }
 
 .tokens-container {
