@@ -286,15 +286,23 @@ export class TokenSystem {
 
     const tempTokens = this.tokens.slice(0, index);
     const branchData = this.getCurrentBranchDataForTokens(tempTokens);
+    const currentValue = this.tokens[index];
+
     if (branchData["Class"]) {
         const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
-        const html = renderer.render([], '', {});
+        const context = {
+            members: this.committeeSelector.getSelectedCommitteeMembers(),
+            allCommittees: Object.keys(this.committeeSelector.committeesData),
+            selectedCommittee: this.committeeSelector.getSelectedCommittee()
+        };
+        const html = renderer.render([], '', context);
         this.suggestionsContainer.innerHTML = html;
         if (typeof renderer.bindEvents === 'function') {
             renderer.bindEvents(this.suggestionsContainer, this);
             const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
             if (inputElement) {
-                inputElement.value = this.tokens[index];
+                inputElement.value = currentValue;
+                inputElement.focus();
                 if (typeof renderer.postRender === 'function') {
                     renderer.postRender(this.suggestionsContainer, this);
                 }

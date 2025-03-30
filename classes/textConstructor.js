@@ -2,6 +2,7 @@ export class TextConstructor {
 
     /**
      * Constructs the tech clerk text based on the provided tokens and committee selector.
+     * Dynamically includes LC# values when present in the token sequence.
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed tech clerk text.
@@ -26,6 +27,10 @@ export class TextConstructor {
                         const shortenedCommittee = committeeSelector.shortenCommitteeName(committee);
                         techText += ` and Rereferred to ${shortenedCommittee}`;
                         i++;
+                    } else if (tokens[i] === "LC#" && i + 1 < tokens.length) {
+                        const lcNumber = tokens[i + 1];
+                        techText += ` LC# ${lcNumber}`;
+                        i++;
                     }
                 }
                 return techText;
@@ -38,6 +43,7 @@ export class TextConstructor {
 
     /**
      * Constructs the procedural clerk text based on the provided tokens and committee selector.
+     * Dynamically includes LC# values when present in the token sequence.
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed procedural clerk text.
@@ -66,6 +72,10 @@ export class TextConstructor {
                         const committee = tokens[i + 1];
                         const shortenedCommittee = committeeSelector.shortenCommitteeName(committee).toLowerCase();
                         procedureText += ` and rereferred to ${shortenedCommittee}`;
+                        i++;
+                    } else if (tokens[i] === "LC#" && i + 1 < tokens.length) {
+                        const lcNumber = tokens[i + 1];
+                        procedureText += ` LC# ${lcNumber}`;
                         i++;
                     }
                 }

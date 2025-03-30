@@ -39,9 +39,9 @@ export class LCModule {
 
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
-     * Manages input formatting and cursor positioning for a masked LC number (##.####.#####).
+     * Manages input formatting, cursor positioning, and allows token deletion when input is empty.
      * @param {HTMLElement} container - The container element where the input is rendered.
-     * @param {TokenSystem} tokenSystem - The TokenSystem instance to add the token.
+     * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
     bindEvents(container, tokenSystem) {
         this.inputElement = container.querySelector('.lc-input');
@@ -50,21 +50,25 @@ export class LCModule {
         this.inputElement.addEventListener('input', (e) => {
             const oldValue = e.target.value;
             const oldCursorPos = e.target.selectionStart;
-            let value = oldValue.replace(/[^0-9.]/g, '');
-            value = this.formatLCNumber(value);
-            e.target.value = value;
+            let digits = oldValue.replace(/[^0-9]/g, '');
+            const formatted = this.formatLCNumber(digits);
+            e.target.value = formatted;
 
-            let newCursorPos = oldCursorPos;
-            if (oldValue.length < value.length) {
-                newCursorPos += value.length - oldValue.length;
-            } else if (oldValue.length > value.length) {
-                newCursorPos -= oldValue.length - value.length;
+            // Adjust cursor position based on digits entered
+            let newCursorPos;
+            if (digits.length <= 2) {
+                newCursorPos = digits.length;
+            } else if (digits.length <= 6) {
+                newCursorPos = 3 + (digits.length - 2); // After period
+            } else {
+                newCursorPos = 8 + (digits.length - 6); // After second period
             }
-            newCursorPos = Math.min(newCursorPos, value.length);
 
-            if (newCursorPos === 2) newCursorPos = 3; // Skip over first period
-            else if (newCursorPos === 7) newCursorPos = 8; // Skip over second period
+            // Skip over periods
+            if (newCursorPos === 2) newCursorPos = 3;
+            else if (newCursorPos === 7) newCursorPos = 8;
 
+            newCursorPos = Math.min(newCursorPos, formatted.length);
             e.target.setSelectionRange(newCursorPos, newCursorPos);
         });
 
@@ -72,6 +76,10 @@ export class LCModule {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
                 this.submitLCNumber(tokenSystem);
+            } else if (e.key === 'Backspace' && e.target.value === '') {
+                e.preventDefault();
+                tokenSystem.handleKeyDown(e);
+                tokenSystem.tokenInput.focus();
             }
         });
 
@@ -81,19 +89,32 @@ export class LCModule {
     }
 
     /**
-     * Format the LC number to maintain the mask ##.####.#####, padding or truncating parts as needed.
-     * Allows for partial input by preserving existing digits and padding with zeros.
-     * @param {string} value - The current input value.
-     * @returns {string} - The formatted LC number.
+     * Format the LC number to maintain the mask ##.####.##### as the user types.
+     * Preserves digits in the order they are entered, padding with zeros where incomplete.
+     * @param {string} value - The current input value with only numbers and periods.
+     * @returns {string} - The formatted LC number (e.g., "25.1234.56789").
      */
     formatLCNumber(value) {
         const currentYear = new Date().getFullYear().toString().slice(-2);
-        const parts = value.split('.');
-        let year = (parts[0] || '').padEnd(2, '0').slice(0, 2);
-        let middle = (parts[1] || '').padEnd(4, '0').slice(0, 4);
-        let end = (parts[2] || '').padEnd(5, '0').slice(0, 5);
+        let digits = value.replace(/[^0-9]/g, ''); // Remove all non-digits
+        if (digits.length === 0) return `${currentYear}.0000.00000`;
 
-        if (!year) year = currentYear;
+        // Extract parts based on digit count
+        let year = digits.slice(0, 2).padEnd(2, '0');
+        let middle = digits.slice(2, 6).padEnd(4, '0');
+        let end = digits.slice(6, 11).padEnd(5, '0');
+
+        if (digits.length <= 2) {
+            year = digits.padEnd(2, '0');
+            middle = '0000';
+            end = '00000';
+        } else if (digits.length <= 6) {
+            middle = digits.slice(2).padEnd(4, '0');
+            end = '00000';
+        }
+
+        // Default to current year if no year digits provided
+        if (!digits) year = currentYear;
 
         return `${year}.${middle}.${end}`;
     }
