@@ -148,12 +148,14 @@ export class TokenSystem {
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
 
-    // Position the suggestions-container below the token-container
-    const tokenContainerRect = this.tokenContainer.getBoundingClientRect();
-    this.suggestionsContainer.style.position = 'absolute';
-    this.suggestionsContainer.style.left = `${tokenContainerRect.left}px`;
-    this.suggestionsContainer.style.top = `${tokenContainerRect.bottom + window.scrollY}px`;
-    this.suggestionsContainer.style.width = `${tokenContainerRect.width}px`;
+    // Delay positioning to ensure DOM is fully rendered
+    setTimeout(() => {
+        const tokenContainerRect = this.tokenContainer.getBoundingClientRect();
+        this.suggestionsContainer.style.position = 'absolute';
+        this.suggestionsContainer.style.left = `${tokenContainerRect.left}px`;
+        this.suggestionsContainer.style.top = `${tokenContainerRect.bottom + window.scrollY}px`;
+        this.suggestionsContainer.style.width = `${tokenContainerRect.width}px`;
+    }, 0);
 
     // Highlight the appropriate suggestion
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
@@ -398,7 +400,7 @@ export class TokenSystem {
         if (tokenElements.length > 0) {
             const lastTokenEl = tokenElements[tokenElements.length - 1];
             lastTokenEl.remove();
-            this.tokens.pop();
+            this.tokens.pop(); // Ensure this.tokens is updated
             this.updateSuggestions();
             this.updateConstructedText();
         }
