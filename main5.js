@@ -79,4 +79,22 @@ document.addEventListener("DOMContentLoaded", () => {
           tokenSystem.markTime();
       }
   });
+
+  // Handle saving and loading bill and bill type
+  const billInput = document.getElementById('bill');
+  const billTypeSelect = document.getElementById('bill-type');
+
+  // Load from local storage
+  const savedBill = localStorage.getItem('bill');
+  const savedBillType = localStorage.getItem('billType');
+  if (savedBill) billInput.value = savedBill;
+  if (savedBillType) billTypeSelect.value = savedBillType;
+
+  // Save to local storage on change
+  billInput.addEventListener('input', () => {
+      localStorage.setItem('bill', billInput.value);
+  });
+  billTypeSelect.addEventListener('change', () => {
+      localStorage.setItem('billType', billTypeSelect.value);
+  });
 });

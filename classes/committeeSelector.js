@@ -49,8 +49,8 @@ export class CommitteeSelector {
       nonFavorites.sort();
       const sorted = favorites.concat(nonFavorites);
       console.log("Sorted committee list:", sorted);
-
-      let html = `<div class="dropdown-selected">${this.selectedCommittee} ▾</div>`;
+  
+      let html = `<div class="dropdown-selected"><span>${this.selectedCommittee}</span><span class="dropdown-arrow">▾</span></div>`;
       html += `<div class="dropdown-list" style="display:${this.isDropdownOpen ? 'block' : 'none'};">`;
       sorted.forEach(committee => {
           html += `<div class="dropdown-item" data-committee="${committee}">`;
@@ -60,17 +60,17 @@ export class CommitteeSelector {
       });
       html += `</div>`;
       this.containerElement.innerHTML = html;
-
+  
       const selectedDiv = this.containerElement.querySelector(".dropdown-selected");
       const listDiv = this.containerElement.querySelector(".dropdown-list");
-
+  
       selectedDiv.addEventListener("click", (e) => {
           e.stopPropagation();
           this.isDropdownOpen = !this.isDropdownOpen;
           listDiv.style.display = this.isDropdownOpen ? "block" : "none";
           console.log("Dropdown selected clicked. isDropdownOpen:", this.isDropdownOpen);
       });
-
+  
       const nameSpans = this.containerElement.querySelectorAll(".committee-name");
       nameSpans.forEach(span => {
           span.addEventListener("click", (e) => {
@@ -84,7 +84,7 @@ export class CommitteeSelector {
               this.renderLegend();
           });
       });
-
+  
       const checkboxes = this.containerElement.querySelectorAll(".fav-checkbox");
       checkboxes.forEach(checkbox => {
           checkbox.addEventListener("click", (e) => {
@@ -106,7 +106,7 @@ export class CommitteeSelector {
               this.renderLegend();
           });
       });
-
+  
       document.addEventListener("click", (e) => {
           if (!this.containerElement.contains(e.target)) {
               this.isDropdownOpen = false;

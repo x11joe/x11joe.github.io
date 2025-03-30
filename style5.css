@@ -131,6 +131,9 @@ body {
     background: #fff;
     cursor: pointer;
     font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .committee-selector .dropdown-list {

@@ -60,6 +60,10 @@ export class TokenSystem {
     });
   }
 
+  getCurrentBranchData() {
+    return this.getCurrentBranchDataForTokens(this.tokens);
+  } 
+  
   /**
    * Get the current branch of the flow data based on the selected tokens.
    * If no token is selected, return an object whose Options property is an array
