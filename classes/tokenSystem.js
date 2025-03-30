@@ -131,56 +131,61 @@ export class TokenSystem {
   }
 
   /**
-   * Update the suggestions based on the current branch and input, relying on CSS for positioning.
-   * Uses the default renderer when options are available (e.g., actions after a member), and binds events
-   * for special renderers like LCModule when no options are present.
+   * Update the suggestions based on the current branch and input, prioritizing module renderers when a "Class" is specified.
+   * Dynamically handles the flow by rendering a module's interface first if "Class" exists, then showing options after module completion.
+   * Relies on CSS for positioning and uses context to pass committee data to renderers.
    */
   updateSuggestions() {
     console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
     let options = branchData["Options"] || [];
-    if (this.tokens.length === 0) {
-      const startingModules = options.map(module => ({ value: module }));
-      const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
-        const name = member.split(" - ")[0];
-        return { value: name, shortcut: "member" };
-      });
-      options = startingModules.concat(memberNames);
-    }
     let renderer;
-    if (options.length > 0) {
-      renderer = this.defaultRenderer;
+
+    if (this.tokens.length === 0) {
+        // Initial state: show starting modules and member shortcuts
+        const startingModules = options.map(module => ({ value: module }));
+        const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
+            const name = member.split(" - ")[0];
+            return { value: name, shortcut: "member" };
+        });
+        options = startingModules.concat(memberNames);
+        renderer = this.defaultRenderer;
     } else if (branchData["Class"]) {
-      renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        // If a "Class" is specified, use the module's renderer to display its interface
+        renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
-      renderer = this.defaultRenderer;
+        // No "Class" present, use the default renderer for static options
+        renderer = this.defaultRenderer;
     }
+
     const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
     const allCommittees = Object.keys(this.committeeSelector.committeesData);
     const selectedCommittee = this.committeeSelector.getSelectedCommittee();
     const context = {
-      members: currentMembers,
-      allCommittees: allCommittees,
-      selectedCommittee: selectedCommittee
+        members: currentMembers,
+        allCommittees: allCommittees,
+        selectedCommittee: selectedCommittee
     };
+
+    // Render the suggestions or module interface
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
 
-    // If the branch class is LC_Module, bind its events
+    // Bind events for modules that require custom interaction (e.g., LCModule)
     if (branchData["Class"] === 'LC_Module') {
         renderer.bindEvents(this.suggestionsContainer, this);
     }
 
-    // Highlight the appropriate suggestion
+    // Highlight the first suggestion if using the default renderer and options are present
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
-    if (suggestions.length > 0) {
-      if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
-        this.highlightedIndex = 0;
-      }
-      this.updateHighlighted();
+    if (suggestions.length > 0 && renderer === this.defaultRenderer) {
+        if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
+            this.highlightedIndex = 0;
+        }
+        this.updateHighlighted();
     } else {
-      this.highlightedIndex = -1;
+        this.highlightedIndex = -1;
     }
   }
   
