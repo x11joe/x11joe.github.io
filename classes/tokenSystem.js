@@ -36,25 +36,22 @@ export class TokenSystem {
   
   /**
    * Bind event listeners to the token input and suggestions container to handle user interactions.
+   * Prevents hiding suggestions when a class module is active and allows refocusing the main input without interference.
    */
   _bindEvents() {
-    // Bind key events on the token input
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
     this.tokenInput.addEventListener("keyup", (e) => this.handleKeyUp(e));
     
-    // Bind focus event to show suggestions when the input is focused
     this.tokenInput.addEventListener("focus", () => {
         console.log('Input focused - updating suggestions');
         this.updateSuggestions();
     });
     
-    // Bind click event to ensure suggestions appear on first click into the input
     this.tokenInput.addEventListener("click", () => {
         console.log('Input clicked - updating suggestions');
         this.updateSuggestions();
     });
     
-    // Bind click event for suggestions
     this.suggestionsContainer.addEventListener("click", (e) => {
         if (e.target && e.target.nodeName === "LI") {
             const value = e.target.dataset.value;
@@ -66,10 +63,11 @@ export class TokenSystem {
         }
     });
     
-    // Hide suggestions when clicking outside (if the input isn't focused)
     document.addEventListener("click", (e) => {
+        const branchData = this.getCurrentBranchData();
+        const isClassModuleActive = branchData["Class"] && this.suggestionsContainer.innerHTML !== "";
         if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
-            if (document.activeElement !== this.tokenInput) {
+            if (!isClassModuleActive) {
                 console.log('Clicked outside - hiding suggestions');
                 this.suggestionsContainer.innerHTML = "";
             }
@@ -295,7 +293,7 @@ export class TokenSystem {
 
   /**
    * Display editing options for a token at the specified index, dynamically using module interfaces for class-based tokens.
-   * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value.
+   * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value for editing.
    * @param {number} index - The index of the token to edit.
    * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
    */

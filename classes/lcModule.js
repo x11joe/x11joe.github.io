@@ -39,7 +39,7 @@ export class LCModule {
 
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
-     * Manages input formatting, ensures sequential cursor positioning, and allows token deletion when input is empty.
+     * Manages input formatting, ensures sequential cursor positioning based on digit count, and allows token deletion when input is empty.
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
@@ -57,11 +57,11 @@ export class LCModule {
             const digitCount = digits.length;
             let cursorPos = 0;
             if (digitCount <= 2) {
-                cursorPos = digitCount; // Before first period
+                cursorPos = digitCount; // Before first period (year section)
             } else if (digitCount <= 6) {
-                cursorPos = 3 + (digitCount - 2); // After first period
+                cursorPos = 3 + (digitCount - 2); // After first period (middle section)
             } else {
-                cursorPos = 8 + (digitCount - 6); // After second period
+                cursorPos = 8 + (digitCount - 6); // After second period (end section)
             }
 
             // Adjust cursor position to skip over periods
@@ -70,6 +70,7 @@ export class LCModule {
 
             // Ensure cursor position doesn't exceed the formatted string length
             cursorPos = Math.min(cursorPos, formatted.length);
+            console.log(`LCModule input - Digits: ${digits}, Digit count: ${digitCount}, Cursor position: ${cursorPos}`);
             e.target.setSelectionRange(cursorPos, cursorPos);
         });
 
@@ -79,7 +80,13 @@ export class LCModule {
                 this.submitLCNumber(tokenSystem);
             } else if (e.key === 'Backspace' && e.target.value === '') {
                 e.preventDefault();
-                tokenSystem.handleKeyDown(e);
+                if (tokenSystem.tokens.length > 0) {
+                    const lastTokenEl = tokenSystem.tokenContainer.querySelector('.token:last-of-type');
+                    if (lastTokenEl) lastTokenEl.remove();
+                    tokenSystem.tokens.pop();
+                    tokenSystem.updateSuggestions();
+                    tokenSystem.updateConstructedText();
+                }
                 tokenSystem.tokenInput.focus();
             }
         });
