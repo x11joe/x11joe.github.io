@@ -23,6 +23,21 @@ export class LCModule {
     }
 
     /**
+     * Perform actions after rendering the LCModule interface, such as focusing the input and setting cursor position.
+     * @param {HTMLElement} container - The container element where the input is rendered.
+     * @param {TokenSystem} tokenSystem - The TokenSystem instance.
+     */
+    postRender(container, tokenSystem) {
+        this.inputElement = container.querySelector('.lc-input');
+        if (this.inputElement) {
+            this.inputElement.focus();
+            const value = this.inputElement.value;
+            const cursorPos = value.length > 2 ? 3 : value.length;
+            this.inputElement.setSelectionRange(cursorPos, cursorPos);
+        }
+    }
+
+    /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
      * Manages input formatting and cursor positioning for a masked LC number (##.####.#####).
      * @param {HTMLElement} container - The container element where the input is rendered.
@@ -32,11 +47,6 @@ export class LCModule {
         this.inputElement = container.querySelector('.lc-input');
         this.submitButton = container.querySelector('.submit-btn');
 
-        // Initial focus and cursor position after the year
-        this.inputElement.focus();
-        this.inputElement.setSelectionRange(3, 3);
-
-        // Handle input to enforce mask and preserve cursor position
         this.inputElement.addEventListener('input', (e) => {
             const oldValue = e.target.value;
             const oldCursorPos = e.target.selectionStart;
@@ -44,26 +54,20 @@ export class LCModule {
             value = this.formatLCNumber(value);
             e.target.value = value;
 
-            // Determine which part the cursor was in and adjust position
-            const beforeFirstPeriod = oldValue.indexOf('.');
-            const beforeSecondPeriod = oldValue.indexOf('.', beforeFirstPeriod + 1);
-            let newCursorPos;
-            if (oldCursorPos <= beforeFirstPeriod) {
-                // Year part (positions 0-2)
-                newCursorPos = Math.min(oldCursorPos, 2);
-            } else if (oldCursorPos <= beforeSecondPeriod) {
-                // Middle part (positions 3-7)
-                newCursorPos = 3 + (oldCursorPos - beforeFirstPeriod - 1);
-                newCursorPos = Math.min(newCursorPos, 7);
-            } else {
-                // End part (positions 8-14)
-                newCursorPos = 8 + (oldCursorPos - beforeSecondPeriod - 1);
-                newCursorPos = Math.min(newCursorPos, 14);
+            let newCursorPos = oldCursorPos;
+            if (oldValue.length < value.length) {
+                newCursorPos += value.length - oldValue.length;
+            } else if (oldValue.length > value.length) {
+                newCursorPos -= oldValue.length - value.length;
             }
+            newCursorPos = Math.min(newCursorPos, value.length);
+
+            if (newCursorPos === 2) newCursorPos = 3; // Skip over first period
+            else if (newCursorPos === 7) newCursorPos = 8; // Skip over second period
+
             e.target.setSelectionRange(newCursorPos, newCursorPos);
         });
 
-        // Handle keydown for Enter and Tab to submit
         this.inputElement.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
@@ -71,7 +75,6 @@ export class LCModule {
             }
         });
 
-        // Handle submit button click
         this.submitButton.addEventListener('click', () => {
             this.submitLCNumber(tokenSystem);
         });
@@ -79,21 +82,18 @@ export class LCModule {
 
     /**
      * Format the LC number to maintain the mask ##.####.#####, padding or truncating parts as needed.
-     * Preserves existing digits while allowing partial input during editing.
+     * Allows for partial input by preserving existing digits and padding with zeros.
      * @param {string} value - The current input value.
      * @returns {string} - The formatted LC number.
      */
     formatLCNumber(value) {
         const currentYear = new Date().getFullYear().toString().slice(-2);
         const parts = value.split('.');
-        let year = parts[0] || '';
-        let middle = parts[1] || '';
-        let end = parts[2] || '';
+        let year = (parts[0] || '').padEnd(2, '0').slice(0, 2);
+        let middle = (parts[1] || '').padEnd(4, '0').slice(0, 4);
+        let end = (parts[2] || '').padEnd(5, '0').slice(0, 5);
 
-        // Pad or truncate to correct lengths, defaulting to zeros if empty
-        year = year.padEnd(2, '0').slice(0, 2);
-        middle = middle.padEnd(4, '0').slice(0, 4);
-        end = end.padEnd(5, '0').slice(0, 5);
+        if (!year) year = currentYear;
 
         return `${year}.${middle}.${end}`;
     }

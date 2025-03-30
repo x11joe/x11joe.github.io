@@ -143,7 +143,6 @@ export class TokenSystem {
     let renderer;
 
     if (this.tokens.length === 0) {
-        // Initial state: show starting modules and member shortcuts
         const startingModules = options.map(module => ({ value: module }));
         const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
             const name = member.split(" - ")[0];
@@ -152,10 +151,8 @@ export class TokenSystem {
         options = startingModules.concat(memberNames);
         renderer = this.defaultRenderer;
     } else if (branchData["Class"]) {
-        // If a "Class" is specified, use the module's renderer to display its interface
         renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
-        // No "Class" present, use the default renderer for static options
         renderer = this.defaultRenderer;
     }
 
@@ -168,16 +165,18 @@ export class TokenSystem {
         selectedCommittee: selectedCommittee
     };
 
-    // Render the suggestions or module interface
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
 
-    // Bind events for modules that require custom interaction (e.g., LCModule)
-    if (branchData["Class"] === 'LC_Module') {
-        renderer.bindEvents(this.suggestionsContainer, this);
+    if (branchData["Class"]) {
+        if (typeof renderer.bindEvents === 'function') {
+            renderer.bindEvents(this.suggestionsContainer, this);
+        }
+        if (typeof renderer.postRender === 'function') {
+            renderer.postRender(this.suggestionsContainer, this);
+        }
     }
 
-    // Highlight the first suggestion if using the default renderer and options are present
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (suggestions.length > 0 && renderer === this.defaultRenderer) {
         if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
@@ -202,8 +201,8 @@ export class TokenSystem {
   }
 
   /**
-   * Add a new token to the container and tokens array, updating suggestions and managing focus.
-   * Prevents focusing the main input if the current branch uses a custom input (e.g., LCModule).
+   * Add a new token to the container and tokens array, updating suggestions and managing focus dynamically.
+   * If the current branch has a "Class", it calls the renderer's postRender method to handle custom actions.
    * @param {string} value - The selected option to add as a token.
    */
   addToken(value) {
@@ -217,9 +216,14 @@ export class TokenSystem {
     this.tokenInput.value = "";
     this.updateSuggestions();
     this.updateConstructedText();
-    // Only focus the main input if the current branch does not have a custom input
+    
     const branchData = this.getCurrentBranchData();
-    if (!branchData["Class"] || branchData["Class"] !== "LC_Module") {
+    if (branchData["Class"]) {
+        const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        if (typeof renderer.postRender === 'function') {
+            renderer.postRender(this.suggestionsContainer, this);
+        }
+    } else {
         this.tokenInput.focus();
     }
   }
@@ -271,8 +275,8 @@ export class TokenSystem {
   }
 
   /**
-   * Display editing options for a token at the specified index, using module interfaces for class-based tokens.
-   * Renders a custom interface (e.g., LCModule) if the token’s branch has a "Class", otherwise shows a dropdown.
+   * Display editing options for a token at the specified index, dynamically using module interfaces for class-based tokens.
+   * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value.
    * @param {number} index - The index of the token to edit.
    * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
    */
@@ -280,26 +284,23 @@ export class TokenSystem {
     const existingDropdown = document.querySelector('.token-dropdown');
     if (existingDropdown) existingDropdown.remove();
 
-    // Check if this token is associated with a module class
     const tempTokens = this.tokens.slice(0, index);
     const branchData = this.getCurrentBranchDataForTokens(tempTokens);
     if (branchData["Class"]) {
-        // Render the module's interface for editing
         const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
         const html = renderer.render([], '', {});
         this.suggestionsContainer.innerHTML = html;
-        if (branchData["Class"] === 'LC_Module') {
+        if (typeof renderer.bindEvents === 'function') {
             renderer.bindEvents(this.suggestionsContainer, this);
-            // Pre-fill the input with the current token value
-            const inputElement = this.suggestionsContainer.querySelector('.lc-input');
+            const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
             if (inputElement) {
                 inputElement.value = this.tokens[index];
-                inputElement.focus();
-                inputElement.setSelectionRange(3, 3);
+                if (typeof renderer.postRender === 'function') {
+                    renderer.postRender(this.suggestionsContainer, this);
+                }
             }
         }
     } else {
-        // Show standard dropdown for non-class tokens
         const options = this.getOptionsForToken(index);
         const dropdown = document.createElement('div');
         dropdown.className = 'token-dropdown';
