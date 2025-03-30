@@ -36,7 +36,7 @@ export class TokenSystem {
   
   /**
    * Bind event listeners to the token input and suggestions container to handle user interactions.
-   * Prevents hiding suggestions when a class module is active and allows refocusing the main input without interference.
+   * Prevents hiding suggestions when a class module is active, ensuring module interfaces remain visible until completed.
    */
   _bindEvents() {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -70,6 +70,8 @@ export class TokenSystem {
             if (!isClassModuleActive) {
                 console.log('Clicked outside - hiding suggestions');
                 this.suggestionsContainer.innerHTML = "";
+            } else {
+                console.log('Class module active - keeping suggestions visible');
             }
         }
     });
@@ -260,7 +262,8 @@ export class TokenSystem {
   }
 
   /**
-   * Clear existing tokens and set new ones from an array, ensuring dropdowns for editing.
+   * Clear existing tokens and set new ones from an array, ensuring dropdowns for editing and immediate module rendering.
+   * Triggers module interfaces when a class is defined in the flow, maintaining focus on the token input afterward.
    * @param {Array<string>} tokenArray - Array of token values to set.
    */
   setTokens(tokenArray) {
@@ -272,22 +275,46 @@ export class TokenSystem {
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
 
     tokenArray.forEach(value => {
-      const tokenSpan = document.createElement('span');
-      tokenSpan.className = 'token';
-      tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
-      tokenSpan.dataset.value = value;
-      tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
-      this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
-      this.tokens.push(value);
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'token';
+        tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
+        tokenSpan.dataset.value = value;
+        tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
+        this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
+        this.tokens.push(value);
     });
 
     if (!this.isEditing && this.tokens.length > 0) {
-      this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
 
     this.tokenInput.value = '';
-    this.updateSuggestions();
     this.updateConstructedText();
+
+    // Immediately update suggestions to render class module interfaces if applicable
+    const branchData = this.getCurrentBranchData();
+    if (branchData["Class"]) {
+        const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        const context = {
+            members: this.committeeSelector.getSelectedCommitteeMembers(),
+            allCommittees: Object.keys(this.committeeSelector.committeesData),
+            selectedCommittee: this.committeeSelector.getSelectedCommittee()
+        };
+        const html = renderer.render([], '', context);
+        this.suggestionsContainer.innerHTML = html;
+        if (typeof renderer.bindEvents === 'function') {
+            renderer.bindEvents(this.suggestionsContainer, this);
+        }
+        if (typeof renderer.postRender === 'function') {
+            renderer.postRender(this.suggestionsContainer, this);
+        }
+        const inputElement = this.suggestionsContainer.querySelector('.lc-input');
+        if (inputElement) {
+            inputElement.focus();
+        }
+    } else {
+        this.updateSuggestions();
+    }
     this.tokenInput.focus();
   }
 
@@ -426,8 +453,7 @@ export class TokenSystem {
   
   /**
    * Handle keydown events for token input, managing token addition, deletion, and history storage.
-   * Sets enterHandled flag when Enter is processed to prevent duplicate handling in handleKeyUp.
-   * Handles number keys (1-9) to select suggestions when input does not start with a number and suggestions are available.
+   * Safely handles Tab and Backspace to prevent errors and ensures smooth navigation through suggestions.
    * @param {Event} e - The keydown event.
    */
   handleKeyDown(e) {
@@ -505,11 +531,13 @@ export class TokenSystem {
         if (suggestions.length > 0) {
             e.preventDefault();
             const selectedSuggestion = suggestions[this.highlightedIndex];
-            const value = selectedSuggestion.dataset.value;
-            if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
-                this.setTokens(["Member Action", value]);
-            } else {
-                this.addToken(value);
+            if (selectedSuggestion) {
+                const value = selectedSuggestion.dataset.value;
+                if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
+                    this.setTokens(["Member Action", value]);
+                } else {
+                    this.addToken(value);
+                }
             }
         }
     } else if (e.key === "Backspace" && this.tokenInput.value === "") {
