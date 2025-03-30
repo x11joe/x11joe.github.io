@@ -515,6 +515,7 @@ export class TokenSystem {
 
   /**
    * Edit a token at the specified index, validate subsequent tokens appropriately, and update suggestions immediately.
+   * Ensures class module tokens (e.g., committee names) are correctly validated and preserved.
    * @param {number} index - The index of the token to edit.
    * @param {string} newValue - The new value to set for the token.
    */
@@ -528,31 +529,40 @@ export class TokenSystem {
         let currentData = this.getCurrentBranchDataForTokens(this.tokens.slice(0, index + 1));
         const subsequentTokens = this.tokens.slice(index + 1);
         let tempTokens = this.tokens.slice(0, index + 1);
+        console.log('Starting validation - currentData:', currentData, 'subsequentTokens:', subsequentTokens);
+
         for (let i = 0; i < subsequentTokens.length; i++) {
-            // Check if token is valid, accounting for dynamic options from class modules
+            console.log('Validating token:', subsequentTokens[i], 'at position', i);
             if (currentData.Options) {
+                console.log('Options available:', currentData.Options);
                 if (currentData.Options.includes(subsequentTokens[i])) {
                     tempTokens.push(subsequentTokens[i]);
                     currentData = currentData[subsequentTokens[i]] || {};
+                    console.log('Token included, new currentData:', currentData);
                 } else {
+                    console.log('Token not in Options, breaking');
                     break;
                 }
             } else if (currentData.Class && this.classRegistry[currentData.Class]) {
-                // For class modules, assume token is valid if previously accepted, or fetch options
                 const context = {
                     members: this.committeeSelector.getSelectedCommitteeMembers(),
                     allCommittees: Object.keys(this.committeeSelector.committeesData),
                     selectedCommittee: this.committeeSelector.getSelectedCommittee()
                 };
+                console.log('Class module context:', context);
                 const classOptions = this.classRegistry[currentData.Class].getOptions ? 
                     this.classRegistry[currentData.Class].getOptions("", context) : [];
+                console.log('Class options:', classOptions);
                 if (classOptions.includes(subsequentTokens[i])) {
                     tempTokens.push(subsequentTokens[i]);
-                    currentData = {}; // Reset as we don’t have further static options
+                    currentData = {}; // Reset as class modules provide dynamic options with no further static structure
+                    console.log('Class module token included:', subsequentTokens[i]);
                 } else {
+                    console.log('Token not in classOptions, breaking');
                     break;
                 }
             } else {
+                console.log('No Options or Class, breaking');
                 break;
             }
         }
@@ -572,7 +582,7 @@ export class TokenSystem {
     // Update suggestions immediately and focus input
     this.updateConstructedText();
     this.tokenInput.focus();
-    this.updateSuggestions(); // Explicitly call to ensure suggestions appear after edit
+    this.updateSuggestions();
     console.log('Token elements after re-render:', this.tokenContainer.querySelectorAll('.token').length);
   }
 
