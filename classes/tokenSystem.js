@@ -30,48 +30,49 @@ export class TokenSystem {
     this.editingEntry = null;
     this.startTime = null;
     this.markedTime = null;
-    this.isInitialLoad = true; // Flag to skip initial automatic focus
     this._bindEvents();
   }
   
   /**
-   * Bind event listeners to the token input and suggestions container.
+   * Bind event listeners to the token input and suggestions container to handle user interactions.
    */
   _bindEvents() {
-    // Bind key events on the token input.
+    // Bind key events on the token input
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
     this.tokenInput.addEventListener("keyup", (e) => this.handleKeyUp(e));
     
-    // Bind focus event to show suggestions only when input is explicitly focused by user, skipping initial load
+    // Bind focus event to show suggestions when the input is focused
     this.tokenInput.addEventListener("focus", () => {
-      if (this.isInitialLoad) {
-        this.isInitialLoad = false;
-        return;
-      }
-      console.log('Input focused - updating suggestions');
-      this.updateSuggestions();
+        console.log('Input focused - updating suggestions');
+        this.updateSuggestions();
     });
     
-    // Bind click event for suggestions.
+    // Bind click event to ensure suggestions appear on first click into the input
+    this.tokenInput.addEventListener("click", () => {
+        console.log('Input clicked - updating suggestions');
+        this.updateSuggestions();
+    });
+    
+    // Bind click event for suggestions
     this.suggestionsContainer.addEventListener("click", (e) => {
-      if (e.target && e.target.nodeName === "LI") {
-        const value = e.target.dataset.value;
-        if (e.target.hasAttribute('data-shortcut') && e.target.dataset.shortcut === "member") {
-          this.setTokens(["Member Action", value]);
-        } else {
-          this.addToken(value);
+        if (e.target && e.target.nodeName === "LI") {
+            const value = e.target.dataset.value;
+            if (e.target.hasAttribute('data-shortcut') && e.target.dataset.shortcut === "member") {
+                this.setTokens(["Member Action", value]);
+            } else {
+                this.addToken(value);
+            }
         }
-      }
     });
     
-    // Hide suggestions when clicking outside (if the input isn't focused).
+    // Hide suggestions when clicking outside (if the input isn't focused)
     document.addEventListener("click", (e) => {
-      if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
-        if (document.activeElement !== this.tokenInput) {
-          console.log('Clicked outside - hiding suggestions');
-          this.suggestionsContainer.innerHTML = "";
+        if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
+            if (document.activeElement !== this.tokenInput) {
+                console.log('Clicked outside - hiding suggestions');
+                this.suggestionsContainer.innerHTML = "";
+            }
         }
-      }
     });
   }
 
@@ -513,7 +514,7 @@ export class TokenSystem {
   }
 
   /**
-   * Edit a token at the specified index, validate subsequent tokens, and re-render without duplication.
+   * Edit a token at the specified index, validate subsequent tokens appropriately, and update suggestions immediately.
    * @param {number} index - The index of the token to edit.
    * @param {string} newValue - The new value to set for the token.
    */
@@ -521,38 +522,57 @@ export class TokenSystem {
     console.log('editToken called - Index:', index, 'New value:', newValue, 'Tokens before:', this.tokens);
     this.tokens[index] = newValue;
 
-    // Validate subsequent tokens
-    let currentData = this.getCurrentBranchDataForTokens(this.tokens.slice(0, index + 1));
-    const subsequentTokens = this.tokens.slice(index + 1);
-    let tempTokens = this.tokens.slice(0, index + 1);
-    for (let i = 0; i < subsequentTokens.length; i++) {
-      if (currentData.Options && currentData.Options.includes(subsequentTokens[i])) {
-        tempTokens.push(subsequentTokens[i]);
-        currentData = currentData[subsequentTokens[i]] || {};
-      } else {
-        break;
-      }
+    // Special handling for editing member name in "Member Action" to preserve subsequent tokens
+    if (!(this.tokens[0] === "Member Action" && index === 1)) {
+        // Validate subsequent tokens for other cases
+        let currentData = this.getCurrentBranchDataForTokens(this.tokens.slice(0, index + 1));
+        const subsequentTokens = this.tokens.slice(index + 1);
+        let tempTokens = this.tokens.slice(0, index + 1);
+        for (let i = 0; i < subsequentTokens.length; i++) {
+            // Check if token is valid, accounting for dynamic options from class modules
+            if (currentData.Options) {
+                if (currentData.Options.includes(subsequentTokens[i])) {
+                    tempTokens.push(subsequentTokens[i]);
+                    currentData = currentData[subsequentTokens[i]] || {};
+                } else {
+                    break;
+                }
+            } else if (currentData.Class && this.classRegistry[currentData.Class]) {
+                // For class modules, assume token is valid if previously accepted, or fetch options
+                const context = {
+                    members: this.committeeSelector.getSelectedCommitteeMembers(),
+                    allCommittees: Object.keys(this.committeeSelector.committeesData),
+                    selectedCommittee: this.committeeSelector.getSelectedCommittee()
+                };
+                const classOptions = this.classRegistry[currentData.Class].getOptions ? 
+                    this.classRegistry[currentData.Class].getOptions("", context) : [];
+                if (classOptions.includes(subsequentTokens[i])) {
+                    tempTokens.push(subsequentTokens[i]);
+                    currentData = {}; // Reset as we don’t have further static options
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        this.tokens = tempTokens;
     }
-    this.tokens = tempTokens;
     console.log('Tokens after validation:', this.tokens);
 
-    // Re-render tokens without duplication
+    // Re-render tokens
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
     this.tokens.forEach(value => {
-      const tokenSpan = this.createTokenElement(value);
-      this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
+        const tokenSpan = this.createTokenElement(value);
+        this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
     });
 
-    // Update suggestions based on current branch
-    const branchData = this.getCurrentBranchData();
-    if (branchData["Options"] && branchData["Options"].length > 0) {
-      this.updateSuggestions();
-    } else {
-      this.suggestionsContainer.innerHTML = "";
-    }
+    // Update suggestions immediately and focus input
     this.updateConstructedText();
+    this.tokenInput.focus();
+    this.updateSuggestions(); // Explicitly call to ensure suggestions appear after edit
     console.log('Token elements after re-render:', this.tokenContainer.querySelectorAll('.token').length);
   }
 

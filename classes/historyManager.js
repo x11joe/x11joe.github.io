@@ -21,60 +21,75 @@ export class HistoryManager {
         }
     }
 
+    /**
+     * Add a tokenized entry to the history, creating a new group for each entry to prioritize time-based separation.
+     * @param {Array<string>} tokens - The array of tokens representing the entry.
+     * @param {string} bill - The bill name (e.g., "HB 2013").
+     * @param {string} billType - The type of bill (e.g., "Hearing").
+     * @param {string} time - The timestamp of the entry (e.g., "9:00:00 AM").
+     */
     addEntry(tokens, bill, billType, time) {
-        const key = `${bill}-${billType}`;
-        if (!this.historyData[key]) {
-            this.historyData[key] = [];
-        }
+        // Create a new group for every entry to ensure time-based separation
+        const group = { id: this.nextGroupId++, bill, billType, entries: [] };
         const techText = TextConstructor.getTechText(tokens, this.committeeSelector);
         const baseProcedureText = TextConstructor.getProcedureText(tokens, this.committeeSelector);
-        const entry = { id: this.nextId++, time, tokens, techText, baseProcedureText };
-        this.historyData[key].push(entry);
+        const entry = { id: this.nextId++, groupId: group.id, time, tokens, techText, baseProcedureText };
+        group.entries.push(entry);
+        this.historyGroups.push(group);
         this.saveToStorage();
         this.render();
     }
 
     /**
-     * Add a raw text entry to the history, marked for later review.
+     * Add a raw text entry to the history, creating a new group for each entry, marked for later review.
      * @param {string} rawText - The raw input text to store.
      * @param {string} bill - The bill name.
-     * @param {string} billType - The type of bill (e.g., Hearing).
+     * @param {string} billType - The type of bill (e.g., "Hearing").
      * @param {string} time - The timestamp of the entry.
      */
     addRawEntry(rawText, bill, billType, time) {
-        const key = `${bill}-${billType}`;
-        if (!this.historyData[key]) {
-            this.historyData[key] = [];
-        }
-        const entry = { id: this.nextId++, time, rawText, isRaw: true };
-        this.historyData[key].push(entry);
+        // Create a new group for every raw entry to ensure time-based separation
+        const group = { id: this.nextGroupId++, bill, billType, entries: [] };
+        const entry = { id: this.nextId++, groupId: group.id, time, rawText, isRaw: true };
+        group.entries.push(entry);
+        this.historyGroups.push(group);
         this.saveToStorage();
         this.render();
     }
 
     /**
-     * Render the history table, grouping entries by bill and bill type, with raw entries highlighted.
+     * Render the history table, sorting groups by the latest entry timestamp to ensure newest entries are at the top.
      */
     render() {
+        // Sort groups by the latest entry's timestamp, descending, to prioritize newest entries
+        this.historyGroups.sort((a, b) => {
+            const latestA = Math.max(...a.entries.map(e => Date.parse("1970-01-01 " + e.time)));
+            const latestB = Math.max(...b.entries.map(e => Date.parse("1970-01-01 " + e.time)));
+            return latestB - latestA;
+        });
+        // Within each group, sort entries by timestamp descending
+        for (const group of this.historyGroups) {
+            group.entries.sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
+        }
         this.containerElement.innerHTML = '';
-        for (const key in this.historyData) {
-            const [bill, billType] = key.split('-');
+        for (const group of this.historyGroups) {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'bill-group';
             const header = document.createElement('div');
             header.className = 'bill-header';
+            const key = group.id; // Use group id for editing
             if (this.editingHeaderKey === key) {
                 header.innerHTML = `
-                    <input type="text" class="edit-bill" value="${bill}">
+                    <input type="text" class="edit-bill" value="${group.bill}">
                     <select class="edit-bill-type">
-                        <option value="Hearing" ${billType === 'Hearing' ? 'selected' : ''}>Hearing</option>
-                        <option value="Committee Work" ${billType === 'Committee Work' ? 'selected' : ''}>Committee Work</option>
-                        <option value="Conference Committee" ${billType === 'Conference Committee' ? 'selected' : ''}>Conference Committee</option>
+                        <option value="Hearing" ${group.billType === 'Hearing' ? 'selected' : ''}>Hearing</option>
+                        <option value="Committee Work" ${group.billType === 'Committee Work' ? 'selected' : ''}>Committee Work</option>
+                        <option value="Conference Committee" ${group.billType === 'Conference Committee' ? 'selected' : ''}>Conference Committee</option>
                     </select>
                     <button class="save-header-btn">Save</button>
                 `;
             } else {
-                header.innerHTML = `${bill} - ${billType} <button class="edit-header-btn">✏️</button>`;
+                header.innerHTML = `${group.bill} - ${group.billType} <button class="edit-header-btn">✏️</button>`;
             }
             const table = document.createElement('table');
             table.innerHTML = `
@@ -89,11 +104,10 @@ export class HistoryManager {
                 <tbody></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            const sortedEntries = this.historyData[key].sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
-            sortedEntries.forEach(entry => {
+            group.entries.forEach(entry => {
                 const row = document.createElement('tr');
                 row.dataset.id = entry.id;
-                row.dataset.key = key;
+                row.dataset.groupId = group.id;
                 if (entry.isRaw) {
                     row.style.backgroundColor = 'red'; // Highlight raw entries in red
                 }
@@ -119,17 +133,17 @@ export class HistoryManager {
                 const editBtn = row.querySelector('.edit-btn');
                 let isEditingThis = false;
                 if (this.tokenSystem && this.tokenSystem.isEditing && this.tokenSystem.editingEntry) {
-                    isEditingThis = this.tokenSystem.editingEntry.key === key && this.tokenSystem.editingEntry.id === entry.id;
+                    isEditingThis = this.tokenSystem.editingEntry.groupId === group.id && this.tokenSystem.editingEntry.id === entry.id;
                 }
                 if (isEditingThis) {
                     editBtn.textContent = '❌';
                     editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
                 } else {
                     editBtn.textContent = '✏️';
-                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(key, entry.id, entry.tokens || [entry.rawText]));
+                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(group.id, entry.id, entry.tokens || [entry.rawText]));
                 }
                 const deleteBtn = row.querySelector('.delete-btn');
-                deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, key));
+                deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, group.id));
             });
             groupDiv.appendChild(header);
             groupDiv.appendChild(table);
