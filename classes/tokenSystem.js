@@ -132,6 +132,7 @@ export class TokenSystem {
 
   /**
    * Update the suggestions based on the current branch and input, relying on CSS for positioning.
+   * Binds events for LCModule if it is the renderer to handle its special input interface.
    */
   updateSuggestions() {
     console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
@@ -162,6 +163,11 @@ export class TokenSystem {
     };
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
+
+    // If the renderer is LCModule, bind its events
+    if (renderer instanceof LCModule) {
+        renderer.bindEvents(this.suggestionsContainer, this);
+    }
 
     // Highlight the appropriate suggestion
     const suggestions = this.suggestionsContainer.querySelectorAll("li");

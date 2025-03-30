@@ -108,7 +108,7 @@ body {
     max-height: 200px;
     overflow-y: auto;
     display: none; /* Hidden by default */
-    box-sizing: border-box; /* Ensure padding/border don’t affect width */
+    box-sizing: border-box; /* Ensure padding/b mucosaorder don’t affect width */
 }
 
 .suggestions-container:not(:empty) {
@@ -446,6 +446,43 @@ body {
     font-size: 12px;
 }
 
+/* Styles for LCModule input interface */
+.lc-input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+}
+
+.lc-input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 150px;
+    font-family: monospace; /* Improves readability of the mask */
+}
+
+.lc-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 3px #4CAF50;
+}
+
+.submit-btn {
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.submit-btn:hover {
+    background-color: #45a049;
+}
+
 @media (max-width: 900px) {
     .shortcut-legend {
         position: static;
@@ -463,5 +500,19 @@ body {
         margin-left: 0;
         margin-right: 0;
         max-width: 100%;
+    }
+
+    .lc-input-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .lc-input {
+        width: 100%;
+        max-width: 150px;
+    }
+
+    .submit-btn {
+        margin-top: 5px;
     }
 }
