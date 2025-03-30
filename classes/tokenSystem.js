@@ -60,6 +60,7 @@ export class TokenSystem {
             } else {
                 this.addToken(value);
             }
+            e.stopPropagation(); // Prevent the click from bubbling to the document
         }
     });
     

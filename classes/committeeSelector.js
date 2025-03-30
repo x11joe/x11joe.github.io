@@ -162,8 +162,8 @@ export class CommitteeSelector {
       html += "</ul>";
       this.legendElement.innerHTML = html;
   
-      // Add click event listener for member items
       this.legendElement.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent the click from reaching the document listener
           const memberItem = e.target.closest('.member-item');
           if (memberItem && this.tokenSystem) {
               const memberName = memberItem.dataset.member;
@@ -200,5 +200,7 @@ export class CommitteeSelector {
     shortenCommitteeName(committee) {
         return committee.replace(/^(Senate|House)\s+/i, '').replace(/\s+Committee$/i, '');
     }
+
+    
   }
   
