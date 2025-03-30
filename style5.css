@@ -28,6 +28,7 @@ body {
     align-items: center;
     border: 1px solid #ccc;
     padding: 5px;
+    padding-right: 7px; /* Adjust padding to align with the input to prevent overflow */
     border-radius: 4px;
     min-height: 40px;
     background: #fff;

@@ -347,12 +347,16 @@ export class TokenSystem {
   /**
    * Handle keydown events for token input, managing token addition, deletion, and history storage.
    * Sets enterHandled flag when Enter is processed to prevent duplicate handling in handleKeyUp.
-   * Handles number keys (1-9) to select suggestions when input is empty.
+   * Handles number keys (1-9) to select suggestions when input does not start with a number and suggestions are available.
    * @param {Event} e - The keydown event.
    */
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
-    if (/[1-9]/.test(e.key) && this.tokenInput.value.trim() === '' && suggestions.length > 0) {
+    const inputValue = this.tokenInput.value.trim();
+    const startsWithNumber = /^\d/.test(inputValue); // Check if input starts with a digit
+
+    // Handle number key shortcuts (1-9) if input does not start with a number and suggestions are available
+    if (/[1-9]/.test(e.key) && !startsWithNumber && suggestions.length > 0) {
         const index = parseInt(e.key) - 1;
         if (index < suggestions.length) {
             const selectedSuggestion = suggestions[index];
@@ -366,6 +370,7 @@ export class TokenSystem {
             return; // Exit after handling the number key
         }
     }
+
     if (e.key === "Enter") {
         this.enterHandled = true; // Indicate that Enter has been handled
         if (this.isEditing) {
