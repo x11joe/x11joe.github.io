@@ -202,7 +202,8 @@ export class TokenSystem {
   }
 
   /**
-   * Add a new token to the container and tokens array.
+   * Add a new token to the container and tokens array, updating suggestions and managing focus.
+   * Prevents focusing the main input if the current branch uses a custom input (e.g., LCModule).
    * @param {string} value - The selected option to add as a token.
    */
   addToken(value) {
@@ -216,7 +217,11 @@ export class TokenSystem {
     this.tokenInput.value = "";
     this.updateSuggestions();
     this.updateConstructedText();
-    this.tokenInput.focus();
+    // Only focus the main input if the current branch does not have a custom input
+    const branchData = this.getCurrentBranchData();
+    if (!branchData["Class"] || branchData["Class"] !== "LC_Module") {
+        this.tokenInput.focus();
+    }
   }
 
   /**
@@ -265,39 +270,66 @@ export class TokenSystem {
     this.tokenInput.focus();
   }
 
+  /**
+   * Display editing options for a token at the specified index, using module interfaces for class-based tokens.
+   * Renders a custom interface (e.g., LCModule) if the token’s branch has a "Class", otherwise shows a dropdown.
+   * @param {number} index - The index of the token to edit.
+   * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
+   */
   showTokenOptions(index, tokenElement) {
     const existingDropdown = document.querySelector('.token-dropdown');
     if (existingDropdown) existingDropdown.remove();
 
-    const options = this.getOptionsForToken(index);
-    const dropdown = document.createElement('div');
-    dropdown.className = 'token-dropdown';
-    let html = '<ul>';
-    options.forEach(option => {
-        html += `<li data-value="${option}">${option}</li>`;
-    });
-    html += '</ul>';
-    dropdown.innerHTML = html;
-    document.body.appendChild(dropdown);
-
-    const rect = tokenElement.getBoundingClientRect();
-    dropdown.style.position = 'absolute';
-    dropdown.style.left = `${rect.left}px`;
-    dropdown.style.top = `${rect.bottom + window.scrollY}px`;
-
-    dropdown.addEventListener('click', (e) => {
-        if (e.target.tagName === 'LI') {
-            const newValue = e.target.dataset.value;
-            this.editToken(index, newValue);
-            dropdown.remove();
+    // Check if this token is associated with a module class
+    const tempTokens = this.tokens.slice(0, index);
+    const branchData = this.getCurrentBranchDataForTokens(tempTokens);
+    if (branchData["Class"]) {
+        // Render the module's interface for editing
+        const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        const html = renderer.render([], '', {});
+        this.suggestionsContainer.innerHTML = html;
+        if (branchData["Class"] === 'LC_Module') {
+            renderer.bindEvents(this.suggestionsContainer, this);
+            // Pre-fill the input with the current token value
+            const inputElement = this.suggestionsContainer.querySelector('.lc-input');
+            if (inputElement) {
+                inputElement.value = this.tokens[index];
+                inputElement.focus();
+                inputElement.setSelectionRange(3, 3);
+            }
         }
-    });
+    } else {
+        // Show standard dropdown for non-class tokens
+        const options = this.getOptionsForToken(index);
+        const dropdown = document.createElement('div');
+        dropdown.className = 'token-dropdown';
+        let html = '<ul>';
+        options.forEach(option => {
+            html += `<li data-value="${option}">${option}</li>`;
+        });
+        html += '</ul>';
+        dropdown.innerHTML = html;
+        document.body.appendChild(dropdown);
 
-    document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && e.target !== tokenElement.querySelector('.dropdown-arrow')) {
-            dropdown.remove();
-        }
-    }, { once: true });
+        const rect = tokenElement.getBoundingClientRect();
+        dropdown.style.position = 'absolute';
+        dropdown.style.left = `${rect.left}px`;
+        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+
+        dropdown.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                const newValue = e.target.dataset.value;
+                this.editToken(index, newValue);
+                dropdown.remove();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== tokenElement.querySelector('.dropdown-arrow')) {
+                dropdown.remove();
+            }
+        }, { once: true });
+    }
   }
 
   /**

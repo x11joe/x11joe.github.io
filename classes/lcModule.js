@@ -23,7 +23,8 @@ export class LCModule {
     }
 
     /**
-     * Bind events to the input field and submit button to handle user interactions.
+     * Bind events to the LCModule input field and submit button to handle user interactions.
+     * Manages input formatting and cursor positioning for a masked LC number (##.####.#####).
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add the token.
      */
@@ -31,18 +32,35 @@ export class LCModule {
         this.inputElement = container.querySelector('.lc-input');
         this.submitButton = container.querySelector('.submit-btn');
 
-        // Focus on the input field and position cursor after the year
+        // Initial focus and cursor position after the year
         this.inputElement.focus();
         this.inputElement.setSelectionRange(3, 3);
 
-        // Handle input to enforce mask and numeric input
+        // Handle input to enforce mask and preserve cursor position
         this.inputElement.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/[^0-9.]/g, '');
-            if (!value.startsWith('.')) {
-                value = this.formatLCNumber(value);
-                e.target.value = value;
-                this.moveCursor(e.target);
+            const oldValue = e.target.value;
+            const oldCursorPos = e.target.selectionStart;
+            let value = oldValue.replace(/[^0-9.]/g, '');
+            value = this.formatLCNumber(value);
+            e.target.value = value;
+
+            // Determine which part the cursor was in and adjust position
+            const beforeFirstPeriod = oldValue.indexOf('.');
+            const beforeSecondPeriod = oldValue.indexOf('.', beforeFirstPeriod + 1);
+            let newCursorPos;
+            if (oldCursorPos <= beforeFirstPeriod) {
+                // Year part (positions 0-2)
+                newCursorPos = Math.min(oldCursorPos, 2);
+            } else if (oldCursorPos <= beforeSecondPeriod) {
+                // Middle part (positions 3-7)
+                newCursorPos = 3 + (oldCursorPos - beforeFirstPeriod - 1);
+                newCursorPos = Math.min(newCursorPos, 7);
+            } else {
+                // End part (positions 8-14)
+                newCursorPos = 8 + (oldCursorPos - beforeSecondPeriod - 1);
+                newCursorPos = Math.min(newCursorPos, 14);
             }
+            e.target.setSelectionRange(newCursorPos, newCursorPos);
         });
 
         // Handle keydown for Enter and Tab to submit
@@ -60,16 +78,23 @@ export class LCModule {
     }
 
     /**
-     * Format the LC number to match the mask ##.####.#####.
+     * Format the LC number to maintain the mask ##.####.#####, padding or truncating parts as needed.
+     * Preserves existing digits while allowing partial input during editing.
      * @param {string} value - The current input value.
      * @returns {string} - The formatted LC number.
      */
     formatLCNumber(value) {
         const currentYear = new Date().getFullYear().toString().slice(-2);
         const parts = value.split('.');
-        const year = parts[0].slice(0, 2) || currentYear;
-        const middle = (parts[1] || '').slice(0, 4).padEnd(4, '0');
-        const end = (parts[2] || '').slice(0, 5).padEnd(5, '0');
+        let year = parts[0] || '';
+        let middle = parts[1] || '';
+        let end = parts[2] || '';
+
+        // Pad or truncate to correct lengths, defaulting to zeros if empty
+        year = year.padEnd(2, '0').slice(0, 2);
+        middle = middle.padEnd(4, '0').slice(0, 4);
+        end = end.padEnd(5, '0').slice(0, 5);
+
         return `${year}.${middle}.${end}`;
     }
 
