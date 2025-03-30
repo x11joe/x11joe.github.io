@@ -515,7 +515,7 @@ export class TokenSystem {
 
   /**
    * Edit a token at the specified index, validate subsequent tokens appropriately, and update suggestions immediately.
-   * Ensures class module tokens (e.g., committee names) are correctly validated and preserved.
+   * Ensures class module tokens (e.g., committee names) are correctly validated and preserved by checking class options when static options are empty or absent.
    * @param {number} index - The index of the token to edit.
    * @param {string} newValue - The new value to set for the token.
    */
@@ -533,14 +533,15 @@ export class TokenSystem {
 
         for (let i = 0; i < subsequentTokens.length; i++) {
             console.log('Validating token:', subsequentTokens[i], 'at position', i);
-            if (currentData.Options) {
-                console.log('Options available:', currentData.Options);
+            console.log('Current currentData:', currentData);
+            if (currentData.Options && currentData.Options.length > 0) {
+                console.log('Checking static Options:', currentData.Options);
                 if (currentData.Options.includes(subsequentTokens[i])) {
                     tempTokens.push(subsequentTokens[i]);
                     currentData = currentData[subsequentTokens[i]] || {};
-                    console.log('Token included, new currentData:', currentData);
+                    console.log('Token included from static Options, new currentData:', currentData);
                 } else {
-                    console.log('Token not in Options, breaking');
+                    console.log('Token not in static Options, breaking');
                     break;
                 }
             } else if (currentData.Class && this.classRegistry[currentData.Class]) {
@@ -549,20 +550,20 @@ export class TokenSystem {
                     allCommittees: Object.keys(this.committeeSelector.committeesData),
                     selectedCommittee: this.committeeSelector.getSelectedCommittee()
                 };
-                console.log('Class module context:', context);
+                console.log('No valid static Options, checking class module. Context:', context);
                 const classOptions = this.classRegistry[currentData.Class].getOptions ? 
                     this.classRegistry[currentData.Class].getOptions("", context) : [];
-                console.log('Class options:', classOptions);
+                console.log('Class module options retrieved:', classOptions);
                 if (classOptions.includes(subsequentTokens[i])) {
                     tempTokens.push(subsequentTokens[i]);
                     currentData = {}; // Reset as class modules provide dynamic options with no further static structure
-                    console.log('Class module token included:', subsequentTokens[i]);
+                    console.log('Class module token included:', subsequentTokens[i], 'New tempTokens:', tempTokens);
                 } else {
-                    console.log('Token not in classOptions, breaking');
+                    console.log('Token not in classOptions:', subsequentTokens[i], 'Breaking');
                     break;
                 }
             } else {
-                console.log('No Options or Class, breaking');
+                console.log('No valid Options or Class for token:', subsequentTokens[i], 'Breaking');
                 break;
             }
         }
