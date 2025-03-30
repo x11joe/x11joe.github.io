@@ -55,24 +55,35 @@ export class TokenSystem {
     this.suggestionsContainer.addEventListener("click", (e) => {
         if (e.target && e.target.nodeName === "LI") {
             const value = e.target.dataset.value;
-            if (e.target.hasAttribute('data-shortcut') && e.target.dataset.shortcut === "member") {
-                this.setTokens(["Member Action", value]);
+            const editingIndex = this.suggestionsContainer.getAttribute('data-editing-index');
+            if (editingIndex !== null) {
+                // Editing mode
+                const index = parseInt(editingIndex, 10);
+                this.editToken(index, value);
+                this.suggestionsContainer.removeAttribute('data-editing-index');
             } else {
-                this.addToken(value);
+                // Normal mode
+                if (e.target.hasAttribute('data-shortcut') && e.target.dataset.shortcut === "member") {
+                    this.setTokens(["Member Action", value]);
+                } else {
+                    this.addToken(value);
+                }
             }
-            e.stopPropagation(); // Prevent the click from bubbling to the document
+            e.stopPropagation();
         }
     });
     
     document.addEventListener("click", (e) => {
         const branchData = this.getCurrentBranchData();
         const isClassModuleActive = branchData["Class"] && this.suggestionsContainer.innerHTML !== "";
+        const isEditingModule = this.suggestionsContainer.getAttribute('data-editing-index') !== null;
         if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
-            if (!isClassModuleActive) {
+            if (!isEditingModule && !isClassModuleActive) {
                 console.log('Clicked outside - hiding suggestions');
                 this.suggestionsContainer.innerHTML = "";
+                this.suggestionsContainer.removeAttribute('data-editing-index');
             } else {
-                console.log('Class module active - keeping suggestions visible');
+                console.log('Editing or class module active - keeping suggestions visible');
             }
         }
     });
@@ -342,6 +353,7 @@ export class TokenSystem {
         };
         const html = renderer.render([], '', context);
         this.suggestionsContainer.innerHTML = html;
+        this.suggestionsContainer.setAttribute('data-editing-index', index); // Set editing flag
         if (typeof renderer.bindEvents === 'function') {
             renderer.bindEvents(this.suggestionsContainer, this);
             const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
@@ -442,6 +454,7 @@ export class TokenSystem {
    */
   tokenClickHandler(e) {
     if (e.target.className === 'dropdown-arrow') {
+        e.stopPropagation(); // Prevent the click from bubbling to the document
         const tokenSpan = e.target.parentElement;
         const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
         const index = tokenElements.indexOf(tokenSpan);
@@ -449,7 +462,6 @@ export class TokenSystem {
             this.showTokenOptions(index, tokenSpan);
         }
     }
-    // Clicking the token body does nothing, preventing deletion
   }
   
   /**
