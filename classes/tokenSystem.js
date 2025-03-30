@@ -26,6 +26,8 @@ export class TokenSystem {
     this.procedureTextField = document.getElementById("procedure-text");
     this.isEditing = false;
     this.editingEntry = null;
+    this.startTime = null;
+    this.markedTime = null;
     this._bindEvents();
     this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
     this.updateSuggestions();
@@ -170,6 +172,9 @@ export class TokenSystem {
    * @param {string} value - The selected option.
    */
   addToken(value) {
+    if (!this.isEditing && this.tokens.length === 0) {
+        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    }
     const tokenSpan = document.createElement("span");
     tokenSpan.className = "token";
     tokenSpan.textContent = value;
@@ -194,20 +199,30 @@ export class TokenSystem {
   
     // Add new tokens
     tokenArray.forEach(value => {
-      const tokenSpan = document.createElement('span');
-      tokenSpan.className = 'token';
-      tokenSpan.textContent = value;
-      tokenSpan.dataset.value = value;
-      tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
-      this.tokenContainer.insertBefore(tokenSpan, this.tokenInput);
-      this.tokens.push(value);
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'token';
+        tokenSpan.textContent = value;
+        tokenSpan.dataset.value = value;
+        tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
+        this.tokenContainer.insertBefore(tokenSpan, this.tokenInput);
+        this.tokens.push(value);
     });
+  
+    // Set startTime if not editing and tokens are added
+    if (!this.isEditing && this.tokens.length > 0) {
+        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    }
   
     // Clear input and update suggestions
     this.tokenInput.value = '';
     this.updateSuggestions();
     this.updateConstructedText();
     this.tokenInput.focus();
+  }
+
+  markTime() {
+    this.markedTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    document.body.classList.add('marking-time');
   }
   
   updateConstructedText() {
@@ -244,8 +259,12 @@ export class TokenSystem {
         } else if (this.tokens.length > 0) {
             const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
             const billType = document.getElementById('bill-type').value;
-            this.historyManager.addEntry(this.tokens, bill, billType);
+            const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+            this.historyManager.addEntry(this.tokens, bill, billType, time);
             this.setTokens([]);
+            this.markedTime = null;
+            this.startTime = null;
+            document.body.classList.remove('marking-time');
         }
         e.preventDefault();
     } else if (e.key === "Escape" && this.isEditing) {
@@ -309,12 +328,14 @@ export class TokenSystem {
     this.isEditing = true;
     this.editingEntry = {key, id};
     this.setTokens(tokens);
+    this.historyManager.render();
   }
 
   cancelEdit() {
     this.isEditing = false;
     this.editingEntry = null;
     this.setTokens([]);
+    this.historyManager.render();
   }
 }
   

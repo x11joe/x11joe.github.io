@@ -72,4 +72,11 @@ document.addEventListener("DOMContentLoaded", () => {
           Utils.copyWithGlow(textField, text);
       });
   });
+
+  // Add keydown listener for mark time feature
+  document.addEventListener('keydown', (e) => {
+      if (e.key === '`') {
+          tokenSystem.markTime();
+      }
+  });
 });

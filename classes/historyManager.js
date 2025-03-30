@@ -21,12 +21,11 @@ export class HistoryManager {
         }
     }
 
-    addEntry(tokens, bill, billType) {
+    addEntry(tokens, bill, billType, time) {
         const key = `${bill}-${billType}`;
         if (!this.historyData[key]) {
             this.historyData[key] = [];
         }
-        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
         const techText = TextConstructor.getTechText(tokens, this.committeeSelector);
         const baseProcedureText = TextConstructor.getProcedureText(tokens, this.committeeSelector);
         const entry = { id: this.nextId++, time, tokens, techText, baseProcedureText };
@@ -43,7 +42,7 @@ export class HistoryManager {
             groupDiv.className = 'bill-group';
             const header = document.createElement('div');
             header.className = 'bill-header';
-            header.textContent = `${bill} - ${billType}`;
+            header.innerHTML = `${bill} - ${billType} <button class="edit-header-btn">✏️</button>`;
             const table = document.createElement('table');
             table.innerHTML = `
                 <thead>
@@ -66,7 +65,7 @@ export class HistoryManager {
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">
-                        <div class="tokens-container">${entry.tokens.map(token => `<span class="token">${token}</span>`).join('')}</div>
+                        <div class="tokens-container">${entry.tokens.map(token => `<span class="history-token">${token}</span>`).join('')}</div>
                         <div class="tech-clerk">
                             <label>Tech Clerk</label>
                             <div class="copyable">${entry.techText}</div>
@@ -100,18 +99,29 @@ export class HistoryManager {
             groupDiv.appendChild(table);
             this.containerElement.appendChild(groupDiv);
     
+            const editHeaderBtn = header.querySelector('.edit-header-btn');
+            editHeaderBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.editHeader(key);
+            });
+    
             header.addEventListener('click', () => {
                 table.style.display = table.style.display === 'none' ? '' : 'none';
             });
     
-            groupDiv.querySelectorAll('.copyable').forEach(el => {
-                el.addEventListener('click', () => {
-                    const text = el.textContent;
-                    Utils.copyWithGlow(el, text);
+            groupDiv.querySelectorAll('.tech-clerk, .procedural-clerk').forEach(container => {
+                container.addEventListener('click', () => {
+                    const copyable = container.querySelector('.copyable');
+                    const text = copyable.textContent;
+                    Utils.copyWithGlow(container, text);
                 });
             });
     
             groupDiv.querySelectorAll('.time').forEach(timeCell => {
+                timeCell.addEventListener('dblclick', () => {
+                    const text = timeCell.textContent;
+                    Utils.copyWithGlow(timeCell, text);
+                });
                 timeCell.addEventListener('blur', (e) => {
                     const id = parseInt(e.target.closest('tr').dataset.id, 10);
                     const newTime = e.target.textContent;
@@ -145,6 +155,21 @@ export class HistoryManager {
     editEntry(id) {
         // Placeholder for future edit functionality beyond time
         alert('Edit functionality for tokens to be implemented');
+    }
+
+    editHeader(key) {
+        const [oldBill, oldBillType] = key.split('-');
+        const newBill = prompt("Enter new bill:", oldBill);
+        const newBillType = prompt("Enter new bill type:", oldBillType);
+        if (newBill && newBillType) {
+            const newKey = `${newBill}-${newBillType}`;
+            if (newKey !== key) {
+                this.historyData[newKey] = this.historyData[key];
+                delete this.historyData[key];
+                this.saveToStorage();
+                this.render();
+            }
+        }
     }
 
     setTokenSystem(tokenSystem) {

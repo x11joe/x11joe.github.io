@@ -346,6 +346,24 @@ body {
     text-align: center;
 }
 
+.marking-time {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { background-color: #f7f7f7; }
+    50% { background-color: #00ff00; }
+    100% { background-color: #f7f7f7; }
+}
+
+.history-token {
+    background: #e0e0e0;
+    border-radius: 3px;
+    padding: 2px 5px;
+    margin: 2px;
+    font-size: 12px;
+}
+
 @media (max-width: 900px) {
     .shortcut-legend {
         position: static;
