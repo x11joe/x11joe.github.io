@@ -372,4 +372,15 @@ export class HistoryManager {
     saveToStorage() {
         localStorage.setItem("historyGroups", JSON.stringify(this.historyGroups));
     }
+
+    /**
+     * Clear all history groups, reset ID counters, save changes to local storage, and re-render the history table.
+     */
+    clearAllHistory() {
+        this.historyGroups = [];
+        this.nextId = 0;
+        this.nextGroupId = 0;
+        this.saveToStorage();
+        this.render();
+    }
 }

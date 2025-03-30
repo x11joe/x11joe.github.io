@@ -64,20 +64,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const shortcutLegendContainer = document.getElementById("shortcut-legend");
   new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
 
+  // Add event listener for the Clear All button
+  const clearHistoryBtn = document.getElementById('clear-history-btn');
+  clearHistoryBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
+      historyManager.clearAllHistory();
+    }
+  });
+
   document.querySelectorAll('.copy-button').forEach(button => {
-      button.addEventListener('click', () => {
-          const targetId = button.dataset.target;
-          const textField = document.getElementById(targetId);
-          const text = textField.value;
-          Utils.copyWithGlow(textField, text);
-      });
+    button.addEventListener('click', () => {
+      const targetId = button.dataset.target;
+      const textField = document.getElementById(targetId);
+      const text = textField.value;
+      Utils.copyWithGlow(textField, text);
+    });
   });
 
   // Add keydown listener for mark time feature
   document.addEventListener('keydown', (e) => {
-      if (e.key === '`') {
-          tokenSystem.markTime();
-      }
+    if (e.key === '`') {
+      tokenSystem.markTime();
+    }
   });
 
   // Handle saving and loading bill and bill type
@@ -92,9 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Save to local storage on change
   billInput.addEventListener('input', () => {
-      localStorage.setItem('bill', billInput.value);
+    localStorage.setItem('bill', billInput.value);
   });
   billTypeSelect.addEventListener('change', () => {
-      localStorage.setItem('billType', billTypeSelect.value);
+    localStorage.setItem('billType', billTypeSelect.value);
   });
 });
