@@ -31,12 +31,14 @@ body {
     border-radius: 4px;
     min-height: 40px;
     background: #fff;
+    position: relative; /* Ensure suggestions position relative to this */
 }
 
 .input-wrapper {
     flex-grow: 1;
     margin: 0;
     padding: 0;
+    position: relative; /* Contain suggestions within wrapper */
 }
 
 .token {
@@ -95,12 +97,21 @@ body {
 }
 
 .suggestions-container {
+    position: absolute;
+    left: 0;
+    top: 100%; /* Position directly below input-wrapper */
+    width: 100%;
     z-index: 1000;
     background: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
+    display: none; /* Hidden by default, shown only on focus */
+}
+
+.suggestions-container:not(:empty) {
+    display: block; /* Show when populated */
 }
 
 .suggestions-container ul {

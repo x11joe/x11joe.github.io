@@ -36,10 +36,19 @@ export class TokenSystem {
     // Removed initial updateSuggestions() call to prevent suggestions on start
   }
   
+  /**
+   * Bind event listeners to the token input and suggestions container.
+   */
   _bindEvents() {
     // Bind key events on the token input.
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
     this.tokenInput.addEventListener("keyup", (e) => this.handleKeyUp(e));
+    
+    // Bind focus event to show suggestions only when input is explicitly focused by user
+    this.tokenInput.addEventListener("focus", () => {
+      console.log('Input focused - updating suggestions');
+      this.updateSuggestions();
+    });
     
     // Bind click event for suggestions.
     this.suggestionsContainer.addEventListener("click", (e) => {
@@ -57,6 +66,7 @@ export class TokenSystem {
     document.addEventListener("click", (e) => {
       if (!this.suggestionsContainer.contains(e.target) && e.target !== this.tokenInput) {
         if (document.activeElement !== this.tokenInput) {
+          console.log('Clicked outside - hiding suggestions');
           this.suggestionsContainer.innerHTML = "";
         }
       }
@@ -117,55 +127,47 @@ export class TokenSystem {
   }
 
   /**
-   * Update the suggestions based on the current branch and input, positioning them fixed below the token-container.
+   * Update the suggestions based on the current branch and input, relying on CSS for positioning.
    */
   updateSuggestions() {
+    console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
     let options = branchData["Options"] || [];
     if (this.tokens.length === 0) {
-        const startingModules = options.map(module => ({ value: module }));
-        const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
-            const name = member.split(" - ")[0];
-            return { value: name, shortcut: "member" };
-        });
-        options = startingModules.concat(memberNames);
+      const startingModules = options.map(module => ({ value: module }));
+      const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
+        const name = member.split(" - ")[0];
+        return { value: name, shortcut: "member" };
+      });
+      options = startingModules.concat(memberNames);
     }
     let renderer;
     if (branchData["Class"]) {
-        renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+      renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
-        renderer = this.defaultRenderer;
+      renderer = this.defaultRenderer;
     }
     const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
     const allCommittees = Object.keys(this.committeeSelector.committeesData);
     const selectedCommittee = this.committeeSelector.getSelectedCommittee();
     const context = {
-        members: currentMembers,
-        allCommittees: allCommittees,
-        selectedCommittee: selectedCommittee
+      members: currentMembers,
+      allCommittees: allCommittees,
+      selectedCommittee: selectedCommittee
     };
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
 
-    // Delay positioning to ensure DOM is fully rendered
-    setTimeout(() => {
-        const tokenContainerRect = this.tokenContainer.getBoundingClientRect();
-        this.suggestionsContainer.style.position = 'absolute';
-        this.suggestionsContainer.style.left = `${tokenContainerRect.left}px`;
-        this.suggestionsContainer.style.top = `${tokenContainerRect.bottom + window.scrollY}px`;
-        this.suggestionsContainer.style.width = `${tokenContainerRect.width}px`;
-    }, 0);
-
     // Highlight the appropriate suggestion
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (suggestions.length > 0) {
-        if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
-            this.highlightedIndex = 0;
-        }
-        this.updateHighlighted();
+      if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
+        this.highlightedIndex = 0;
+      }
+      this.updateHighlighted();
     } else {
-        this.highlightedIndex = -1;
+      this.highlightedIndex = -1;
     }
   }
   
@@ -210,6 +212,7 @@ export class TokenSystem {
    * @param {Array<string>} tokenArray - Array of token values to set.
    */
   setTokens(tokenArray) {
+    console.log('setTokens called - New tokens:', tokenArray);
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     this.tokens = [];
@@ -217,17 +220,17 @@ export class TokenSystem {
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
 
     tokenArray.forEach(value => {
-        const tokenSpan = document.createElement('span');
-        tokenSpan.className = 'token';
-        tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
-        tokenSpan.dataset.value = value;
-        tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
-        this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
-        this.tokens.push(value);
+      const tokenSpan = document.createElement('span');
+      tokenSpan.className = 'token';
+      tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
+      tokenSpan.dataset.value = value;
+      tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
+      this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
+      this.tokens.push(value);
     });
 
     if (!this.isEditing && this.tokens.length > 0) {
-        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+      this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
 
     this.tokenInput.value = '';
@@ -330,81 +333,82 @@ export class TokenSystem {
   }
   
   /**
-   * Handle keydown events for token input, managing token addition, editing, and history storage.
+   * Handle keydown events for token input, managing token addition, deletion, and history storage.
    * @param {Event} e - The keydown event.
    */
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (e.key === "Enter") {
-        if (this.isEditing) {
-            const {key, id} = this.editingEntry;
-            this.historyManager.updateEntry(key, id, this.tokens);
-            this.cancelEdit();
-        } else {
-            const inputText = this.tokenInput.value.trim();
-            let parsedTokens = [];
-            if (inputText) {
-                parsedTokens = this.parseTextToTokens(inputText);
-            }
-            if (parsedTokens.length > 0) {
-                this.setTokens(parsedTokens);
-                this.tokenInput.value = '';
-            } else if (inputText) {
-                // Store raw input in history
-                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
-                const billType = document.getElementById('bill-type').value;
-                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-                this.historyManager.addRawEntry(inputText, bill, billType, time);
-                this.tokenInput.value = '';
-            } else if (this.tokens.length > 0) {
-                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
-                const billType = document.getElementById('bill-type').value;
-                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-                this.historyManager.addEntry(this.tokens, bill, billType, time);
-                this.setTokens([]); // Clear tokens after adding to history
-                this.suggestionsContainer.innerHTML = ""; // Clear suggestions
-                this.markedTime = null;
-                this.startTime = null;
-                document.body.classList.remove('marking-time');
-            }
-        }
-        e.preventDefault();
-    } else if (e.key === "Escape" && this.isEditing) {
+      if (this.isEditing) {
+        const {key, id} = this.editingEntry;
+        this.historyManager.updateEntry(key, id, this.tokens);
         this.cancelEdit();
-        e.preventDefault();
+      } else {
+        const inputText = this.tokenInput.value.trim();
+        let parsedTokens = [];
+        if (inputText) {
+          parsedTokens = this.parseTextToTokens(inputText);
+        }
+        if (parsedTokens.length > 0) {
+          this.setTokens(parsedTokens);
+          this.tokenInput.value = '';
+        } else if (inputText) {
+          // Store raw input in history
+          const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+          const billType = document.getElementById('bill-type').value;
+          const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+          this.historyManager.addRawEntry(inputText, bill, billType, time);
+          this.tokenInput.value = '';
+        } else if (this.tokens.length > 0) {
+          const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+          const billType = document.getElementById('bill-type').value;
+          const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+          this.historyManager.addEntry(this.tokens, bill, billType, time);
+          this.setTokens([]); // Clear tokens after adding to history
+          this.suggestionsContainer.innerHTML = ""; // Clear suggestions
+          this.markedTime = null;
+          this.startTime = null;
+          document.body.classList.remove('marking-time');
+        }
+      }
+      e.preventDefault();
+    } else if (e.key === "Escape" && this.isEditing) {
+      this.cancelEdit();
+      e.preventDefault();
     } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (suggestions.length > 0) {
-            this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
-            this.updateHighlighted();
-        }
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
+        this.updateHighlighted();
+      }
     } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (suggestions.length > 0) {
-            this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
-            this.updateHighlighted();
-        }
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+        this.updateHighlighted();
+      }
     } else if (e.key === "Tab") {
-        if (suggestions.length > 0) {
-            e.preventDefault();
-            const selectedSuggestion = suggestions[this.highlightedIndex];
-            const value = selectedSuggestion.dataset.value;
-            if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
-                this.setTokens(["Member Action", value]);
-            } else {
-                this.addToken(value);
-            }
-        }
-    } else if (e.key === "Backspace" && this.tokenInput.value === "") {
-        const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
-        if (tokenElements.length > 0) {
-            const lastTokenEl = tokenElements[tokenElements.length - 1];
-            lastTokenEl.remove();
-            this.tokens.pop(); // Ensure this.tokens is updated
-            this.updateSuggestions();
-            this.updateConstructedText();
-        }
+      if (suggestions.length > 0) {
         e.preventDefault();
+        const selectedSuggestion = suggestions[this.highlightedIndex];
+        const value = selectedSuggestion.dataset.value;
+        if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
+          this.setTokens(["Member Action", value]);
+        } else {
+          this.addToken(value);
+        }
+      }
+    } else if (e.key === "Backspace" && this.tokenInput.value === "") {
+      const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
+      if (tokenElements.length > 0) {
+        const lastTokenEl = tokenElements[tokenElements.length - 1];
+        lastTokenEl.remove();
+        this.tokens.pop(); // Ensure this.tokens is updated
+        console.log('After Backspace - Tokens:', this.tokens);
+        this.updateSuggestions();
+        this.updateConstructedText();
+      }
+      e.preventDefault();
     }
   }
 
@@ -504,6 +508,7 @@ export class TokenSystem {
    * @param {string} newValue - The new value to set for the token.
    */
   editToken(index, newValue) {
+    console.log('editToken called - Index:', index, 'New value:', newValue, 'Tokens before:', this.tokens);
     const oldValue = this.tokens[index];
     this.tokens[index] = newValue;
 
@@ -514,29 +519,33 @@ export class TokenSystem {
     let tempTokens = this.tokens.slice(0, index + 1);
 
     for (let i = 0; i < subsequentTokens.length && valid; i++) {
-        if (currentData.Options && currentData.Options.includes(subsequentTokens[i])) {
-            tempTokens.push(subsequentTokens[i]);
-            currentData = currentData[subsequentTokens[i]] || {};
-        } else {
-            valid = false;
-        }
+      if (currentData.Options && currentData.Options.includes(subsequentTokens[i])) {
+        tempTokens.push(subsequentTokens[i]);
+        currentData = currentData[subsequentTokens[i]] || {};
+      } else {
+        valid = false;
+      }
     }
 
     if (!valid) {
-        this.tokens = tempTokens;
+      this.tokens = tempTokens;
     }
+
+    console.log('Tokens after validation:', this.tokens);
 
     // Re-render tokens
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     this.tokens.forEach(value => this.addToken(value));
 
+    console.log('Token elements after re-render:', this.tokenContainer.querySelectorAll('.token').length);
+
     // Show suggestions if further options exist, otherwise clear them
     const branchData = this.getCurrentBranchData();
     if (branchData["Options"] && branchData["Options"].length > 0) {
-        this.updateSuggestions();
+      this.updateSuggestions();
     } else {
-        this.suggestionsContainer.innerHTML = "";
+      this.suggestionsContainer.innerHTML = "";
     }
     this.updateConstructedText();
   }
