@@ -49,45 +49,52 @@ export class LCModule {
         this.submitButton = container.querySelector('.submit-btn');
 
         this.inputElement.addEventListener('input', (e) => {
-            const oldValue = e.target.value;
-            const oldCursorPos = e.target.selectionStart;
-            let digits = oldValue.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+            const newValue = e.target.value;
+            let digits = newValue.replace(/[^0-9]/g, '');
             const formatted = this.formatLCNumber(digits);
             e.target.value = formatted;
 
-            // Determine if a digit was added or removed
-            const oldDigitCount = oldValue.replace(/[^0-9]/g, '').length;
-            const newDigitCount = digits.length;
-            let newCursorPos;
+            // Calculate new cursor position based on input type
+            let newCursorPos = this.inputElement.selectionStart;
 
-            // Set initial cursor position based on digit count if starting fresh
-            if (newDigitCount <= 2) {
-                newCursorPos = newDigitCount; // Year section (positions 0-1)
-            } else if (newDigitCount <= 6) {
-                newCursorPos = 3 + (newDigitCount - 2); // Middle section (positions 3-6)
-            } else {
-                newCursorPos = 8 + (newDigitCount - 6); // End section (positions 8-12)
+            if (e.inputType === 'insertText') {
+                // Move cursor forward
+                newCursorPos++;
+                if (newCursorPos === 2) newCursorPos = 3;
+                else if (newCursorPos === 7) newCursorPos = 8;
+            } else if (e.inputType === 'deleteContentBackward') {
+                // Move cursor back
+                newCursorPos--;
+                if (newCursorPos === 2) newCursorPos = 1;
+                else if (newCursorPos === 7) newCursorPos = 6;
             }
 
-            // Adjust cursor based on action (typing or deleting)
-            if (newDigitCount > oldDigitCount) {
-                // Typing: Move cursor forward, but start at position 3 after year
-                newCursorPos = oldCursorPos === 2 ? 3 : newCursorPos + 1;
-            } else if (newDigitCount < oldDigitCount) {
-                // Deleting: Move cursor back, respecting section boundaries
-                newCursorPos = oldCursorPos > 8 ? oldCursorPos - 1 : 
-                            oldCursorPos > 3 ? Math.max(3, oldCursorPos - 1) : 
-                            Math.max(0, oldCursorPos - 1);
+            // Ensure cursor is on a digit position
+            const digitPositions = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12];
+            if (!digitPositions.includes(newCursorPos)) {
+                // Find the nearest digit position
+                if (newCursorPos < 0) newCursorPos = 0;
+                else if (newCursorPos > 12) newCursorPos = 12;
+                else {
+                    const nextPos = digitPositions.find(pos => pos > newCursorPos);
+                    newCursorPos = nextPos !== undefined ? nextPos : digitPositions[digitPositions.length - 1];
+                }
             }
 
-            // Skip over periods
-            if (newCursorPos === 2) newCursorPos = 3;
-            else if (newCursorPos === 7) newCursorPos = 8;
-
-            // Ensure cursor position stays within bounds
-            newCursorPos = Math.min(newCursorPos, formatted.length);
-            console.log(`LCModule input - Digits: ${digits}, Old cursor: ${oldCursorPos}, New cursor: ${newCursorPos}`);
+            console.log(`LCModule input - Input type: ${e.inputType}, Digits: ${digits}, New cursor: ${newCursorPos}`);
             e.target.setSelectionRange(newCursorPos, newCursorPos);
+        });
+
+        this.inputElement.addEventListener('click', (e) => {
+            const pos = this.inputElement.selectionStart;
+            const digitPositions = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12];
+            if (!digitPositions.includes(pos)) {
+                // Find the nearest digit position
+                const distances = digitPositions.map(p => Math.abs(p - pos));
+                const minDistance = Math.min(...distances);
+                const nearestPos = digitPositions.find(p => Math.abs(p - pos) === minDistance);
+                this.inputElement.setSelectionRange(nearestPos, nearestPos);
+            }
         });
 
         this.inputElement.addEventListener('keydown', (e) => {
