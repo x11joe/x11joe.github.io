@@ -30,6 +30,7 @@ export class TokenSystem {
     this.editingEntry = null;
     this.startTime = null;
     this.markedTime = null;
+    this.enterHandled = false; // Flag to track if Enter key was handled in handleKeyDown
     this._bindEvents();
   }
   
@@ -345,81 +346,83 @@ export class TokenSystem {
   
   /**
    * Handle keydown events for token input, managing token addition, deletion, and history storage.
+   * Sets enterHandled flag when Enter is processed to prevent duplicate handling in handleKeyUp.
    * @param {Event} e - The keydown event.
    */
   handleKeyDown(e) {
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (e.key === "Enter") {
-      if (this.isEditing) {
-        const {key, id} = this.editingEntry;
-        this.historyManager.updateEntry(key, id, this.tokens);
-        this.cancelEdit();
-      } else {
-        const inputText = this.tokenInput.value.trim();
-        let parsedTokens = [];
-        if (inputText) {
-          parsedTokens = this.parseTextToTokens(inputText);
-        }
-        if (parsedTokens.length > 0) {
-          this.setTokens(parsedTokens);
-          this.tokenInput.value = '';
-        } else if (inputText) {
-          // Store raw input in history
-          const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
-          const billType = document.getElementById('bill-type').value;
-          const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-          this.historyManager.addRawEntry(inputText, bill, billType, time);
-          this.tokenInput.value = '';
-        } else if (this.tokens.length > 0) {
-          const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
-          const billType = document.getElementById('bill-type').value;
-          const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-          this.historyManager.addEntry(this.tokens, bill, billType, time);
-          this.setTokens([]); // Clear tokens after adding to history
-          this.suggestionsContainer.innerHTML = ""; // Clear suggestions
-          this.markedTime = null;
-          this.startTime = null;
-          document.body.classList.remove('marking-time');
-        }
-      }
-      e.preventDefault();
-    } else if (e.key === "Escape" && this.isEditing) {
-      this.cancelEdit();
-      e.preventDefault();
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (suggestions.length > 0) {
-        this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
-        this.updateHighlighted();
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (suggestions.length > 0) {
-        this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
-        this.updateHighlighted();
-      }
-    } else if (e.key === "Tab") {
-      if (suggestions.length > 0) {
-        e.preventDefault();
-        const selectedSuggestion = suggestions[this.highlightedIndex];
-        const value = selectedSuggestion.dataset.value;
-        if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
-          this.setTokens(["Member Action", value]);
+        this.enterHandled = true; // Indicate that Enter has been handled
+        if (this.isEditing) {
+            const {key, id} = this.editingEntry;
+            this.historyManager.updateEntry(key, id, this.tokens);
+            this.cancelEdit();
         } else {
-          this.addToken(value);
+            const inputText = this.tokenInput.value.trim();
+            let parsedTokens = [];
+            if (inputText) {
+                parsedTokens = this.parseTextToTokens(inputText);
+            }
+            if (parsedTokens.length > 0) {
+                this.setTokens(parsedTokens);
+                this.tokenInput.value = '';
+            } else if (inputText) {
+                // Store raw input in history
+                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+                const billType = document.getElementById('bill-type').value;
+                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                this.historyManager.addRawEntry(inputText, bill, billType, time);
+                this.tokenInput.value = '';
+            } else if (this.tokens.length > 0) {
+                const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
+                const billType = document.getElementById('bill-type').value;
+                const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                this.historyManager.addEntry(this.tokens, bill, billType, time);
+                this.setTokens([]); // Clear tokens after adding to history
+                this.suggestionsContainer.innerHTML = ""; // Clear suggestions
+                this.markedTime = null;
+                this.startTime = null;
+                document.body.classList.remove('marking-time');
+            }
         }
-      }
+        e.preventDefault();
+    } else if (e.key === "Escape" && this.isEditing) {
+        this.cancelEdit();
+        e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            this.highlightedIndex = Math.min(this.highlightedIndex + 1, suggestions.length - 1);
+            this.updateHighlighted();
+        }
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (suggestions.length > 0) {
+            this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+            this.updateHighlighted();
+        }
+    } else if (e.key === "Tab") {
+        if (suggestions.length > 0) {
+            e.preventDefault();
+            const selectedSuggestion = suggestions[this.highlightedIndex];
+            const value = selectedSuggestion.dataset.value;
+            if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
+                this.setTokens(["Member Action", value]);
+            } else {
+                this.addToken(value);
+            }
+        }
     } else if (e.key === "Backspace" && this.tokenInput.value === "") {
-      const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
-      if (tokenElements.length > 0) {
-        const lastTokenEl = tokenElements[tokenElements.length - 1];
-        lastTokenEl.remove();
-        this.tokens.pop(); // Ensure this.tokens is updated
-        console.log('After Backspace - Tokens:', this.tokens);
-        this.updateSuggestions();
-        this.updateConstructedText();
-      }
-      e.preventDefault();
+        const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
+        if (tokenElements.length > 0) {
+            const lastTokenEl = tokenElements[tokenElements.length - 1];
+            lastTokenEl.remove();
+            this.tokens.pop(); // Ensure this.tokens is updated
+            console.log('After Backspace - Tokens:', this.tokens);
+            this.updateSuggestions();
+            this.updateConstructedText();
+        }
+        e.preventDefault();
     }
   }
 
@@ -495,20 +498,29 @@ export class TokenSystem {
       return tokens;
   }
     
+  /**
+   * Handle keyup events for token input, managing suggestion selection.
+   * Skips token addition if Enter was already handled in handleKeyDown to prevent duplication.
+   * @param {Event} e - The keyup event.
+   */
   handleKeyUp(e) {
     if (e.key === "Enter") {
-      const suggestions = this.suggestionsContainer.querySelectorAll("li");
-      if (suggestions.length > 0) {
-        const selectedSuggestion = suggestions[this.highlightedIndex];
-        const value = selectedSuggestion.dataset.value;
-        if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
-          this.setTokens(["Member Action", value]);
-        } else {
-          this.addToken(value);
+        if (this.enterHandled) {
+            this.enterHandled = false; // Reset the flag
+            return; // Skip token addition if handled in keydown
         }
-        e.preventDefault();
-        return;
-      }
+        const suggestions = this.suggestionsContainer.querySelectorAll("li");
+        if (suggestions.length > 0) {
+            const selectedSuggestion = suggestions[this.highlightedIndex];
+            const value = selectedSuggestion.dataset.value;
+            if (selectedSuggestion.hasAttribute('data-shortcut') && selectedSuggestion.dataset.shortcut === "member") {
+                this.setTokens(["Member Action", value]);
+            } else {
+                this.addToken(value);
+            }
+            e.preventDefault();
+            return;
+        }
     }
     this.updateSuggestions();
   }
