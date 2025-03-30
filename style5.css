@@ -34,7 +34,6 @@ body {
 }
 
 .input-wrapper {
-    position: relative;
     flex-grow: 1;
     margin: 0;
     padding: 0;
@@ -96,17 +95,12 @@ body {
 }
 
 .suggestions-container {
-    position: absolute;
     z-index: 1000;
     background: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
-    width: 100%;
-    left: 0;
-    top: 100%;
-    margin-top: 2px; /* Small gap for better visibility */
 }
 
 .suggestions-container ul {

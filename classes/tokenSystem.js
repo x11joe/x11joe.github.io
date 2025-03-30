@@ -67,7 +67,7 @@ export class TokenSystem {
   getCurrentBranchData() {
     return this.getCurrentBranchDataForTokens(this.tokens);
   }
-   
+
   /**
    * Get the branch data for a given token sequence.
    * @param {Array} tokens - The token sequence to navigate with.
@@ -114,46 +114,53 @@ export class TokenSystem {
   }
 
   /**
-   * Update the suggestions based on the current branch and input.
+   * Update the suggestions based on the current branch and input, positioning them fixed below the token-container.
    */
   updateSuggestions() {
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
     let options = branchData["Options"] || [];
     if (this.tokens.length === 0) {
-      const startingModules = options.map(module => ({ value: module }));
-      const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
-        const name = member.split(" - ")[0];
-        return { value: name, shortcut: "member" };
-      });
-      options = startingModules.concat(memberNames);
+        const startingModules = options.map(module => ({ value: module }));
+        const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
+            const name = member.split(" - ")[0];
+            return { value: name, shortcut: "member" };
+        });
+        options = startingModules.concat(memberNames);
     }
     let renderer;
     if (branchData["Class"]) {
-      renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
     } else {
-      renderer = this.defaultRenderer;
+        renderer = this.defaultRenderer;
     }
     const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
     const allCommittees = Object.keys(this.committeeSelector.committeesData);
     const selectedCommittee = this.committeeSelector.getSelectedCommittee();
     const context = {
-      members: currentMembers,
-      allCommittees: allCommittees,
-      selectedCommittee: selectedCommittee
+        members: currentMembers,
+        allCommittees: allCommittees,
+        selectedCommittee: selectedCommittee
     };
     const html = renderer.render(options, query, context);
     this.suggestionsContainer.innerHTML = html;
-  
+
+    // Position the suggestions-container below the token-container
+    const tokenContainerRect = this.tokenContainer.getBoundingClientRect();
+    this.suggestionsContainer.style.position = 'absolute';
+    this.suggestionsContainer.style.left = `${tokenContainerRect.left}px`;
+    this.suggestionsContainer.style.top = `${tokenContainerRect.bottom + window.scrollY}px`;
+    this.suggestionsContainer.style.width = `${tokenContainerRect.width}px`;
+
     // Highlight the appropriate suggestion
     const suggestions = this.suggestionsContainer.querySelectorAll("li");
     if (suggestions.length > 0) {
-      if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
-        this.highlightedIndex = 0;
-      }
-      this.updateHighlighted();
+        if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
+            this.highlightedIndex = 0;
+        }
+        this.updateHighlighted();
     } else {
-      this.highlightedIndex = -1;
+        this.highlightedIndex = -1;
     }
   }
   
@@ -265,10 +272,34 @@ export class TokenSystem {
     }, { once: true });
   }
 
+  /**
+   * Get the possible options for editing a token at a specific index, using class module options where applicable.
+   * @param {number} index - The index of the token to edit.
+   * @returns {Array<string>} The list of possible options for that token.
+   */
   getOptionsForToken(index) {
-    const tempTokens = this.tokens.slice(0, index);
-    let currentData = this.getCurrentBranchDataForTokens(tempTokens);
-    return currentData.Options || [];
+    if (index === 0) {
+        // Starting modules
+        return this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
+    } else if (this.tokens[0] === "Member Action" && index === 1) {
+        // Member names for "Member Action"
+        const renderer = this.classRegistry["Member_Module"];
+        const context = { members: this.committeeSelector.getSelectedCommitteeMembers() };
+        return renderer.getOptions("", context);
+    } else {
+        const tempTokens = this.tokens.slice(0, index);
+        let currentData = this.getCurrentBranchDataForTokens(tempTokens);
+        if (currentData["Class"] && this.classRegistry[currentData["Class"]] && typeof this.classRegistry[currentData["Class"]].getOptions === 'function') {
+            const context = {
+                members: this.committeeSelector.getSelectedCommitteeMembers(),
+                allCommittees: Object.keys(this.committeeSelector.committeesData),
+                selectedCommittee: this.committeeSelector.getSelectedCommittee()
+            };
+            return this.classRegistry[currentData["Class"]].getOptions("", context);
+        } else {
+            return currentData["Options"] || [];
+        }
+    }
   }
 
   markTime() {
