@@ -202,28 +202,47 @@ export class TokenSystem {
 
   /**
    * Add a new token to the container and tokens array, updating suggestions and managing focus dynamically.
-   * If the current branch has a "Class", it calls the renderer's postRender method to handle custom actions.
+   * If the current branch has a "Class" (e.g., LC_Module), it immediately renders the class module's interface.
    * @param {string} value - The selected option to add as a token.
    */
   addToken(value) {
     if (!this.isEditing && this.tokens.length === 0) {
-      this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
     const tokenSpan = this.createTokenElement(value);
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
     this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
     this.tokens.push(value);
     this.tokenInput.value = "";
-    this.updateSuggestions();
     this.updateConstructedText();
-    
+
+    // Get the current branch data after adding the token
     const branchData = this.getCurrentBranchData();
+
+    // If the branch has a "Class" (e.g., LC_Module), render the class module's interface immediately
     if (branchData["Class"]) {
         const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        const context = {
+            members: this.committeeSelector.getSelectedCommitteeMembers(),
+            allCommittees: Object.keys(this.committeeSelector.committeesData),
+            selectedCommittee: this.committeeSelector.getSelectedCommittee()
+        };
+        const html = renderer.render([], '', context);
+        this.suggestionsContainer.innerHTML = html;
+        if (typeof renderer.bindEvents === 'function') {
+            renderer.bindEvents(this.suggestionsContainer, this);
+        }
         if (typeof renderer.postRender === 'function') {
             renderer.postRender(this.suggestionsContainer, this);
         }
+        // Ensure focus is set to the input field of the class module (e.g., LC# input)
+        const inputElement = this.suggestionsContainer.querySelector('.lc-input');
+        if (inputElement) {
+            inputElement.focus();
+        }
     } else {
+        // Otherwise, update suggestions as usual and focus the main token input
+        this.updateSuggestions();
         this.tokenInput.focus();
     }
   }
