@@ -2,23 +2,48 @@ import { TextConstructor } from './textConstructor.js';
 import { Utils } from './utils.js';
 
 export class HistoryManager {
+
+    /**
+     * Initialize the HistoryManager with a container element and committee selector.
+     * Loads history groups from local storage or migrates old history data, ensuring historyGroups is always defined.
+     * @param {HTMLElement} containerElement - The element where the history table will be rendered.
+     * @param {Object} committeeSelector - The CommitteeSelector instance for text construction.
+     */
     constructor(containerElement, committeeSelector) {
         this.containerElement = containerElement;
         this.committeeSelector = committeeSelector;
-        const storedData = localStorage.getItem("historyData");
-        if (storedData) {
-            this.historyData = JSON.parse(storedData);
-            let maxId = 0;
-            for (const key in this.historyData) {
-                const entries = this.historyData[key];
-                const maxInGroup = Math.max(...entries.map(entry => entry.id));
+        const storedGroups = localStorage.getItem("historyGroups");
+        if (storedGroups) {
+            this.historyGroups = JSON.parse(storedGroups);
+        } else {
+            // Check for old historyData and convert if it exists
+            const storedData = localStorage.getItem("historyData");
+            if (storedData) {
+                const historyData = JSON.parse(storedData);
+                this.historyGroups = Object.keys(historyData).map((key, index) => {
+                    const [bill, billType] = key.split('-');
+                    return {
+                        id: index,
+                        bill,
+                        billType,
+                        entries: historyData[key]
+                    };
+                });
+            } else {
+                this.historyGroups = [];
+            }
+        }
+        // Find max id for entries
+        let maxId = 0;
+        for (const group of this.historyGroups) {
+            if (group.entries.length > 0) {
+                const maxInGroup = Math.max(...group.entries.map(entry => entry.id));
                 if (maxInGroup > maxId) maxId = maxInGroup;
             }
-            this.nextId = maxId + 1;
-        } else {
-            this.historyData = {};
-            this.nextId = 0;
         }
+        this.nextId = maxId + 1;
+        // Find max group id
+        this.nextGroupId = this.historyGroups.length > 0 ? Math.max(...this.historyGroups.map(g => g.id)) + 1 : 0;
     }
 
     /**
@@ -250,13 +275,21 @@ export class HistoryManager {
         }
     }
 
-    deleteEntry(id, key) {
-        this.historyData[key] = this.historyData[key].filter(e => e.id !== id);
-        if (this.historyData[key].length === 0) {
-            delete this.historyData[key];
+    /**
+     * Delete an entry from a group by its ID and remove the group if it becomes empty.
+     * @param {number} id - The ID of the entry to delete.
+     * @param {number} groupId - The ID of the group containing the entry.
+     */
+    deleteEntry(id, groupId) {
+        const group = this.historyGroups.find(g => g.id === groupId);
+        if (group) {
+            group.entries = group.entries.filter(e => e.id !== id);
+            if (group.entries.length === 0) {
+                this.historyGroups = this.historyGroups.filter(g => g.id !== groupId);
+            }
+            this.saveToStorage();
+            this.render();
         }
-        this.saveToStorage();
-        this.render();
     }
 
     editEntry(id) {
@@ -283,18 +316,30 @@ export class HistoryManager {
         this.tokenSystem = tokenSystem;
     }
 
-    updateEntry(key, id, newTokens) {
-        const entry = this.historyData[key].find(e => e.id === id);
-        if (entry) {
-            entry.tokens = newTokens;
-            entry.techText = TextConstructor.getTechText(newTokens, this.committeeSelector);
-            entry.baseProcedureText = TextConstructor.getProcedureText(newTokens, this.committeeSelector);
-            this.saveToStorage();
-            this.render();
+    /**
+     * Update an existing entry's tokens within a specific group and refresh the display.
+     * @param {number} groupId - The ID of the group containing the entry.
+     * @param {number} id - The ID of the entry to update.
+     * @param {Array<string>} newTokens - The new token array to set.
+     */
+    updateEntry(groupId, id, newTokens) {
+        const group = this.historyGroups.find(g => g.id === groupId);
+        if (group) {
+            const entry = group.entries.find(e => e.id === id);
+            if (entry) {
+                entry.tokens = newTokens;
+                entry.techText = TextConstructor.getTechText(newTokens, this.committeeSelector);
+                entry.baseProcedureText = TextConstructor.getProcedureText(newTokens, this.committeeSelector);
+                this.saveToStorage();
+                this.render();
+            }
         }
     }
 
+    /**
+     * Save the current history groups to local storage under the key "historyGroups".
+     */
     saveToStorage() {
-        localStorage.setItem("historyData", JSON.stringify(this.historyData));
+        localStorage.setItem("historyGroups", JSON.stringify(this.historyGroups));
     }
 }
