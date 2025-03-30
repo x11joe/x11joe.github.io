@@ -20,12 +20,21 @@ export class RereferCommitteeModule {
             committee.toLowerCase().includes(query.toLowerCase())
         );
     }
-    
+
+    /**
+     * Render suggestions by filtering the available committee options based on the query.
+     * Adds numbers (1-9) before the first 9 suggestions for shortcut reminders.
+     * @param {Array} options - List of possible options (ignored here as committees come from context).
+     * @param {string} query - The current user input.
+     * @param {Object} context - Context object containing all committees and selected committee.
+     * @returns {string} - HTML string for the suggestion list.
+     */
     render(options, query, context = {}) {
         const suggestions = this.getOptions(query, context);
         let html = "<ul>";
-        suggestions.forEach(committee => {
-            html += `<li data-value="${committee}">${committee}</li>`;
+        suggestions.forEach((committee, index) => {
+            const displayText = index < 9 ? `${index + 1}. ${committee}` : committee;
+            html += `<li data-value="${committee}">${displayText}</li>`;
         });
         html += "</ul>";
         return html;

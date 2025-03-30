@@ -15,6 +15,7 @@ export class MemberModule {
 
   /**
    * Render suggestions by filtering the available member options based on the query.
+   * Adds numbers (1-9) before the first 9 suggestions for shortcut reminders.
    * @param {Array} options - List of possible options (ignored here as members come from context).
    * @param {string} query - The current user input.
    * @param {Object} context - Context object containing the members list.
@@ -23,8 +24,9 @@ export class MemberModule {
   render(options, query, context = {}) {
     const filtered = this.getOptions(query, context);
     let html = "<ul>";
-    filtered.forEach(name => {
-        html += `<li data-value="${name}">${name}</li>`;
+    filtered.forEach((name, index) => {
+        const displayText = index < 9 ? `${index + 1}. ${name}` : name;
+        html += `<li data-value="${name}">${displayText}</li>`;
     });
     html += "</ul>";
     return html;
