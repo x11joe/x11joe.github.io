@@ -61,9 +61,50 @@ export class TokenSystem {
   }
 
   getCurrentBranchData() {
-    return this.getCurrentBranchDataForTokens(this.tokens);
-  } 
-  
+    if (this.tokens.length === 0) {
+        const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
+        return { Options: startingModules };
+    }
+
+    const moduleName = this.tokens[0];
+    let currentData = null;
+    for (let i = 0; i < this.flowData.length; i++) {
+        if (this.flowData[i][moduleName]) {
+            currentData = this.flowData[i][moduleName];
+            break;
+        }
+    }
+    if (!currentData) return {};
+
+    if (this.tokens.length === 1) {
+        return currentData;
+    }
+
+    // Determine if the second token is a member name
+    const isSecondTokenMember = this.tokens.length >= 2 && this.committeeSelector.isMemberName(this.tokens[1]);
+
+    // If second token is a member name, start navigation from tokens[2]
+    let navigationTokens = isSecondTokenMember ? this.tokens.slice(2) : this.tokens.slice(1);
+
+    for (const token of navigationTokens) {
+        if (currentData[token]) {
+            currentData = currentData[token];
+        } else {
+            currentData = {};
+            break;
+        }
+    }
+
+    // Special case: if we have exactly two tokens and the second is a member name,
+    // return the options under the module
+    if (this.tokens.length === 2 && isSecondTokenMember) {
+        const { Class, ...rest } = currentData;
+        return rest;
+    }
+
+    return currentData;
+  }  
+
   /**
    * Get the current branch of the flow data based on the selected tokens.
    * If no token is selected, return an object whose Options property is an array
