@@ -30,10 +30,8 @@ export class TokenSystem {
     this.editingEntry = null;
     this.startTime = null;
     this.markedTime = null;
+    this.isInitialLoad = true; // Flag to skip initial automatic focus
     this._bindEvents();
-    // Bind focus event to show suggestions only when input is clicked
-    this.tokenInput.addEventListener("focus", () => this.updateSuggestions());
-    // Removed initial updateSuggestions() call to prevent suggestions on start
   }
   
   /**
@@ -44,8 +42,12 @@ export class TokenSystem {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
     this.tokenInput.addEventListener("keyup", (e) => this.handleKeyUp(e));
     
-    // Bind focus event to show suggestions only when input is explicitly focused by user
+    // Bind focus event to show suggestions only when input is explicitly focused by user, skipping initial load
     this.tokenInput.addEventListener("focus", () => {
+      if (this.isInitialLoad) {
+        this.isInitialLoad = false;
+        return;
+      }
       console.log('Input focused - updating suggestions');
       this.updateSuggestions();
     });
@@ -184,27 +186,35 @@ export class TokenSystem {
   }
 
   /**
-   * Add a token element to the container with a dropdown for editing.
+   * Add a new token to the container and tokens array.
    * @param {string} value - The selected option to add as a token.
    */
   addToken(value) {
     if (!this.isEditing && this.tokens.length === 0) {
-        this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+      this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
-    const tokenSpan = document.createElement("span");
-    tokenSpan.className = "token";
-    tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
-    tokenSpan.dataset.value = value;
-    tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
-    
+    const tokenSpan = this.createTokenElement(value);
     const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
     this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
-    
     this.tokens.push(value);
     this.tokenInput.value = "";
     this.updateSuggestions();
     this.updateConstructedText();
     this.tokenInput.focus();
+  }
+
+  /**
+   * Create a token DOM element without modifying the tokens array.
+   * @param {string} value - The value of the token to create.
+   * @returns {HTMLElement} The created token element.
+   */
+  createTokenElement(value) {
+    const tokenSpan = document.createElement("span");
+    tokenSpan.className = "token";
+    tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
+    tokenSpan.dataset.value = value;
+    tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
+    return tokenSpan;
   }
 
   /**
@@ -503,44 +513,39 @@ export class TokenSystem {
   }
 
   /**
-   * Edit a token at the specified index and update subsequent tokens and suggestions.
+   * Edit a token at the specified index, validate subsequent tokens, and re-render without duplication.
    * @param {number} index - The index of the token to edit.
    * @param {string} newValue - The new value to set for the token.
    */
   editToken(index, newValue) {
     console.log('editToken called - Index:', index, 'New value:', newValue, 'Tokens before:', this.tokens);
-    const oldValue = this.tokens[index];
     this.tokens[index] = newValue;
 
-    // Check if subsequent tokens are still valid
+    // Validate subsequent tokens
     let currentData = this.getCurrentBranchDataForTokens(this.tokens.slice(0, index + 1));
     const subsequentTokens = this.tokens.slice(index + 1);
-    let valid = true;
     let tempTokens = this.tokens.slice(0, index + 1);
-
-    for (let i = 0; i < subsequentTokens.length && valid; i++) {
+    for (let i = 0; i < subsequentTokens.length; i++) {
       if (currentData.Options && currentData.Options.includes(subsequentTokens[i])) {
         tempTokens.push(subsequentTokens[i]);
         currentData = currentData[subsequentTokens[i]] || {};
       } else {
-        valid = false;
+        break;
       }
     }
-
-    if (!valid) {
-      this.tokens = tempTokens;
-    }
-
+    this.tokens = tempTokens;
     console.log('Tokens after validation:', this.tokens);
 
-    // Re-render tokens
+    // Re-render tokens without duplication
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
-    this.tokens.forEach(value => this.addToken(value));
+    const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
+    this.tokens.forEach(value => {
+      const tokenSpan = this.createTokenElement(value);
+      this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
+    });
 
-    console.log('Token elements after re-render:', this.tokenContainer.querySelectorAll('.token').length);
-
-    // Show suggestions if further options exist, otherwise clear them
+    // Update suggestions based on current branch
     const branchData = this.getCurrentBranchData();
     if (branchData["Options"] && branchData["Options"].length > 0) {
       this.updateSuggestions();
@@ -548,6 +553,7 @@ export class TokenSystem {
       this.suggestionsContainer.innerHTML = "";
     }
     this.updateConstructedText();
+    console.log('Token elements after re-render:', this.tokenContainer.querySelectorAll('.token').length);
   }
 
   startEdit(key, id, tokens) {

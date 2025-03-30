@@ -31,14 +31,13 @@ body {
     border-radius: 4px;
     min-height: 40px;
     background: #fff;
-    position: relative; /* Ensure suggestions position relative to this */
+    position: relative; /* Anchor for suggestions positioning */
 }
 
 .input-wrapper {
     flex-grow: 1;
     margin: 0;
     padding: 0;
-    position: relative; /* Contain suggestions within wrapper */
 }
 
 .token {
@@ -99,7 +98,7 @@ body {
 .suggestions-container {
     position: absolute;
     left: 0;
-    top: 100%; /* Position directly below input-wrapper */
+    top: calc(100% + 2px); /* Position directly below token-container with slight offset */
     width: 100%;
     z-index: 1000;
     background: #fff;
@@ -107,7 +106,8 @@ body {
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
-    display: none; /* Hidden by default, shown only on focus */
+    display: none; /* Hidden by default */
+    box-sizing: border-box; /* Ensure padding/border don’t affect width */
 }
 
 .suggestions-container:not(:empty) {
