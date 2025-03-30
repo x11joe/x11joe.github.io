@@ -358,7 +358,8 @@ export class TokenSystem {
   /**
    * Display editing options for a token at the specified index, dynamically using module interfaces for class-based tokens.
    * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value for editing,
-   * and sets the editing index for subsequent actions to recognize the edit context.
+   * and sets the editing index for subsequent actions to recognize the edit context. Resets suppressSuggestions only when
+   * the user clicks on "LC#" and selects "LC#" again from the dropdown, overriding suppression to bring back the LCModule prompt.
    * @param {number} index - The index of the token to edit.
    * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
    */
@@ -413,6 +414,11 @@ export class TokenSystem {
         dropdown.addEventListener('click', (e) => {
             if (e.target.tagName === 'LI') {
                 const newValue = e.target.dataset.value;
+                // Reset suppressSuggestions only if the current token is "LC#" and the user selects "LC#" again
+                if (this.tokens[index] === "LC#" && newValue === "LC#") {
+                    this.suppressSuggestions = false; // Override suppression to bring back LCModule
+                    console.log('Reset suppressSuggestions to false because "LC#" was reselected');
+                }
                 this.editToken(index, newValue);
                 dropdown.remove();
             }
