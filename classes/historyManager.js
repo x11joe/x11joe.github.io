@@ -42,7 +42,19 @@ export class HistoryManager {
             groupDiv.className = 'bill-group';
             const header = document.createElement('div');
             header.className = 'bill-header';
-            header.innerHTML = `${bill} - ${billType} <button class="edit-header-btn">✏️</button>`;
+            if (this.editingHeaderKey === key) {
+                header.innerHTML = `
+                    <input type="text" class="edit-bill" value="${bill}">
+                    <select class="edit-bill-type">
+                        <option value="Hearing" ${billType === 'Hearing' ? 'selected' : ''}>Hearing</option>
+                        <option value="Committee Work" ${billType === 'Committee Work' ? 'selected' : ''}>Committee Work</option>
+                        <option value="Conference Committee" ${billType === 'Conference Committee' ? 'selected' : ''}>Conference Committee</option>
+                    </select>
+                    <button class="save-header-btn">Save</button>
+                `;
+            } else {
+                header.innerHTML = `${bill} - ${billType} <button class="edit-header-btn">✏️</button>`;
+            }
             const table = document.createElement('table');
             table.innerHTML = `
                 <thead>
@@ -99,14 +111,35 @@ export class HistoryManager {
             groupDiv.appendChild(table);
             this.containerElement.appendChild(groupDiv);
     
-            const editHeaderBtn = header.querySelector('.edit-header-btn');
-            editHeaderBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.editHeader(key);
-            });
+            if (this.editingHeaderKey === key) {
+                const saveBtn = header.querySelector('.save-header-btn');
+                const billInput = header.querySelector('.edit-bill');
+                saveBtn.addEventListener('click', () => this.saveHeader(key));
+                billInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.saveHeader(key);
+                    }
+                });
+                header.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        if (!header.contains(document.activeElement)) {
+                            this.saveHeader(key);
+                        }
+                    }, 100);
+                }, true);
+            } else {
+                const editHeaderBtn = header.querySelector('.edit-header-btn');
+                editHeaderBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.startEditingHeader(key);
+                });
+            }
     
             header.addEventListener('click', () => {
-                table.style.display = table.style.display === 'none' ? '' : 'none';
+                if (this.editingHeaderKey !== key) {
+                    table.style.display = table.style.display === 'none' ? '' : 'none';
+                }
             });
     
             groupDiv.querySelectorAll('.tech-clerk, .procedural-clerk').forEach(container => {
@@ -130,6 +163,42 @@ export class HistoryManager {
             });
         }
     }
+    
+    startEditingHeader(key) {
+        this.editingHeaderKey = key;
+        this.render();
+    }
+    
+    saveHeader(key) {
+        const bill = document.querySelector('.edit-bill').value.trim();
+        const billType = document.querySelector('.edit-bill-type').value;
+        const newKey = `${bill}-${billType}`;
+        if (newKey !== key && bill) {
+            this.historyData[newKey] = this.historyData[key];
+            delete this.historyData[key];
+            this.saveToStorage();
+        }
+        this.editingHeaderKey = null;
+        this.render();
+    }
+
+startEditingHeader(key) {
+    this.editingHeaderKey = key;
+    this.render();
+}
+
+saveHeader(key) {
+    const bill = document.querySelector('.edit-bill').value.trim();
+    const billType = document.querySelector('.edit-bill-type').value;
+    const newKey = `${bill}-${billType}`;
+    if (newKey !== key && bill) {
+        this.historyData[newKey] = this.historyData[key];
+        delete this.historyData[key];
+        this.saveToStorage();
+    }
+    this.editingHeaderKey = null;
+    this.render();
+}
 
     updateTime(id, newTime) {
         for (const key in this.historyData) {
