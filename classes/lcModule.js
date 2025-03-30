@@ -23,7 +23,8 @@ export class LCModule {
     }
 
     /**
-     * Perform actions after rendering the LCModule interface, such as focusing the input and setting cursor position.
+     * Perform actions after rendering the LCModule interface, such as focusing the input and setting the initial cursor position.
+     * Sets the cursor to position 3 (after the year) for intuitive user entry.
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance.
      */
@@ -31,15 +32,15 @@ export class LCModule {
         this.inputElement = container.querySelector('.lc-input');
         if (this.inputElement) {
             this.inputElement.focus();
-            const value = this.inputElement.value;
-            const cursorPos = value.length > 2 ? 3 : value.length;
+            const cursorPos = 3; // Start after the year (e.g., "25.|0000.00000")
             this.inputElement.setSelectionRange(cursorPos, cursorPos);
         }
     }
 
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
-     * Manages input formatting, ensures sequential cursor positioning based on digit count, and allows token deletion when input is empty.
+     * Manages input formatting, ensures cursor positioning reflects user actions (typing/deleting),
+     * allows focus to return to token-input when clicking outside, and cancels the interface on Escape.
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
@@ -49,36 +50,55 @@ export class LCModule {
 
         this.inputElement.addEventListener('input', (e) => {
             const oldValue = e.target.value;
+            const oldCursorPos = e.target.selectionStart;
             let digits = oldValue.replace(/[^0-9]/g, ''); // Remove non-numeric characters
             const formatted = this.formatLCNumber(digits);
             e.target.value = formatted;
 
-            // Calculate cursor position based on the number of digits entered
-            const digitCount = digits.length;
-            let cursorPos = 0;
-            if (digitCount <= 2) {
-                cursorPos = digitCount; // Before first period (year section)
-            } else if (digitCount <= 6) {
-                cursorPos = 3 + (digitCount - 2); // After first period (middle section)
+            // Determine if a digit was added or removed
+            const oldDigitCount = oldValue.replace(/[^0-9]/g, '').length;
+            const newDigitCount = digits.length;
+            let newCursorPos;
+
+            // Set initial cursor position based on digit count if starting fresh
+            if (newDigitCount <= 2) {
+                newCursorPos = newDigitCount; // Year section (positions 0-1)
+            } else if (newDigitCount <= 6) {
+                newCursorPos = 3 + (newDigitCount - 2); // Middle section (positions 3-6)
             } else {
-                cursorPos = 8 + (digitCount - 6); // After second period (end section)
+                newCursorPos = 8 + (newDigitCount - 6); // End section (positions 8-12)
             }
 
-            // Adjust cursor position to skip over periods
-            if (cursorPos === 2) cursorPos = 3; // Move past first period
-            else if (cursorPos === 7) cursorPos = 8; // Move past second period
+            // Adjust cursor based on action (typing or deleting)
+            if (newDigitCount > oldDigitCount) {
+                // Typing: Move cursor forward, but start at position 3 after year
+                newCursorPos = oldCursorPos === 2 ? 3 : newCursorPos + 1;
+            } else if (newDigitCount < oldDigitCount) {
+                // Deleting: Move cursor back, respecting section boundaries
+                newCursorPos = oldCursorPos > 8 ? oldCursorPos - 1 : 
+                            oldCursorPos > 3 ? Math.max(3, oldCursorPos - 1) : 
+                            Math.max(0, oldCursorPos - 1);
+            }
 
-            // Ensure cursor position doesn't exceed the formatted string length
-            cursorPos = Math.min(cursorPos, formatted.length);
-            console.log(`LCModule input - Digits: ${digits}, Digit count: ${digitCount}, Cursor position: ${cursorPos}`);
-            e.target.setSelectionRange(cursorPos, cursorPos);
+            // Skip over periods
+            if (newCursorPos === 2) newCursorPos = 3;
+            else if (newCursorPos === 7) newCursorPos = 8;
+
+            // Ensure cursor position stays within bounds
+            newCursorPos = Math.min(newCursorPos, formatted.length);
+            console.log(`LCModule input - Digits: ${digits}, Old cursor: ${oldCursorPos}, New cursor: ${newCursorPos}`);
+            e.target.setSelectionRange(newCursorPos, newCursorPos);
         });
 
         this.inputElement.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
                 this.submitLCNumber(tokenSystem);
-            } else if (e.key === 'Backspace' && e.target.value === '') {
+            } else if (e.key === 'Escape') {
+                // Cancel LCModule interface and return focus to token-input
+                tokenSystem.suggestionsContainer.innerHTML = '';
+                tokenSystem.tokenInput.focus();
+            } else if (e.key === 'Backspace' && e.target.value.replace(/[^0-9]/g, '').length === 0) {
                 e.preventDefault();
                 if (tokenSystem.tokens.length > 0) {
                     const lastTokenEl = tokenSystem.tokenContainer.querySelector('.token:last-of-type');
@@ -94,6 +114,14 @@ export class LCModule {
         this.submitButton.addEventListener('click', () => {
             this.submitLCNumber(tokenSystem);
         });
+
+        // Allow clicking outside to focus token-input without closing suggestions
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target) && e.target === tokenSystem.tokenInput) {
+                tokenSystem.tokenInput.focus();
+                console.log('Clicked token-input while LCModule active - focus returned, suggestions kept');
+            }
+        }, { once: false });
     }
 
     /**
