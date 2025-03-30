@@ -393,7 +393,11 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     background: #f9f9f9;
-    cursor: pointer;
+    cursor: pointer; /* Ensure cursor is pointer for entire container */
+}
+
+.tech-clerk:hover, .procedural-clerk:hover {
+    background: #f0f0f0; /* Added hover effect for clarity */
 }
 
 .tech-clerk label, .procedural-clerk label {

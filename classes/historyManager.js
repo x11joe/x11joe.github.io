@@ -47,37 +47,41 @@ export class HistoryManager {
     }
 
     /**
-     * Add a tokenized entry to the history, creating a new group for each entry to prioritize time-based separation.
+     * Add a tokenized entry to the history, grouping by bill and bill type if a matching group exists.
      * @param {Array<string>} tokens - The array of tokens representing the entry.
      * @param {string} bill - The bill name (e.g., "HB 2013").
      * @param {string} billType - The type of bill (e.g., "Hearing").
      * @param {string} time - The timestamp of the entry (e.g., "9:00:00 AM").
      */
     addEntry(tokens, bill, billType, time) {
-        // Create a new group for every entry to ensure time-based separation
-        const group = { id: this.nextGroupId++, bill, billType, entries: [] };
+        let group = this.historyGroups.find(g => g.bill === bill && g.billType === billType);
+        if (!group) {
+            group = { id: this.nextGroupId++, bill, billType, entries: [] };
+            this.historyGroups.push(group);
+        }
         const techText = TextConstructor.getTechText(tokens, this.committeeSelector);
         const baseProcedureText = TextConstructor.getProcedureText(tokens, this.committeeSelector);
         const entry = { id: this.nextId++, groupId: group.id, time, tokens, techText, baseProcedureText };
         group.entries.push(entry);
-        this.historyGroups.push(group);
         this.saveToStorage();
         this.render();
     }
 
     /**
-     * Add a raw text entry to the history, creating a new group for each entry, marked for later review.
+     * Add a raw text entry to the history, grouping by bill and bill type if a matching group exists, marked for later review.
      * @param {string} rawText - The raw input text to store.
      * @param {string} bill - The bill name.
      * @param {string} billType - The type of bill (e.g., "Hearing").
      * @param {string} time - The timestamp of the entry.
      */
     addRawEntry(rawText, bill, billType, time) {
-        // Create a new group for every raw entry to ensure time-based separation
-        const group = { id: this.nextGroupId++, bill, billType, entries: [] };
+        let group = this.historyGroups.find(g => g.bill === bill && g.billType === billType);
+        if (!group) {
+            group = { id: this.nextGroupId++, bill, billType, entries: [] };
+            this.historyGroups.push(group);
+        }
         const entry = { id: this.nextId++, groupId: group.id, time, rawText, isRaw: true };
         group.entries.push(entry);
-        this.historyGroups.push(group);
         this.saveToStorage();
         this.render();
     }

@@ -1,46 +1,76 @@
 export class TextConstructor {
+
+    /**
+     * Constructs the tech clerk text based on the provided tokens and committee selector.
+     * @param {Array<string>} tokens - The array of tokens representing the action.
+     * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
+     * @returns {string} The constructed tech clerk text.
+     */
     static getTechText(tokens, committeeSelector) {
-        if (tokens[0] === "Member Action" && tokens.length >= 4 && committeeSelector.isMemberName(tokens[1])) {
+        if (tokens[0] === "Member Action" && tokens.length >= 3 && committeeSelector.isMemberName(tokens[1])) {
             const memberTitle = committeeSelector.getMemberTitle();
             const lastName = committeeSelector.getLastName(tokens[1]);
-            const action = tokens[2].toLowerCase();
-            const motion = tokens[3];
-            let techText = `${memberTitle} ${lastName} ${action} ${motion}`;
-            for (let i = 4; i < tokens.length; i++) {
-                if (tokens[i] === "As Amended") {
-                    techText += " as Amended";
-                } else if (tokens[i] === "and Rereferred" && i + 1 < tokens.length) {
-                    const committee = tokens[i + 1];
-                    const shortenedCommittee = committeeSelector.shortenCommitteeName(committee);
-                    techText += ` and Rereferred to ${shortenedCommittee}`;
-                    i++;
+            const action = tokens[2];
+            if (action === "Seconded" && tokens.length === 3) {
+                return `${memberTitle} ${lastName} Seconded`;
+            } else if (tokens.length >= 5 && (action === "Introduced" || action === "Proposed") && tokens[3] === "Self" && tokens[4] === "Verbal") {
+                return `${memberTitle} ${lastName} ${action} a Verbal Amendment`;
+            } else if (tokens.length >= 4) {
+                const motion = tokens[3];
+                let techText = `${memberTitle} ${lastName} ${action} ${motion}`;
+                for (let i = 4; i < tokens.length; i++) {
+                    if (tokens[i] === "As Amended") {
+                        techText += " as Amended";
+                    } else if (tokens[i] === "and Rereferred" && i + 1 < tokens.length) {
+                        const committee = tokens[i + 1];
+                        const shortenedCommittee = committeeSelector.shortenCommitteeName(committee);
+                        techText += ` and Rereferred to ${shortenedCommittee}`;
+                        i++;
+                    }
                 }
+                return techText;
             }
-            return techText;
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
             return tokens[1];
         }
         return "";
     }
 
+    /**
+     * Constructs the procedural clerk text based on the provided tokens and committee selector.
+     * @param {Array<string>} tokens - The array of tokens representing the action.
+     * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
+     * @returns {string} The constructed procedural clerk text.
+     */
     static getProcedureText(tokens, committeeSelector) {
-        if (tokens[0] === "Member Action" && tokens.length >= 4 && committeeSelector.isMemberName(tokens[1])) {
+        if (tokens[0] === "Member Action" && tokens.length >= 3 && committeeSelector.isMemberName(tokens[1])) {
             const memberTitle = committeeSelector.getMemberTitle();
             const lastName = committeeSelector.getLastName(tokens[1]);
             const action = tokens[2].toLowerCase();
-            const motion = tokens[3].toLowerCase();
-            let procedureText = `${memberTitle} ${lastName} ${action} a ${motion}`;
-            for (let i = 4; i < tokens.length; i++) {
-                if (tokens[i] === "As Amended") {
-                    procedureText += " as amended";
-                } else if (tokens[i] === "and Rereferred" && i + 1 < tokens.length) {
-                    const committee = tokens[i + 1];
-                    const shortenedCommittee = committeeSelector.shortenCommitteeName(committee).toLowerCase();
-                    procedureText += ` and rereferred to ${shortenedCommittee}`;
-                    i++;
+            if (action === "seconded" && tokens.length === 3) {
+                return `${memberTitle} ${lastName} seconded the motion`;
+            } else if (tokens.length >= 5 && (action === "introduced" || action === "proposed") && tokens[3] === "Self" && tokens[4] === "Verbal") {
+                return `${memberTitle} ${lastName} ${action} a verbal amendment`;
+            } else if (tokens.length >= 4) {
+                const motion = tokens[3].toLowerCase();
+                let procedureText;
+                if (action === "withdrew") {
+                    procedureText = `${memberTitle} ${lastName} ${action} the ${motion}`;
+                } else {
+                    procedureText = `${memberTitle} ${lastName} ${action} a ${motion}`;
                 }
+                for (let i = 4; i < tokens.length; i++) {
+                    if (tokens[i] === "As Amended") {
+                        procedureText += " as amended";
+                    } else if (tokens[i] === "and Rereferred" && i + 1 < tokens.length) {
+                        const committee = tokens[i + 1];
+                        const shortenedCommittee = committeeSelector.shortenCommitteeName(committee).toLowerCase();
+                        procedureText += ` and rereferred to ${shortenedCommittee}`;
+                        i++;
+                    }
+                }
+                return procedureText;
             }
-            return procedureText;
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
             return tokens[1].toLowerCase();
         }
