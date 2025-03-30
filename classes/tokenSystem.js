@@ -39,7 +39,8 @@ export class TokenSystem {
    * Bind event listeners to the token input and suggestions container to handle user interactions.
    * Prevents hiding suggestions when a class module is active, ensuring module interfaces remain visible until completed.
    * Handles clicks on the token-input to hide suggestions and suppress re-rendering when a class module is active,
-   * focusing the input afterward to allow seamless user interaction.
+   * focusing the input afterward to allow seamless user interaction. Resets suppressSuggestions on input to allow rendering
+   * after meaningful user interaction post-deletion.
    */
   _bindEvents() {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -53,6 +54,12 @@ export class TokenSystem {
     this.tokenInput.addEventListener("click", () => {
         console.log('Input clicked - updating suggestions');
         this.updateSuggestions();
+    });
+    
+    this.tokenInput.addEventListener("input", () => {
+        if (this.tokenInput.value.trim() !== "") {
+            this.suppressSuggestions = false;
+        }
     });
     
     this.suggestionsContainer.addEventListener("click", (e) => {
@@ -72,6 +79,7 @@ export class TokenSystem {
                     this.addToken(value);
                 }
             }
+            this.suppressSuggestions = false; // Reset flag after selecting a suggestion
             e.stopPropagation();
         }
     });
@@ -156,18 +164,18 @@ export class TokenSystem {
 
   /**
    * Update the suggestions based on the current branch and input, prioritizing module renderers when a "Class" is specified.
-   * Respects the suppressSuggestions flag to prevent re-rendering after dismissal, resetting the flag after skipping.
-   * Logs detailed state for debugging to ensure correct behavior when interacting with class modules like LCModule.
+   * Respects the suppressSuggestions flag to prevent re-rendering of LCModule after deletion, keeping the flag true until
+   * reset by user input or suggestion selection. Logs detailed state for debugging to ensure correct behavior when
+   * interacting with class modules.
    */
   updateSuggestions() {
-    if (this.suppressSuggestions) {
-        console.log('Suppressing suggestions - Flag is true, resetting to false');
-        this.suppressSuggestions = false;
+    const branchData = this.getCurrentBranchData();
+    if (this.suppressSuggestions && branchData["Class"] === "LC_Module") {
+        console.log('Suppressing LCModule rendering due to recent deletion');
         return;
     }
     console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value, 'suppressSuggestions:', this.suppressSuggestions);
     const query = this.tokenInput.value.trim();
-    const branchData = this.getCurrentBranchData();
     let options = branchData["Options"] || [];
     let renderer;
 
@@ -487,6 +495,7 @@ export class TokenSystem {
   /**
    * Handle keydown events for token input, managing token addition, deletion, and history storage.
    * Safely handles Tab and Backspace to prevent errors and ensures smooth navigation through suggestions.
+   * Sets suppressSuggestions to true when deleting a token to prevent immediate re-rendering of class modules like LCModule.
    * @param {Event} e - The keydown event.
    */
   handleKeyDown(e) {
@@ -580,6 +589,7 @@ export class TokenSystem {
             lastTokenEl.remove();
             this.tokens.pop(); // Ensure this.tokens is updated
             console.log('After Backspace - Tokens:', this.tokens);
+            this.suppressSuggestions = true; // Suppress suggestions for class modules like LCModule
             this.updateSuggestions();
             this.updateConstructedText();
         }
