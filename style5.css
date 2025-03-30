@@ -36,6 +36,8 @@ body {
 .input-wrapper {
     position: relative;
     flex-grow: 1;
+    margin: 0;
+    padding: 0;
 }
 
 .token {
@@ -90,6 +92,7 @@ body {
     padding: 5px;
     font-size: 14px;
     outline: none;
+    margin: 0;
 }
 
 .suggestions-container {
@@ -103,6 +106,7 @@ body {
     width: 100%;
     left: 0;
     top: 100%;
+    margin-top: 2px; /* Small gap for better visibility */
 }
 
 .suggestions-container ul {

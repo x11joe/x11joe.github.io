@@ -60,6 +60,12 @@ export class TokenSystem {
     });
   }
 
+  /**
+   * Get the current branch of the flow data based on the selected tokens.
+   * If no token is selected, return an object whose Options property is an array
+   * of all starting module names.
+   * @returns {Object} The current branch data.
+   */
   getCurrentBranchData() {
     if (this.tokens.length === 0) {
         const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
@@ -105,12 +111,6 @@ export class TokenSystem {
     return currentData;
   }  
 
-  /**
-   * Get the current branch of the flow data based on the selected tokens.
-   * If no token is selected, return an object whose Options property is an array
-   * of all starting module names.
-   * @returns {Object} The current branch data.
-   */
   getCurrentBranchDataForTokens(tokens) {
     if (tokens.length === 0) {
         const startingModules = this.flowData.map(moduleObj => Object.keys(moduleObj)[0]);
@@ -220,7 +220,11 @@ export class TokenSystem {
     tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
     tokenSpan.dataset.value = value;
     tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
-    this.tokenContainer.insertBefore(tokenSpan, this.tokenInput);
+    
+    // Find the input-wrapper to insert before it
+    const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
+    this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
+    
     this.tokens.push(value);
     this.tokenInput.value = "";
     this.updateSuggestions();
@@ -229,14 +233,18 @@ export class TokenSystem {
   }
 
   /**
-   * Method that clears existing tokens and sets new ones
+   * Clears existing tokens and sets new ones from an array.
+   * @param {Array<string>} tokenArray - Array of token values to set.
    */
   setTokens(tokenArray) {
     // Clear existing tokens
     const tokenElements = this.tokenContainer.querySelectorAll('.token');
     tokenElements.forEach(el => el.remove());
     this.tokens = [];
-  
+
+    // Find the input-wrapper to insert before it
+    const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
+
     // Add new tokens
     tokenArray.forEach(value => {
         const tokenSpan = document.createElement('span');
@@ -244,15 +252,15 @@ export class TokenSystem {
         tokenSpan.textContent = value;
         tokenSpan.dataset.value = value;
         tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
-        this.tokenContainer.insertBefore(tokenSpan, this.tokenInput);
+        this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
         this.tokens.push(value);
     });
-  
+
     // Set startTime if not editing and tokens are added
     if (!this.isEditing && this.tokens.length > 0) {
         this.startTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     }
-  
+
     // Clear input and update suggestions
     this.tokenInput.value = '';
     this.updateSuggestions();
