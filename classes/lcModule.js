@@ -39,62 +39,72 @@ export class LCModule {
 
     /**
      * Bind events to the LCModule input field and submit button to handle user interactions.
-     * Manages input formatting, ensures cursor positioning reflects user actions (typing/deleting),
-     * allows focus to return to token-input when clicking outside, and cancels the interface on Escape.
+     * Manages input formatting, tracks cursor position dynamically as the user types or deletes,
+     * adjusts cursor to valid digit positions, allows focus to return to token-input when clicking
+     * outside, and cancels the interface on Escape. Ensures intuitive cursor movement starting
+     * from the pre-filled value (e.g., "25.0000.00000").
      * @param {HTMLElement} container - The container element where the input is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to add or manage tokens.
      */
     bindEvents(container, tokenSystem) {
         this.inputElement = container.querySelector('.lc-input');
         this.submitButton = container.querySelector('.submit-btn');
+        let currentCursorPos = 3; // Initial position after the year (e.g., "25.|0000.00000")
 
         this.inputElement.addEventListener('input', (e) => {
-            const newValue = e.target.value;
-            let digits = newValue.replace(/[^0-9]/g, '');
+            const oldValue = e.target.value;
+            const oldCursorPos = currentCursorPos; // Use tracked position before input
+            let digits = oldValue.replace(/[^0-9]/g, ''); // Remove non-numeric characters
             const formatted = this.formatLCNumber(digits);
             e.target.value = formatted;
 
             // Calculate new cursor position based on input type
-            let newCursorPos = this.inputElement.selectionStart;
+            let newCursorPos = oldCursorPos;
 
             if (e.inputType === 'insertText') {
-                // Move cursor forward
-                newCursorPos++;
+                newCursorPos++; // Move forward one position
+                // Skip over periods
                 if (newCursorPos === 2) newCursorPos = 3;
                 else if (newCursorPos === 7) newCursorPos = 8;
             } else if (e.inputType === 'deleteContentBackward') {
-                // Move cursor back
-                newCursorPos--;
+                newCursorPos--; // Move back one position
+                // Skip over periods
                 if (newCursorPos === 2) newCursorPos = 1;
                 else if (newCursorPos === 7) newCursorPos = 6;
             }
 
-            // Ensure cursor is on a digit position
+            // Ensure cursor stays within valid digit positions
             const digitPositions = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12];
             if (!digitPositions.includes(newCursorPos)) {
-                // Find the nearest digit position
-                if (newCursorPos < 0) newCursorPos = 0;
-                else if (newCursorPos > 12) newCursorPos = 12;
-                else {
-                    const nextPos = digitPositions.find(pos => pos > newCursorPos);
-                    newCursorPos = nextPos !== undefined ? nextPos : digitPositions[digitPositions.length - 1];
-                }
+                // Snap to nearest valid position if out of bounds
+                const distances = digitPositions.map(pos => Math.abs(pos - newCursorPos));
+                const minDistance = Math.min(...distances);
+                newCursorPos = digitPositions.find(pos => Math.abs(pos - newCursorPos) === minDistance);
             }
 
-            console.log(`LCModule input - Input type: ${e.inputType}, Digits: ${digits}, New cursor: ${newCursorPos}`);
+            // Update tracked cursor position
+            currentCursorPos = newCursorPos;
+
+            // Detailed debug logs
+            console.log(`LCModule input - Input type: ${e.inputType}, Old value: ${oldValue}, New value: ${formatted}, Digits: ${digits}, Old cursor: ${oldCursorPos}, New cursor: ${newCursorPos}`);
+
             e.target.setSelectionRange(newCursorPos, newCursorPos);
         });
 
         this.inputElement.addEventListener('click', (e) => {
-            const pos = this.inputElement.selectionStart;
+            const pos = e.target.selectionStart;
             const digitPositions = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12];
             if (!digitPositions.includes(pos)) {
-                // Find the nearest digit position
+                // Snap to nearest digit position
                 const distances = digitPositions.map(p => Math.abs(p - pos));
                 const minDistance = Math.min(...distances);
                 const nearestPos = digitPositions.find(p => Math.abs(p - pos) === minDistance);
+                currentCursorPos = nearestPos;
                 this.inputElement.setSelectionRange(nearestPos, nearestPos);
+            } else {
+                currentCursorPos = pos; // Update tracked position on click
             }
+            console.log(`LCModule click - Clicked position: ${pos}, Adjusted cursor: ${currentCursorPos}`);
         });
 
         this.inputElement.addEventListener('keydown', (e) => {
@@ -105,6 +115,7 @@ export class LCModule {
                 // Cancel LCModule interface and return focus to token-input
                 tokenSystem.suggestionsContainer.innerHTML = '';
                 tokenSystem.tokenInput.focus();
+                console.log('LCModule Escape - Interface cancelled, focus returned to token-input');
             } else if (e.key === 'Backspace' && e.target.value.replace(/[^0-9]/g, '').length === 0) {
                 e.preventDefault();
                 if (tokenSystem.tokens.length > 0) {
@@ -113,6 +124,7 @@ export class LCModule {
                     tokenSystem.tokens.pop();
                     tokenSystem.updateSuggestions();
                     tokenSystem.updateConstructedText();
+                    console.log('LCModule Backspace - Last token removed, tokens:', tokenSystem.tokens);
                 }
                 tokenSystem.tokenInput.focus();
             }
