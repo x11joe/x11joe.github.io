@@ -2,7 +2,7 @@
 import { TextConstructor } from './textConstructor.js';
 export class TokenSystem {
 
-  /**
+ /**
    * Initialize the TokenSystem with necessary elements and configurations.
    * @param {HTMLElement} tokenContainer - The container for token elements.
    * @param {HTMLInputElement} tokenInput - The input element for token entry.
@@ -31,6 +31,7 @@ export class TokenSystem {
     this.startTime = null;
     this.markedTime = null;
     this.enterHandled = false; // Flag to track if Enter key was handled in handleKeyDown
+    this.suppressSuggestions = false; // Flag to prevent immediate re-rendering of suggestions after dismissal
     this._bindEvents();
   }
   
@@ -38,6 +39,7 @@ export class TokenSystem {
    * Bind event listeners to the token input and suggestions container to handle user interactions.
    * Prevents hiding suggestions when a class module is active, ensuring module interfaces remain visible until completed.
    * Additionally, handles clicks on the token-input to hide the suggestions (e.g., LCModule) and focus the input when clicked while a module is active.
+   * Introduces a suppressSuggestions flag to prevent immediate re-rendering of the LCModule after dismissal (or other modules in the future)
    */
   _bindEvents() {
     this.tokenInput.addEventListener("keydown", (e) => this.handleKeyDown(e));
@@ -84,10 +86,11 @@ export class TokenSystem {
                 this.suggestionsContainer.innerHTML = "";
                 this.suggestionsContainer.removeAttribute('data-editing-index');
             } else if (e.target === this.tokenInput && isClassModuleActive) {
-                // If clicking on token-input while a class module is active, hide suggestions and focus input
-                console.log('Clicked token-input while class module active - hiding suggestions and focusing input');
+                // If clicking on token-input while a class module is active, hide suggestions, set suppress flag, and focus input
+                console.log('Clicked token-input while class module active - hiding suggestions and suppressing re-render');
                 this.suggestionsContainer.innerHTML = "";
                 this.suggestionsContainer.removeAttribute('data-editing-index');
+                this.suppressSuggestions = true; // Prevent immediate re-render
                 this.tokenInput.focus();
             } else {
                 console.log('Editing or class module active - keeping suggestions visible');
@@ -152,9 +155,14 @@ export class TokenSystem {
   /**
    * Update the suggestions based on the current branch and input, prioritizing module renderers when a "Class" is specified.
    * Dynamically handles the flow by rendering a module's interface first if "Class" exists, then showing options after module completion.
-   * Relies on CSS for positioning and uses context to pass committee data to renderers.
+   * Respects the suppressSuggestions flag to prevent immediate re-rendering after dismissal.
    */
   updateSuggestions() {
+    if (this.suppressSuggestions) {
+        console.log('Suppressing suggestions due to recent dismissal');
+        this.suppressSuggestions = false; // Reset flag after skipping once
+        return;
+    }
     console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value);
     const query = this.tokenInput.value.trim();
     const branchData = this.getCurrentBranchData();
