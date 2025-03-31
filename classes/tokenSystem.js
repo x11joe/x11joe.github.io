@@ -3,15 +3,16 @@ import { TextConstructor } from './textConstructor.js';
 export class TokenSystem {
 
     /**
-     * Initialize the TokenSystem with necessary elements and configurations.
-     * @param {HTMLElement} tokenContainer - The container for token elements.
-     * @param {HTMLInputElement} tokenInput - The input element for token entry.
-     * @param {HTMLElement} suggestionsContainer - The container for suggestions.
-     * @param {Array} flowData - The full flow definition (an array of module objects).
-     * @param {Object} classRegistry - Registry mapping class names to renderers.
-     * @param {Object} defaultRenderer - The default renderer instance.
-     * @param {Object} committeeSelector - The CommitteeSelector instance for managing committee members.
-     * @param {Object} historyManager - History manager instance for managing history of token selections.
+     * Initializes the TokenSystem with necessary DOM elements and dependencies.
+     * Binds methods to ensure correct 'this' context in callbacks.
+     * @param {HTMLElement} tokenContainer - Container for token elements.
+     * @param {HTMLInputElement} tokenInput - Input field for token entry.
+     * @param {HTMLElement} suggestionsContainer - Container for suggestion dropdown.
+     * @param {Array} flowData - Data defining token flow and options.
+     * @param {Object} classRegistry - Registry of class modules for rendering.
+     * @param {Object} defaultRenderer - Default renderer for suggestions.
+     * @param {CommitteeSelector} committeeSelector - Selector for committee data.
+     * @param {HistoryManager} historyManager - Manager for history entries.
      */
     constructor(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager) {
         this.tokenContainer = tokenContainer;
@@ -23,16 +24,19 @@ export class TokenSystem {
         this.committeeSelector = committeeSelector;
         this.historyManager = historyManager;
         this.tokens = [];
-        this.highlightedIndex = -1;
-        this.techTextField = document.getElementById("tech-text");
-        this.procedureTextField = document.getElementById("procedure-text");
         this.isEditing = false;
         this.editingEntry = null;
+        this.suppressSuggestions = false;
+        this.suppressTestimonyModule = false;
         this.startTime = null;
         this.markedTime = null;
-        this.enterHandled = false; // Flag to track if Enter key was handled in handleKeyDown
-        this.suppressSuggestions = false; // Flag to prevent immediate re-rendering of suggestions after dismissal
-        this._bindEvents();
+        this.highlightedIndex = -1;
+        this.enterHandled = false;
+        this.techTextField = document.getElementById('tech-text');
+        this.procedureTextField = document.getElementById('procedure-text');
+        this.init();
+        // Bind updateSuggestions to ensure 'this' refers to the TokenSystem instance
+        this.updateSuggestions = this.updateSuggestions.bind(this);
     }
   
     /**
