@@ -374,22 +374,36 @@ export class TokenSystem {
     }
 
     /**
-     * Display editing options for a token at the specified index, dynamically using module interfaces for class-based tokens.
-     * Renders the module's interface if the token's branch has a "Class", pre-filling with the current token value for editing,
-     * and sets the editing index for subsequent actions to recognize the edit context. Resets suppressSuggestions only when
-     * the user clicks on "LC#" and selects "LC#" again from the dropdown, overriding suppression to bring back the LCModule prompt.
+     * Display editing options for a token at the specified index. If the token represents testimony (i.e. its value is a JSON string),
+     * then directly open the TestimonyModule modal with the prefilled data.
+     * For other token types, it behaves as before by rendering the module's interface for editing.
      * @param {number} index - The index of the token to edit.
      * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
      */
     showTokenOptions(index, tokenElement) {
         console.log('showTokenOptions called - Index:', index, 'Token:', this.tokens[index]);
-        const existingDropdown = document.querySelector('.token-dropdown');
-        if (existingDropdown) existingDropdown.remove();
-
-        const tempTokens = this.tokens.slice(0, index);
-        const branchData = this.getCurrentBranchDataForTokens(tempTokens);
         const currentValue = this.tokens[index];
 
+        // If the token represents testimony (its value is a JSON string), directly open the testimony modal.
+        if (currentValue.startsWith('{')) {
+            try {
+                const prefillData = JSON.parse(currentValue);
+                // Set prefillData in the testimony module registry for use in openModal.
+                this.classRegistry["Testimony_Module"].prefillData = prefillData;
+                // Set the editing index on the suggestions container so that subsequent edits know the context.
+                this.suggestionsContainer.setAttribute('data-editing-index', index);
+                // Directly call the TestimonyModule's openModal to bring up the modal with prefilled data.
+                this.classRegistry["Testimony_Module"].openModal(this, prefillData);
+                return;
+            } catch (e) {
+                console.error("Error parsing testimony token JSON:", e);
+                // Fallback to normal behavior if parsing fails.
+            }
+        }
+
+        // For non-testimony tokens or if testimony parsing failed, use the branch's class-based interface.
+        const tempTokens = this.tokens.slice(0, index);
+        const branchData = this.getCurrentBranchDataForTokens(tempTokens);
         if (branchData["Class"]) {
             const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
             const context = {
@@ -403,6 +417,7 @@ export class TokenSystem {
             console.log('Set data-editing-index to:', index);
             if (typeof renderer.bindEvents === 'function') {
                 renderer.bindEvents(this.suggestionsContainer, this);
+                // For class modules, set the input value to the current token value.
                 const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
                 if (inputElement) {
                     inputElement.value = currentValue;
@@ -413,6 +428,7 @@ export class TokenSystem {
                 }
             }
         } else {
+            // Fallback: show a simple dropdown with static options.
             const options = this.getOptionsForToken(index);
             const dropdown = document.createElement('div');
             dropdown.className = 'token-dropdown';
@@ -423,12 +439,10 @@ export class TokenSystem {
             html += '</ul>';
             dropdown.innerHTML = html;
             document.body.appendChild(dropdown);
-
             const rect = tokenElement.getBoundingClientRect();
             dropdown.style.position = 'absolute';
             dropdown.style.left = `${rect.left}px`;
             dropdown.style.top = `${rect.bottom + window.scrollY}px`;
-
             dropdown.addEventListener('click', (e) => {
                 if (e.target.tagName === 'LI') {
                     const newValue = e.target.dataset.value;
@@ -441,7 +455,6 @@ export class TokenSystem {
                     dropdown.remove();
                 }
             });
-
             document.addEventListener('click', (e) => {
                 if (!dropdown.contains(e.target) && e.target !== tokenElement.querySelector('.dropdown-arrow')) {
                     dropdown.remove();
@@ -501,13 +514,25 @@ export class TokenSystem {
     }
 
     /**
-     * Handle clicks on tokens, triggering edit options only when the dropdown arrow is clicked.
+     * Handle clicks on tokens, triggering the testimony modal if the token represents testimony.
+     * For testimony tokens (i.e. ones whose value is JSON), this method will immediately call showTokenOptions.
+     * Otherwise, if the click target is the dropdown arrow, it will trigger the normal editing interface.
      * @param {Event} e - The click event.
      */
     tokenClickHandler(e) {
-        if (e.target.className === 'dropdown-arrow') {
-            e.stopPropagation(); // Prevent the click from bubbling to the document
-            const tokenSpan = e.target.parentElement;
+        e.stopPropagation();
+        // Use the token element on which this event is bound.
+        const tokenSpan = e.currentTarget;
+        // If the token's value starts with '{', assume it's a testimony token.
+        if (tokenSpan.dataset.value.startsWith('{')) {
+            const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
+            const index = tokenElements.indexOf(tokenSpan);
+            if (index !== -1) {
+                this.showTokenOptions(index, tokenSpan);
+            }
+        }
+        // Else, if the clicked element is the dropdown arrow, trigger normal editing.
+        else if (e.target.className === 'dropdown-arrow') {
             const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
             const index = tokenElements.indexOf(tokenSpan);
             if (index !== -1) {
