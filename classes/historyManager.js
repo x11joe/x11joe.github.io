@@ -112,157 +112,184 @@ export class HistoryManager {
     render() {
         // Sort groups by the latest entry's timestamp, descending, to prioritize newest entries
         this.historyGroups.sort((a, b) => {
-            const latestA = Math.max(...a.entries.map(e => Date.parse("1970-01-01 " + e.time)));
-            const latestB = Math.max(...b.entries.map(e => Date.parse("1970-01-01 " + e.time)));
-            return latestB - latestA;
+        const latestA = Math.max(...a.entries.map(e => Date.parse("1970-01-01 " + e.time)));
+        const latestB = Math.max(...b.entries.map(e => Date.parse("1970-01-01 " + e.time)));
+        return latestB - latestA;
         });
         // Within each group, sort entries by timestamp descending
         for (const group of this.historyGroups) {
-            group.entries.sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
+        group.entries.sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
         }
         this.containerElement.innerHTML = '';
         for (const group of this.historyGroups) {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'bill-group';
-            const header = document.createElement('div');
-            header.className = 'bill-header';
-            const key = group.id; // Use group id for editing
-            if (this.editingHeaderKey === key) {
-                header.innerHTML = `
-                    <input type="text" class="edit-bill" value="${group.bill}">
-                    <select class="edit-bill-type">
-                        <option value="Hearing" ${group.billType === 'Hearing' ? 'selected' : ''}>Hearing</option>
-                        <option value="Committee Work" ${group.billType === 'Committee Work' ? 'selected' : ''}>Committee Work</option>
-                        <option value="Conference Committee" ${group.billType === 'Conference Committee' ? 'selected' : ''}>Conference Committee</option>
-                    </select>
-                    <button class="save-header-btn">Save</button>
-                `;
-            } else {
-                header.innerHTML = `${group.bill} - ${group.billType} <button class="edit-header-btn">✏️</button>`;
-            }
-            const table = document.createElement('table');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Statements</th>
-                        <th>Edit</th>
-                        <th>Delete</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'bill-group';
+        const header = document.createElement('div');
+        header.className = 'bill-header';
+        const key = group.id; // Use group id for editing
+        if (this.editingHeaderKey === key) {
+            header.innerHTML = `
+            <input type="text" class="edit-bill" value="${group.bill}">
+            <select class="edit-bill-type">
+                <option value="Hearing" ${group.billType === 'Hearing' ? 'selected' : ''}>Hearing</option>
+                <option value="Committee Work" ${group.billType === 'Committee Work' ? 'selected' : ''}>Committee Work</option>
+                <option value="Conference Committee" ${group.billType === 'Conference Committee' ? 'selected' : ''}>Conference Committee</option>
+            </select>
+            <button class="save-header-btn">Save</button>
             `;
-            const tbody = table.querySelector('tbody');
-            group.entries.forEach(entry => {
-                const row = document.createElement('tr');
-                row.dataset.id = entry.id;
-                row.dataset.groupId = group.id;
-                if (entry.isRaw) {
-                    row.style.backgroundColor = 'red'; // Highlight raw entries in red
-                }
-                // Use formatted time for procedural clerk text.
-                const formattedTime = this.formatTime(entry.time);
-                const procedureWithTime = entry.isRaw ? entry.rawText : `${formattedTime} ${entry.baseProcedureText}`;
-                row.innerHTML = `
-                    <td contenteditable="true" class="time">${entry.time}</td>
-                    <td class="statements">
-                        ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${entry.tokens.map(token => {
-                            if (token.startsWith('{')) {
-                                try {
-                                    const data = JSON.parse(token);
-                                    return `<span class="history-token">Testimony: ${data.lastName}, ${data.firstName}</span>`;
-                                } catch (e) {
-                                    return `<span class="history-token">${token}</span>`;
-                                }
-                            } else {
-                                return `<span class="history-token">${token}</span>`;
-                            }
-                        }).join('')}</div>`}
-                        <div class="tech-clerk">
-                            <label>Tech Clerk</label>
-                            <div class="copyable">${entry.techText || ''}</div>
-                        </div>
-                        <div class="procedural-clerk">
-                            <label>Procedural Clerk</label>
-                            <div class="copyable">${procedureWithTime}</div>
-                        </div>
-                    </td>
-                    <td><button class="edit-btn"></button></td>
-                    <td><button class="delete-btn">🗑️</button></td>
-                `;
-                tbody.appendChild(row);
-
-                const editBtn = row.querySelector('.edit-btn');
-                let isEditingThis = false;
-                if (this.tokenSystem && this.tokenSystem.isEditing && this.tokenSystem.editingEntry) {
-                    isEditingThis = this.tokenSystem.editingEntry.groupId === group.id && this.tokenSystem.editingEntry.id === entry.id;
-                }
-                if (isEditingThis) {
-                    editBtn.textContent = '❌';
-                    editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
-                } else {
-                    editBtn.textContent = '✏️';
-                    editBtn.addEventListener('click', () => this.tokenSystem.startEdit(group.id, entry.id, entry.tokens || [entry.rawText]));
-                }
-                const deleteBtn = row.querySelector('.delete-btn');
-                deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, group.id));
-            });
-            groupDiv.appendChild(header);
-            groupDiv.appendChild(table);
-            this.containerElement.appendChild(groupDiv);
-
-            if (this.editingHeaderKey === key) {
-                const saveBtn = header.querySelector('.save-header-btn');
-                const billInput = header.querySelector('.edit-bill');
-                saveBtn.addEventListener('click', () => this.saveHeader(key));
-                billInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.saveHeader(key);
-                    }
-                });
-                header.addEventListener('blur', () => {
-                    setTimeout(() => {
-                        if (!header.contains(document.activeElement)) {
-                            this.saveHeader(key);
-                        }
-                    }, 100);
-                }, true);
-            } else {
-                const editHeaderBtn = header.querySelector('.edit-header-btn');
-                editHeaderBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.startEditingHeader(key);
-                });
+        } else {
+            header.innerHTML = `${group.bill} - ${group.billType} <button class="edit-header-btn">✏️</button>`;
+        }
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+            <tr>
+                <th>Time</th>
+                <th>Statements</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        group.entries.forEach(entry => {
+            const row = document.createElement('tr');
+            row.dataset.id = entry.id;
+            row.dataset.groupId = group.id;
+            if (entry.isRaw) {
+            row.style.backgroundColor = 'red'; // Highlight raw entries in red
             }
-
-            header.addEventListener('click', () => {
-                if (this.editingHeaderKey !== key) {
-                    table.style.display = table.style.display === 'none' ? '' : 'none';
+            const formattedTime = this.formatTime(entry.time);
+            const procedureWithTime = entry.isRaw ? entry.rawText : `${formattedTime} ${entry.baseProcedureText}`;
+            row.innerHTML = `
+            <td contenteditable="true" class="time">${entry.time}</td>
+            <td class="statements">
+                ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${
+                entry.tokens.map(token => {
+                    if (token.startsWith('{')) {
+                    try {
+                        const data = JSON.parse(token);
+                        return `<span class="history-token">Testimony: ${data.lastName}, ${data.firstName}</span>`;
+                    } catch (e) {
+                        return `<span class="history-token">${token}</span>`;
+                    }
+                    } else {
+                    return `<span class="history-token">${token}</span>`;
+                    }
+                }).join('')
+                }</div>`}
+                <div class="tech-clerk">
+                <label>Tech Clerk</label>
+                <div class="copyable">${entry.techText || ''}</div>
+                </div>
+                <div class="procedural-clerk">
+                <label>Procedural Clerk</label>
+                <div class="copyable">${procedureWithTime}</div>
+                </div>
+            </td>
+            <td><button class="edit-btn"></button></td>
+            <td><button class="delete-btn">🗑️</button></td>
+            `;
+            tbody.appendChild(row);
+            const editBtn = row.querySelector('.edit-btn');
+            let isEditingThis = false;
+            if (this.tokenSystem && this.tokenSystem.isEditing && this.tokenSystem.editingEntry) {
+            isEditingThis = this.tokenSystem.editingEntry.groupId === group.id && this.tokenSystem.editingEntry.id === entry.id;
+            }
+            if (isEditingThis) {
+            editBtn.textContent = '❌';
+            editBtn.addEventListener('click', () => this.tokenSystem.cancelEdit());
+            } else {
+            editBtn.textContent = '✏️';
+            editBtn.addEventListener('click', () => this.tokenSystem.startEdit(group.id, entry.id, entry.tokens || [entry.rawText]));
+            }
+            const deleteBtn = row.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, group.id));
+            
+            // Special copy event for tech clerk and procedural clerk
+            row.querySelectorAll('.tech-clerk, .procedural-clerk').forEach((container) => {
+            container.addEventListener('click', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                // Special copy mode: build string "TIME | Tech Clerk Text | member-no:XXX;Mic: | LINK"
+                const timeCell = row.querySelector('.time');
+                const timeText = timeCell ? timeCell.textContent : "";
+                const techText = container.classList.contains('tech-clerk')
+                    ? container.querySelector('.copyable').textContent
+                    : "";
+                let memberNo = "";
+                let link = "";
+                if (entry.tokens && entry.tokens[0] === "Testimony" && entry.tokens.length === 2) {
+                    try {
+                    const data = JSON.parse(entry.tokens[1]);
+                    const members = this.committeeSelector.getSelectedCommitteeMembers();
+                    const memberObj = members.find(m => {
+                        const mName = (typeof m === "object" && m.name) ? m.name.split(" - ")[0] : m;
+                        return mName.toLowerCase().includes(data.lastName.toLowerCase());
+                    });
+                    if (memberObj) {
+                        memberNo = memberObj.memberNo || "";
+                    }
+                    link = data.link || "";
+                    } catch (err) {
+                    console.error(err);
+                    }
+                }
+                const specialText = `${timeText} | ${techText} | member-no:${memberNo};Mic: | ${link}`;
+                Utils.copyWithGlow(container, specialText, "yellow");
+                } else {
+                const copyable = container.querySelector('.copyable');
+                const text = copyable.textContent;
+                Utils.copyWithGlow(container, text);
                 }
             });
-
-            groupDiv.querySelectorAll('.tech-clerk, .procedural-clerk').forEach(container => {
-                container.addEventListener('click', () => {
-                    const copyable = container.querySelector('.copyable');
-                    const text = copyable.textContent;
-                    Utils.copyWithGlow(container, text);
-                });
             });
-
-            groupDiv.querySelectorAll('.time').forEach(timeCell => {
-                timeCell.addEventListener('dblclick', () => {
-                    const text = timeCell.textContent;
-                    Utils.copyWithGlow(timeCell, text);
-                });
-                timeCell.addEventListener('blur', (e) => {
-                    const id = parseInt(e.target.closest('tr').dataset.id, 10);
-                    const newTime = e.target.textContent;
-                    this.updateTime(id, newTime);
-                });
+        
+            row.querySelectorAll('.time').forEach(timeCell => {
+            timeCell.addEventListener('dblclick', () => {
+                const text = timeCell.textContent;
+                Utils.copyWithGlow(timeCell, text);
+            });
+            timeCell.addEventListener('blur', (e) => {
+                const id = parseInt(e.target.closest('tr').dataset.id, 10);
+                const newTime = e.target.textContent;
+                this.updateTime(id, newTime);
+            });
+            });
+        });
+        this.containerElement.appendChild(groupDiv);
+        if (this.editingHeaderKey === key) {
+            const saveBtn = header.querySelector('.save-header-btn');
+            const billInput = header.querySelector('.edit-bill');
+            saveBtn.addEventListener('click', () => this.saveHeader(key));
+            billInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.saveHeader(key);
+            }
+            });
+            header.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (!header.contains(document.activeElement)) {
+                this.saveHeader(key);
+                }
+            }, 100);
+            }, true);
+        } else {
+            const editHeaderBtn = header.querySelector('.edit-header-btn');
+            editHeaderBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.startEditingHeader(key);
             });
         }
+        header.addEventListener('click', () => {
+            if (this.editingHeaderKey !== key) {
+            table.style.display = table.style.display === 'none' ? '' : 'none';
+            }
+        });
+        }
     }
+  
     
     startEditingHeader(key) {
         this.editingHeaderKey = key;
