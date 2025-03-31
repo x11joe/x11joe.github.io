@@ -178,12 +178,17 @@ export class TokenSystem {
         const query = this.tokenInput.value.trim();
         let options = branchData["Options"] || [];
         let renderer;
-
+    
         if (this.tokens.length === 0) {
             const startingModules = options.map(module => ({ value: module }));
             const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
-                const name = member.split(" - ")[0];
-                return { value: name, shortcut: "member" };
+                let memberName = "";
+                if (typeof member === "object" && member.name) {
+                    memberName = member.name.split(" - ")[0];
+                } else if (typeof member === "string") {
+                    memberName = member.split(" - ")[0];
+                }
+                return { value: memberName, shortcut: "member" };
             });
             options = startingModules.concat(memberNames);
             renderer = this.defaultRenderer;
@@ -192,7 +197,7 @@ export class TokenSystem {
         } else {
             renderer = this.defaultRenderer;
         }
-
+    
         const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
         const allCommittees = Object.keys(this.committeeSelector.committeesData);
         const selectedCommittee = this.committeeSelector.getSelectedCommittee();
@@ -201,10 +206,10 @@ export class TokenSystem {
             allCommittees: allCommittees,
             selectedCommittee: selectedCommittee
         };
-
+    
         const html = renderer.render(options, query, context);
         this.suggestionsContainer.innerHTML = html;
-
+    
         if (branchData["Class"]) {
             if (typeof renderer.bindEvents === 'function') {
                 renderer.bindEvents(this.suggestionsContainer, this);
@@ -213,7 +218,7 @@ export class TokenSystem {
                 renderer.postRender(this.suggestionsContainer, this);
             }
         }
-
+    
         const suggestions = this.suggestionsContainer.querySelectorAll("li");
         if (suggestions.length > 0 && renderer === this.defaultRenderer) {
             if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
@@ -224,6 +229,7 @@ export class TokenSystem {
             this.highlightedIndex = -1;
         }
     }
+    
     
     updateHighlighted() {
         const suggestions = this.suggestionsContainer.querySelectorAll("li");

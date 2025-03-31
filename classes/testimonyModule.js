@@ -56,6 +56,24 @@ export class TestimonyModule {
             this.modal.remove();
         }
         this.tokenSystem = tokenSystem;
+    
+        // Process prefillData to split 'name' into firstName and lastName if not already provided
+        if (prefillData && !prefillData.firstName && !prefillData.lastName && prefillData.name) {
+            const parts = prefillData.name.split(',');
+            if (parts.length === 2) {
+                prefillData.lastName = parts[0].trim();
+                prefillData.firstName = parts[1].trim();
+            } else {
+                prefillData.firstName = '';
+                prefillData.lastName = prefillData.name;
+            }
+        }
+    
+        // Deduplicate role and organization: if they are the same, leave role blank
+        if (prefillData && prefillData.role === prefillData.organization) {
+            prefillData.role = '';
+        }
+    
         this.modal = document.createElement('div');
         this.modal.className = 'testimony-modal';
         const title = this.editingIndex !== null ? 'Edit Testimony' : 'Add Testimony';
@@ -90,7 +108,7 @@ export class TestimonyModule {
             </div>
         `;
         document.body.appendChild(this.modal);
-
+    
         const form = this.modal.querySelector('#testimony-form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -115,7 +133,7 @@ export class TestimonyModule {
             this.modal.remove();
             this.modal = null;
         });
-
+    
         const cancelBtn = this.modal.querySelector('.cancel-btn');
         cancelBtn.addEventListener('click', () => {
             this.modal.remove();
@@ -133,4 +151,5 @@ export class TestimonyModule {
             }
         });
     }
+    
 }
