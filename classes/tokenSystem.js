@@ -561,7 +561,7 @@ export class TokenSystem {
     /**
      * Handle keydown events for token input, managing token addition, deletion, and history storage.
      * Safely handles Tab and Backspace to prevent errors and ensures smooth navigation through suggestions.
-     * Sets suppressSuggestions to true when deleting a token to prevent immediate re-rendering of class modules like LCModule.
+     * Sets suppressSuggestions to true when deleting a token to prevent immediate re-rendering of class modules.
      * @param {Event} e - The keydown event.
      */
     handleKeyDown(e) {
@@ -663,6 +663,11 @@ export class TokenSystem {
             const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
             if (tokenElements.length > 0) {
                 const lastTokenEl = tokenElements[tokenElements.length - 1];
+                const lastTokenValue = lastTokenEl.dataset.value;
+                // If the token to be deleted is "Testimony", set the suppression flag
+                if (lastTokenValue === "Testimony") {
+                    this.suppressTestimonyModule = true;
+                }
                 lastTokenEl.remove();
                 this.tokens.pop(); // Ensure this.tokens is updated
                 console.log('After Backspace - Tokens:', this.tokens);
@@ -673,6 +678,7 @@ export class TokenSystem {
             e.preventDefault();
         }
     }
+
 
 
     parseTextToTokens(text) {

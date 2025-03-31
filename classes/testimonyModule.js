@@ -22,13 +22,18 @@ export class TestimonyModule {
     }
 
     /**
-     * Handles post-rendering logic to open the testimony modal, either for adding new testimony or editing existing testimony.
-     * Checks for an editing index or prefill data to determine the mode and data to use.
+     * Handles post-rendering logic to open the testimony modal for adding/editing testimony.
+     * If the token system’s suppressTestimonyModule flag is set, the modal will not be opened.
      * @param {HTMLElement} container - The container element (suggestions container).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      */
     postRender(container, tokenSystem) {
         this.tokenSystem = tokenSystem;
+        // If the testimony module suppression flag is set, clear it and do not open the modal.
+        if (this.tokenSystem.suppressTestimonyModule) {
+            this.tokenSystem.suppressTestimonyModule = false;
+            return;
+        }
         let editingData = null;
         const editingIndex = container.getAttribute('data-editing-index');
         if (editingIndex !== null) {
@@ -51,6 +56,7 @@ export class TestimonyModule {
         }
         this.openModal(tokenSystem, editingData);
     }
+
 
 
     /**
