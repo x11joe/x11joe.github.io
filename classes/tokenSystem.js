@@ -662,24 +662,32 @@ export class TokenSystem {
         } else if (e.key === "Backspace" && this.tokenInput.value === "") {
             const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
             if (tokenElements.length > 0) {
-                const lastTokenEl = tokenElements[tokenElements.length - 1];
-                const lastTokenValue = lastTokenEl.dataset.value;
-                // If the token to be deleted is "Testimony", set the suppression flag
-                if (lastTokenValue === "Testimony") {
+                // Check if the last two tokens form a testimony pair:
+                if (this.tokens.length >= 2 && this.tokens[this.tokens.length - 2] === "Testimony") {
+                    // Remove both the "Testimony" token and its associated JSON token
+                    tokenElements[tokenElements.length - 1].remove();
+                    tokenElements[tokenElements.length - 2].remove();
+                    this.tokens.pop();
+                    this.tokens.pop();
+                    // Set suppression flag so the Testimony modal does not pop up
                     this.suppressTestimonyModule = true;
+                } else {
+                    const lastTokenEl = tokenElements[tokenElements.length - 1];
+                    const lastTokenValue = lastTokenEl.dataset.value;
+                    if (lastTokenValue === "Testimony") {
+                        this.suppressTestimonyModule = true;
+                    }
+                    lastTokenEl.remove();
+                    this.tokens.pop();
                 }
-                lastTokenEl.remove();
-                this.tokens.pop(); // Ensure this.tokens is updated
                 console.log('After Backspace - Tokens:', this.tokens);
-                this.suppressSuggestions = true; // Suppress suggestions for class modules like LCModule
+                this.suppressSuggestions = true; // Suppress suggestions for class modules like LC_Module
                 this.updateSuggestions();
                 this.updateConstructedText();
             }
             e.preventDefault();
         }
     }
-
-
 
     parseTextToTokens(text) {
         const words = text.toLowerCase().split(/\s+/);

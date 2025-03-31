@@ -57,8 +57,6 @@ export class TestimonyModule {
         this.openModal(tokenSystem, editingData);
     }
 
-
-
     /**
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
      * The modal includes fields for first name, last name, role, organization, position, testimony number, link, and format.
