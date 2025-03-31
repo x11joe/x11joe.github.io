@@ -23,7 +23,7 @@ export class TestimonyModule {
 
     /**
      * Handles post-rendering logic to open the testimony modal for adding/editing testimony.
-     * Always opens the modal (clearing any suppress flag) so that if a hearing event triggers a testimony,
+     * Always opens the modal (after clearing any suppression flag) so that if a hearing event triggers testimony,
      * the confirmation questions are asked.
      * @param {HTMLElement} container - The container element (suggestions container).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
@@ -39,7 +39,10 @@ export class TestimonyModule {
         if (editingIndex !== null) {
             this.editingIndex = parseInt(editingIndex, 10);
             const tokenValue = this.tokenSystem.tokens[this.editingIndex];
-            if (tokenValue && tokenValue !== "undefined") {
+            // If the token is exactly "Testimony", then treat it as a placeholder (new testimony)
+            if (tokenValue === "Testimony") {
+                editingData = null;
+            } else if (tokenValue && tokenValue !== "undefined") {
                 try {
                     editingData = JSON.parse(tokenValue);
                 } catch (error) {
@@ -56,6 +59,7 @@ export class TestimonyModule {
         }
         this.openModal(tokenSystem, editingData);
     }
+
 
 
     /**

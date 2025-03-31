@@ -135,8 +135,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (payload.role === payload.organization) {
                     payload.role = '';
                 }
-                // Add "Testimony" token and set prefill data for the modal
-                tokenSystem.addToken("Testimony");
+                // Instead of appending a new "Testimony" token, reset tokens to only contain "Testimony"
+                tokenSystem.setTokens(["Testimony"]);
+                // Set the prefill data so that the modal shows the payload information
                 tokenSystem.classRegistry["Testimony_Module"].prefillData = payload;
                 tokenSystem.updateSuggestions();
             }
