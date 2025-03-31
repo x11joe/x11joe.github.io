@@ -485,6 +485,22 @@ export class TokenSystem {
         }
     }
 
+    getOptions() {
+        const currentData = this.getCurrentBranchDataForTokens(this.tokens);
+        if (currentData["Options"]) {
+            return currentData["Options"];
+        } else if (currentData["Class"] && this.classRegistry[currentData["Class"]] && typeof this.classRegistry[currentData["Class"]].getOptions === 'function') {
+            const context = {
+                members: this.committeeSelector.getSelectedCommitteeMembers(),
+                allCommittees: Object.keys(this.committeeSelector.committeesData),
+                selectedCommittee: this.committeeSelector.getSelectedCommittee()
+            };
+            return this.classRegistry[currentData["Class"]].getOptions(this.tokenInput.value, context);
+        } else {
+            return []; // Default to no options when currentData is empty
+        }
+    }
+
     /**
      * Toggle the mark time feature on or off when the '`' key is pressed, updating the UI accordingly.
      */
