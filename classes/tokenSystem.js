@@ -292,8 +292,8 @@ export class TokenSystem {
 
     /**
      * Create a token DOM element without modifying the tokens array.
-     * Displays testimony tokens in a friendly format, for example:
-     * "Jaclyn Hall - North Dakota Association for Justice - In Opposition - Testimony#44431"
+     * For testimony tokens (JSON string with firstName and lastName), displays "LastName, FirstName" (without the "Testimony:" prefix).
+     * For other tokens, displays the token value as-is.
      * @param {string} value - The value of the token to create.
      * @returns {HTMLElement} The created token element.
      */
@@ -304,24 +304,16 @@ export class TokenSystem {
         if (value.startsWith('{')) {
             try {
                 const data = JSON.parse(value);
-                let parts = [];
-                if (data.firstName || data.lastName) {
-                    parts.push(`${data.firstName || ""} ${data.lastName || ""}`.trim());
+                // Get firstName and lastName, leaving out "undefined" values
+                const firstName = (data.firstName && data.firstName !== "undefined") ? data.firstName : "";
+                const lastName = (data.lastName && data.lastName !== "undefined") ? data.lastName : "";
+                if (lastName || firstName) {
+                    displayText = `${lastName}${firstName ? ", " + firstName : ""}`;
+                } else {
+                    displayText = value;
                 }
-                if (data.role) {
-                    parts.push(data.role);
-                }
-                if (data.organization && data.organization !== "undefined") {
-                    parts.push(data.organization);
-                }
-                if (data.position) {
-                    parts.push(data.position);
-                }
-                if (data.testimonyNo) {
-                    parts.push(`Testimony#${data.testimonyNo}`);
-                }
-                displayText = parts.join(" - ");
             } catch (e) {
+                console.error("Error parsing testimony token in createTokenElement:", e);
                 displayText = value;
             }
         } else {
@@ -332,6 +324,7 @@ export class TokenSystem {
         tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
         return tokenSpan;
     }
+
 
 
     /**
