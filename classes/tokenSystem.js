@@ -348,11 +348,7 @@ export class TokenSystem {
         const inputWrapper = this.tokenContainer.querySelector('.input-wrapper');
 
         tokenArray.forEach(value => {
-            const tokenSpan = document.createElement('span');
-            tokenSpan.className = 'token';
-            tokenSpan.innerHTML = `${value} <span class="dropdown-arrow">▾</span>`;
-            tokenSpan.dataset.value = value;
-            tokenSpan.addEventListener('click', (e) => this.tokenClickHandler(e));
+            const tokenSpan = this.createTokenElement(value);
             this.tokenContainer.insertBefore(tokenSpan, inputWrapper);
             this.tokens.push(value);
         });
@@ -390,6 +386,7 @@ export class TokenSystem {
         }
         this.tokenInput.focus();
     }
+
 
     /**
      * Display editing options for a token at the specified index. If the token represents testimony (i.e. its value is a JSON string),
