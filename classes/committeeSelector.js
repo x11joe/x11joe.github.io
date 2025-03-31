@@ -117,7 +117,7 @@ export class CommitteeSelector {
     }
     
     /**
-     * Renders the committee legend with clickable member items. On Ctrl+click, copies the member's number to the clipboard in the format "member-no:<number>;Mic:".
+     * Renders the committee legend with clickable member items. On Ctrl+click, copies the member's number to the clipboard in the format "member-no:<number>;Mic:" and applies a green glow effect for visual feedback.
      */
     renderLegend() {
         const members = this.committeesData[this.selectedCommittee] || [];
@@ -173,6 +173,11 @@ export class CommitteeSelector {
                     const clipboardText = `member-no:${memberNo};Mic:`;
                     navigator.clipboard.writeText(clipboardText).then(() => {
                         console.log(`Copied to clipboard: ${clipboardText}`);
+                        // Apply green glow effect
+                        memberItem.classList.add('glow');
+                        setTimeout(() => {
+                            memberItem.classList.remove('glow');
+                        }, 1000); // Remove glow after 1 second
                     }).catch(err => {
                         console.error('Failed to copy to clipboard:', err);
                     });

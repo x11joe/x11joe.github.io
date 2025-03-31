@@ -11,6 +11,7 @@ import { HistoryManager } from "./classes/historyManager.js";
 // eslint-disable-next-line no-unused-vars
 import { TextConstructor } from "./classes/textConstructor.js";
 import { Utils } from "./classes/utils.js";
+import { MemberDataProcessor } from "./classes/memberDataProcessor.js";
 
 import flowDataRaw from "./flow5.json" with { type: "json" };
 
@@ -46,7 +47,7 @@ const shortcuts = {
 
 /**
  * Main entry point for the application. Initializes all components and sets up event listeners.
- * Loads allMember.xml to associate member numbers with DEFAULT_COMMITTEES.
+ * Uses MemberDataProcessor to load member numbers into DEFAULT_COMMITTEES.
  */
 document.addEventListener("DOMContentLoaded", async () => {
     const tokenContainer = document.getElementById("token-container");
@@ -56,55 +57,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const committeeSelectorContainer = document.getElementById("committee-selector");
     const committeeLegend = document.getElementById("committee-legend");
 
-    // Fetch and parse allMember.xml
-    const response = await fetch("allMember.xml");
-    const xmlText = await response.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    const hotKeys = xmlDoc.getElementsByTagName("HotKey");
-
-    const memberData = Array.from(hotKeys).map(hotKey => {
-        const lastName = hotKey.getElementsByTagName("Name")[0]?.textContent;
-        const firstNameEl = hotKey.getElementsByTagName("FirstName")[0]?.textContent;
-        const fields = hotKey.getElementsByTagName("Field");
-        let memberNo = null;
-        for (const field of fields) {
-            if (field.getElementsByTagName("Key")[0]?.textContent === "member-no") {
-                memberNo = field.getElementsByTagName("Value")[0]?.textContent;
-                break;
-            }
-        }
-        const titleMatch = firstNameEl?.match(/^(Senator|Representative)(?:\s+([A-Z])\.)?/);
-        return {
-            lastName,
-            title: titleMatch ? titleMatch[1] : null,
-            initial: titleMatch && titleMatch[2] ? titleMatch[2] : null,
-            memberNo
-        };
-    });
-
-    // Match XML data to DEFAULT_COMMITTEES
-    for (const committee in DEFAULT_COMMITTEES) {
-        DEFAULT_COMMITTEES[committee].forEach(memberObj => {
-            const [fullName] = memberObj.name.split(" - ");
-            const nameParts = fullName.split(" ");
-            const lastName = nameParts[nameParts.length - 1];
-            const firstInitial = nameParts[0][0];
-            const isSenate = committee.toLowerCase().startsWith("senate");
-            const title = isSenate ? "Senator" : "Representative";
-
-            const matches = memberData.filter(md => md.lastName === lastName && md.title === title);
-            if (matches.length === 1) {
-                memberObj.memberNo = matches[0].memberNo;
-            } else if (matches.length > 1) {
-                // Handle duplicates by matching initial
-                const exactMatch = matches.find(md => md.initial === firstInitial);
-                if (exactMatch) {
-                    memberObj.memberNo = exactMatch.memberNo;
-                }
-            }
-        });
-    }
+    // Process member data and update DEFAULT_COMMITTEES
+    const memberProcessor = new MemberDataProcessor("allMember.xml", DEFAULT_COMMITTEES);
+    await memberProcessor.loadAndProcess();
 
     const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES, FEMALE_NAMES);
 
