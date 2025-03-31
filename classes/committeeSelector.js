@@ -196,12 +196,18 @@ export class CommitteeSelector {
       return this.committeesData[this.selectedCommittee] || [];
     }
 
+    /**
+     * Check if a given token is a member name in the currently selected committee.
+     * Extracts the name part before " - " from the member's name property.
+     * @param {string} token - The token to check against member names.
+     * @returns {boolean} - True if the token matches a member's name, false otherwise.
+     */
     isMemberName(token) {
-      const currentMembers = this.getSelectedCommitteeMembers();
-      return currentMembers.some(member => {
-          const name = member.split(" - ")[0];
-          return name === token;
-      });
+        const currentMembers = this.getSelectedCommitteeMembers();
+        return currentMembers.some(member => {
+            const name = member.name.split(" - ")[0];
+            return name === token;
+        });
     }
     
     getMemberTitle() {
