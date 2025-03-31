@@ -59,11 +59,12 @@ export class TestimonyModule {
 
     /**
      * Opens a modal for adding or editing testimony, pre‐filling data if provided.
-     * If the testimony data’s role contains “Senator” or “Representative”, a custom confirmation
-     * modal will ask two questions before finalizing the save.
-     * In the first question, if the user confirms the person is a Senator or Representative,
-     * a second question is asked: “Are they introducing a bill?”
-     * The testimonyData object is then augmented with an "introducingBill" property.
+     * If the testimony data’s role contains “Senator” or “Representative” (case-insensitive),
+     * this method will first ask:
+     *  1. "Is this person a Senator or Representative? (yes or no)"
+     * If the user confirms, it then asks:
+     *  2. "Are they introducing a bill? (yes or no)"
+     * The testimonyData is augmented with an "introducingBill" property accordingly.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      * @param {Object|null} prefillData - Data to prefill the form (null if adding new without prefill).
      */
@@ -144,7 +145,7 @@ export class TestimonyModule {
             link: formData.get('link') || '',
             format: formData.get('format') || ''
         };
-        // If role contains "senator" or "representative" (case insensitive), ask additional questions.
+        // If role indicates Senator/Representative, ask for confirmation.
         const roleLower = testimonyData.role.toLowerCase();
         if (roleLower.includes("senator") || roleLower.includes("representative")) {
             const isSpecial = await this.showConfirmationModal("Is this person a Senator or Representative? (yes or no)");
