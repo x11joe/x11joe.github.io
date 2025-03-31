@@ -23,16 +23,16 @@ export class TestimonyModule {
 
     /**
      * Handles post-rendering logic to open the testimony modal for adding/editing testimony.
-     * If the token system’s suppressTestimonyModule flag is set, the modal will not be opened.
+     * Always opens the modal (clearing any suppress flag) so that if a hearing event triggers a testimony,
+     * the confirmation questions are asked.
      * @param {HTMLElement} container - The container element (suggestions container).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      */
     postRender(container, tokenSystem) {
         this.tokenSystem = tokenSystem;
-        // If the testimony module suppression flag is set, clear it and do not open the modal.
+        // Clear the suppression flag if it was set.
         if (this.tokenSystem.suppressTestimonyModule) {
             this.tokenSystem.suppressTestimonyModule = false;
-            return;
         }
         let editingData = null;
         const editingIndex = container.getAttribute('data-editing-index');
@@ -56,6 +56,7 @@ export class TestimonyModule {
         }
         this.openModal(tokenSystem, editingData);
     }
+
 
     /**
      * Opens a modal for adding or editing testimony, pre‐filling data if provided.
