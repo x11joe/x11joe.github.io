@@ -163,70 +163,63 @@ export class TokenSystem {
     }
 
     /**
-     * Update the suggestions based on the current branch and input, prioritizing module renderers when a "Class" is specified.
-     * Respects the suppressSuggestions flag to prevent re-rendering of LCModule after deletion, keeping the flag true until
-     * reset by user input or suggestion selection. Logs detailed state for debugging to ensure correct behavior when
-     * interacting with class modules.
+     * Updates the suggestions dropdown based on the current tokens and input value.
+     * Manages the rendering of class modules or default suggestions, ensuring proper event binding.
+     * Includes detailed logging to track renderer selection and execution.
      */
     updateSuggestions() {
-        const branchData = this.getCurrentBranchData();
-        if (this.suppressSuggestions && branchData["Class"] === "LC_Module") {
-            console.log('Suppressing LCModule rendering due to recent deletion');
+        if (this.suppressSuggestions) {
+            console.log('Suggestions suppressed');
+            this.suppressSuggestions = false;
             return;
         }
         console.log('updateSuggestions called - Tokens:', this.tokens, 'Input value:', this.tokenInput.value, 'suppressSuggestions:', this.suppressSuggestions);
-        const query = this.tokenInput.value.trim();
-        let options = branchData["Options"] || [];
-        let renderer;
-    
-        if (this.tokens.length === 0) {
-            const startingModules = options.map(module => ({ value: module }));
-            const memberNames = this.committeeSelector.getSelectedCommitteeMembers().map(member => {
-                let memberName = "";
-                if (typeof member === "object" && member.name) {
-                    memberName = member.name.split(" - ")[0];
-                } else if (typeof member === "string") {
-                    memberName = member.split(" - ")[0];
-                }
-                return { value: memberName, shortcut: "member" };
-            });
-            options = startingModules.concat(memberNames);
-            renderer = this.defaultRenderer;
-        } else if (branchData["Class"]) {
-            renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
-        } else {
-            renderer = this.defaultRenderer;
-        }
-    
-        const currentMembers = this.committeeSelector.getSelectedCommitteeMembers();
-        const allCommittees = Object.keys(this.committeeSelector.committeesData);
-        const selectedCommittee = this.committeeSelector.getSelectedCommittee();
-        const context = {
-            members: currentMembers,
-            allCommittees: allCommittees,
-            selectedCommittee: selectedCommittee
-        };
-    
-        const html = renderer.render(options, query, context);
-        this.suggestionsContainer.innerHTML = html;
-    
-        if (branchData["Class"]) {
+        const currentData = this.getCurrentBranchDataForTokens(this.tokens);
+        console.log('Current branch data:', currentData);
+
+        if (currentData["Class"] && this.classRegistry[currentData["Class"]]) {
+            const renderer = this.classRegistry[currentData["Class"]];
+            console.log('Renderer selected:', currentData["Class"]);
+            const context = {
+                members: this.committeeSelector.getSelectedCommitteeMembers(),
+                allCommittees: Object.keys(this.committeeSelector.committeesData),
+                selectedCommittee: this.committeeSelector.getSelectedCommittee()
+            };
+            const html = renderer.render(this.getOptions(), this.tokenInput.value, context);
+            console.log('Renderer HTML output:', html);
+            this.suggestionsContainer.innerHTML = html;
+            if (typeof renderer.postRender === 'function') {
+                console.log('Calling renderer.postRender for', currentData["Class"]);
+                renderer.postRender(this.suggestionsContainer, this);
+            } else {
+                console.log('No postRender function for', currentData["Class"]);
+            }
             if (typeof renderer.bindEvents === 'function') {
+                console.log('Binding events for', currentData["Class"]);
                 renderer.bindEvents(this.suggestionsContainer, this);
             }
-            if (typeof renderer.postRender === 'function') {
-                renderer.postRender(this.suggestionsContainer, this);
-            }
-        }
-    
-        const suggestions = this.suggestionsContainer.querySelectorAll("li");
-        if (suggestions.length > 0 && renderer === this.defaultRenderer) {
-            if (this.highlightedIndex < 0 || this.highlightedIndex >= suggestions.length) {
-                this.highlightedIndex = 0;
-            }
-            this.updateHighlighted();
         } else {
-            this.highlightedIndex = -1;
+            const options = this.getOptions();
+            const html = this.defaultRenderer.render(options, this.tokenInput.value);
+            console.log('Default renderer HTML output:', html);
+            this.suggestionsContainer.innerHTML = html;
+
+            const suggestions = this.suggestionsContainer.querySelectorAll("li");
+            suggestions.forEach((suggestion, index) => {
+                suggestion.addEventListener("click", () => {
+                    const value = suggestion.dataset.value;
+                    if (suggestion.hasAttribute('data-shortcut') && suggestion.dataset.shortcut === "member") {
+                        this.setTokens(["Member Action", value]);
+                    } else {
+                        this.addToken(value);
+                    }
+                });
+                suggestion.addEventListener("mouseover", () => {
+                    this.highlightedIndex = index;
+                    this.updateHighlighted();
+                });
+            });
+            this.updateHighlighted();
         }
     }
     

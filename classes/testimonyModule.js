@@ -22,19 +22,24 @@ export class TestimonyModule {
     }
 
     /**
-     * Renders the testimony modal and sets up event listeners. Opens automatically when 'Testimony' is selected
-     * or when editing a testimony token. Prefills the form with data if available from editing or hearing_event.
+     * Renders the testimony modal and sets up event listeners. Opens automatically when 'Testimony' is the last token,
+     * when editing a testimony token, or when prefill data is provided (e.g., from a hearing event).
+     * Includes logging to debug rendering conditions and execution flow.
      * @param {HTMLElement} container - The container element (suggestionsContainer) where the modal is rendered.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for token management.
      */
     postRender(container, tokenSystem) {
+        console.log('TestimonyModule.postRender called');
         this.tokenSystem = tokenSystem;
         const suggestionsContainer = tokenSystem.suggestionsContainer;
+        console.log('postRender - Tokens:', this.tokenSystem.tokens, 'editingIndex:', this.editingIndex, 'prefillData:', this.prefillData);
 
-        // Only render modal if 'Testimony' is the last token or we're editing
+        // Render modal if editing, last token is 'Testimony', or prefillData exists
         if (this.editingIndex === null && this.tokenSystem.tokens[this.tokenSystem.tokens.length - 1] !== 'Testimony' && !this.prefillData) {
+            console.log('Condition not met: not editing, last token is not "Testimony", and no prefillData - skipping modal render');
             return;
         }
+        console.log('Condition met: rendering modal');
 
         // Modal HTML structure
         const modalHtml = `
@@ -46,54 +51,61 @@ export class TestimonyModule {
                         <label>Last Name: <input type="text" name="lastName"></label>
                         <label>Role: <input type="text" name="role"></label>
                         <label>Organization: <input type="text" name="organization"></label>
-                        <label>Position:
-                            <select name="position" required>
+                        <label>Position: 
+                            <select name="position">
                                 <option value="In Favor">In Favor</option>
-                                <option value="In Opposition">In Opposition</option>
+                                <option value="Opposed">Opposed</option>
                                 <option value="Neutral">Neutral</option>
                             </select>
                         </label>
-                        <label>Testimony #: <input type="text" name="testimonyNo"></label>
-                        <label>Link: <input type="text" name="link"></label>
-                        <label>Format:
-                            <select name="format" required>
-                                <option value="In Person" selected>In Person</option>
+                        <label>Testimony Number: <input type="text" name="testimonyNo"></label>
+                        <label>Format: 
+                            <select name="format">
+                                <option value="In Person">In Person</option>
                                 <option value="Online">Online</option>
                                 <option value="Written">Written</option>
                             </select>
                         </label>
-                        <button type="submit">${this.editingIndex !== null ? 'Save Changes' : 'Add Testimony'}</button>
+                        <label>Link: <input type="text" name="link"></label>
+                        <button type="submit">Add Testimony</button>
                         <button type="button" class="cancel-btn">Cancel</button>
                     </form>
                 </div>
             </div>
         `;
         suggestionsContainer.innerHTML = modalHtml;
+        console.log('Modal HTML set to suggestionsContainer');
+
         this.modal = suggestionsContainer.querySelector('.testimony-modal');
-
         const form = this.modal.querySelector('#testimony-form');
+        const cancelBtn = this.modal.querySelector('.cancel-btn');
 
-        // Prefill form if data is available
+        // Prefill form if data exists
         if (this.prefillData) {
-            this.fillForm(form, this.prefillData);
-            this.prefillData = null; // Clear after use to prevent reuse
+            console.log('Prefilling form with data:', this.prefillData);
+            form.elements.firstName.value = this.prefillData.name ? this.prefillData.name.split(', ')[1] || '' : '';
+            form.elements.lastName.value = this.prefillData.name ? this.prefillData.name.split(', ')[0] || '' : '';
+            form.elements.role.value = this.prefillData.role || '';
+            form.elements.organization.value = this.prefillData.org || '';
+            form.elements.position.value = this.prefillData.position || 'Neutral';
+            form.elements.testimonyNo.value = this.prefillData.testimonyNo || '';
+            form.elements.format.value = this.prefillData.format || 'Written';
+            form.elements.link.value = this.prefillData.link || '';
         }
 
-        // Event listeners for form submission and cancel
+        // Event listeners
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Form submit event triggered');
             this.submitForm();
         });
 
-        const cancelBtn = this.modal.querySelector('.cancel-btn');
-        cancelBtn.addEventListener('click', () => this.handleCancel());
-
-        // Close modal if clicking outside content
-        document.addEventListener('click', (e) => {
-            if (this.modal && !this.modal.querySelector('.modal-content').contains(e.target)) {
-                this.handleCancel();
-            }
-        }, { once: true });
+        cancelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Cancel button clicked');
+            this.handleCancel();
+        });
     }
 
     /**
@@ -133,60 +145,58 @@ export class TestimonyModule {
     }
 
     /**
-     * Handles form submission by collecting data, validating it, prompting for metadata if needed,
-     * and adding or updating the token in the token system.
+     * Handles form submission by collecting testimony data, prompting for metadata if special,
+     * adding or updating the token in the token system, and closing the modal.
+     * Includes logging to track submission and token addition.
      */
     async submitForm() {
+        console.log('submitForm called');
         const form = this.modal.querySelector('#testimony-form');
-        const formData = new FormData(form);
-
-        // Collect form data
         const testimonyData = {
-            firstName: formData.get('firstName').trim(),
-            lastName: formData.get('lastName').trim(),
-            role: formData.get('role').trim(),
-            organization: formData.get('organization').trim(),
-            position: formData.get('position'),
-            testimonyNo: formData.get('testimonyNo').trim(),
-            link: formData.get('link').trim(),
-            format: formData.get('format')
+            firstName: form.elements.firstName.value.trim(),
+            lastName: form.elements.lastName.value.trim(),
+            role: form.elements.role.value.trim(),
+            organization: form.elements.organization.value.trim(),
+            position: form.elements.position.value,
+            testimonyNo: form.elements.testimonyNo.value.trim(),
+            format: form.elements.format.value,
+            link: form.elements.link.value.trim()
         };
+        console.log('Collected testimony data:', testimonyData);
 
-        // Validate required fields
-        if (!testimonyData.firstName || !testimonyData.position || !testimonyData.format) {
-            alert('First Name, Position, and Format are required.');
-            return;
-        }
-
-        // Check for special cases (senator/representative)
-        const isSpecial = /senator|representative/i.test(testimonyData.role) || /senator|representative/i.test(testimonyData.organization);
+        const isSpecial = this.tokenSystem.committeeSelector.isMemberName(`${testimonyData.firstName} ${testimonyData.lastName}`);
         let metadata = {};
         if (isSpecial) {
             metadata = await this.promptForMetadata(testimonyData);
+            console.log('Metadata from prompt:', metadata);
         }
 
-        // Create JSON token with all data
-        const jsonToken = JSON.stringify({
-            ...testimonyData,
-            ...metadata
-        });
+        const jsonToken = JSON.stringify({ ...testimonyData, ...metadata });
+        console.log('Created JSON token:', jsonToken);
 
-        // Add or update token in token system
         if (this.editingIndex !== null) {
             this.tokenSystem.tokens.splice(this.editingIndex, 0, jsonToken);
+            console.log('Inserted token at editingIndex:', this.editingIndex);
         } else {
             const testimonyIndex = this.tokenSystem.tokens.indexOf('Testimony');
             if (testimonyIndex !== -1) {
                 this.tokenSystem.tokens.splice(testimonyIndex + 1, 0, jsonToken);
+                console.log('Inserted token after Testimony at index:', testimonyIndex + 1);
             } else {
                 this.tokenSystem.tokens.push(jsonToken);
+                console.log('Pushed token to end of tokens');
             }
         }
+        console.log('Tokens after adding:', this.tokenSystem.tokens);
 
-        // Update UI and close modal
         this.tokenSystem.updateSuggestions();
         this.tokenSystem.updateConstructedText();
         this.closeModal();
+        console.log('Modal closed, suggestions container:', this.tokenSystem.suggestionsContainer.innerHTML);
+
+        // Reset prefill data and form
+        this.prefillData = null;
+        form.reset();
     }
 
     /**
@@ -297,13 +307,12 @@ export class TestimonyModule {
     }
 
     /**
-     * Closes the testimony modal by removing it from the DOM.
+     * Closes the testimony modal by nullifying the modal reference.
+     * Relies on updateSuggestions to clear the suggestionsContainer, avoiding redundant DOM removal.
      */
     closeModal() {
-        if (this.modal) {
-            this.modal.remove();
-            this.modal = null;
-        }
+        console.log('closeModal called');
+        this.modal = null; // suggestionsContainer is already cleared by updateSuggestions
     }
 
     /**
