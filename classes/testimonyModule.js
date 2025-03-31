@@ -23,19 +23,19 @@ export class TestimonyModule {
 
     /**
      * Opens the testimony modal after rendering and prefills it with data if available from the Chrome extension or manual input.
-     * Ensures form fields have correct 'name' attributes for FormData collection and applies prefill data accurately.
-     * @param {HTMLElement} container - The container element where the modal is rendered.
+     * Ensures the modal is fully initialized for both new testimonies and edits, fixing issues with initial display.
+     * @param {HTMLElement} container - The container element where the modal is rendered (typically suggestionsContainer).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance to interact with tokens.
      */
     postRender(container, tokenSystem) {
         this.tokenSystem = tokenSystem;
         const suggestionsContainer = tokenSystem.suggestionsContainer;
 
-        // Create modal HTML with explicit 'name' attributes for FormData
+        // Create modal HTML with explicit 'name' attributes for FormData collection
         const modalHtml = `
             <div class="testimony-modal">
                 <div class="modal-content">
-                    <h2>Add Testimony</h2>
+                    <h2>${this.editingIndex !== null ? "Edit Testimony" : "Add Testimony"}</h2>
                     <form id="testimony-form">
                         <label>First Name: <input type="text" name="firstName" required></label>
                         <label>Last Name: <input type="text" name="lastName" required></label>
@@ -49,7 +49,7 @@ export class TestimonyModule {
                             </select>
                         </label>
                         <label>Link: <input type="text" name="link"></label>
-                        <button type="submit">Add Testimony</button>
+                        <button type="submit">${this.editingIndex !== null ? "Update Testimony" : "Add Testimony"}</button>
                         <button type="button" class="cancel-btn">Cancel</button>
                     </form>
                 </div>
@@ -60,8 +60,21 @@ export class TestimonyModule {
 
         const form = this.modal.querySelector("#testimony-form");
 
-        // Prefill form with prefillData if available (e.g., from HEARING_STATEMENT event)
-        if (this.prefillData) {
+        // Prefill form with existing token data (for editing) or prefillData (for new from HEARING_STATEMENT)
+        if (this.editingIndex !== null && this.tokenSystem.tokens.length > 1) {
+            try {
+                const tokenData = JSON.parse(this.tokenSystem.tokens[1]);
+                const fields = ["firstName", "lastName", "role", "organization", "format", "link"];
+                fields.forEach(field => {
+                    const input = form.querySelector(`[name="${field}"]`);
+                    if (input && tokenData[field]) {
+                        input.value = tokenData[field];
+                    }
+                });
+            } catch (e) {
+                console.error("Failed to parse token for editing:", e);
+            }
+        } else if (this.prefillData) {
             const fields = ["firstName", "lastName", "role", "organization", "format", "link"];
             fields.forEach(field => {
                 const input = form.querySelector(`[name="${field}"]`);
@@ -86,7 +99,7 @@ export class TestimonyModule {
             if (this.modal && !this.modal.querySelector(".modal-content").contains(e.target)) {
                 this.closeModal();
             }
-        });
+        }, { once: true }); // Use once to avoid multiple listeners piling up
     }
   
 
@@ -214,12 +227,17 @@ export class TestimonyModule {
         });
     }
     
+    /**
+     * Closes the testimony modal and cleans up the suggestions container.
+     * Ensures focus returns to the token input after closing.
+     */
     closeModal() {
         if (this.modal) {
             this.modal.remove();
             this.modal = null;
             this.tokenSystem.suggestionsContainer.innerHTML = "";
             this.tokenSystem.tokenInput.focus();
+            this.tokenSystem.updateSuggestions(); // Refresh suggestions after closing
         }
     }
 
@@ -303,13 +321,13 @@ export class TestimonyModule {
 
     /**
      * Submits the testimony form data as a JSON token to the TokenSystem.
-     * Explicitly constructs the testimony object from form inputs to ensure all values are captured, avoiding blank JSON.
-     * Handles both adding new tokens and editing existing ones based on the editing context.
+     * Constructs the testimony object explicitly from form inputs, ensuring consistent submission for both new and edited entries.
+     * Validates required fields and handles adding or updating tokens appropriately.
      */
     submitForm() {
         const form = this.modal.querySelector("#testimony-form");
         const formData = new FormData(form);
-        
+
         // Explicitly build the testimony object from form inputs
         const testimonyData = {
             firstName: formData.get("firstName") || "",
@@ -320,9 +338,11 @@ export class TestimonyModule {
             link: formData.get("link") || ""
         };
 
-        // Validate required fields to prevent empty submissions
+        // Validate required fields to prevent empty or invalid submissions
         if (!testimonyData.firstName || !testimonyData.lastName) {
             console.error("First Name and Last Name are required for testimony submission");
+            form.querySelector("[name='firstName']").classList.add("highlight-red");
+            form.querySelector("[name='lastName']").classList.add("highlight-red");
             return;
         }
 
@@ -333,7 +353,8 @@ export class TestimonyModule {
             this.tokenSystem.editToken(this.editingIndex, jsonToken);
             this.editingIndex = null;
         } else {
-            this.tokenSystem.addToken(jsonToken);
+            // Ensure tokens array starts with "Testimony" followed by the JSON data
+            this.tokenSystem.setTokens(["Testimony", jsonToken]);
         }
 
         this.closeModal();
