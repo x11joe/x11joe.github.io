@@ -47,7 +47,8 @@ export class TestimonyModule {
     /**
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
      * The modal includes fields for first name, last name, role, organization, position, testimony number, link, and format.
-     * Highlights the role field in red if it’s empty (e.g., due to deduplication).
+     * Highlights the role field in red if it’s empty (i.e., after deduplication).
+     * If editing an existing testimony, canceling will simply close the modal without deleting the token.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      * @param {Object|null} prefillData - Data to prefill the form (null if adding new without prefill).
      */
@@ -56,7 +57,7 @@ export class TestimonyModule {
             this.modal.remove();
         }
         this.tokenSystem = tokenSystem;
-    
+
         // Process prefillData to split 'name' into firstName and lastName if not already provided
         if (prefillData && !prefillData.firstName && !prefillData.lastName && prefillData.name) {
             const parts = prefillData.name.split(',');
@@ -68,12 +69,12 @@ export class TestimonyModule {
                 prefillData.lastName = prefillData.name;
             }
         }
-    
+
         // Deduplicate role and organization: if they are the same, leave role blank
         if (prefillData && prefillData.role === prefillData.organization) {
             prefillData.role = '';
         }
-    
+
         this.modal = document.createElement('div');
         this.modal.className = 'testimony-modal';
         const title = this.editingIndex !== null ? 'Edit Testimony' : 'Add Testimony';
@@ -108,7 +109,7 @@ export class TestimonyModule {
             </div>
         `;
         document.body.appendChild(this.modal);
-    
+
         const form = this.modal.querySelector('#testimony-form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -133,13 +134,14 @@ export class TestimonyModule {
             this.modal.remove();
             this.modal = null;
         });
-    
+
         const cancelBtn = this.modal.querySelector('.cancel-btn');
         cancelBtn.addEventListener('click', () => {
             this.modal.remove();
             this.modal = null;
+            // In add mode, remove the "Testimony" token if the user cancels.
+            // In editing mode, do not remove the token.
             if (this.editingIndex === null) {
-                // Remove "Testimony" token if adding new and cancelled
                 const testimonyIndex = this.tokenSystem.tokens.indexOf("Testimony");
                 if (testimonyIndex !== -1) {
                     this.tokenSystem.tokens.splice(testimonyIndex, 1);
@@ -151,5 +153,6 @@ export class TestimonyModule {
             }
         });
     }
+
     
 }

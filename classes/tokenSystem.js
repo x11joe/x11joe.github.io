@@ -836,16 +836,16 @@ export class TokenSystem {
     }
 
     /**
-     * Cancel the current editing session, clear tokens, and refresh the history display.
-     * Clears suggestions to prevent them from appearing immediately after exiting edit mode,
-     * ensuring they only appear upon active user interaction with the input field.
+     * Cancel the current editing session, clear the editing state, and refresh the history display.
+     * This method does not remove tokens if you are editing an existing entry.
      */
     cancelEdit() {
         this.isEditing = false;
         this.editingEntry = null;
-        this.setTokens([]);
+        // Do not clear tokens when canceling an edit.
         this.suggestionsContainer.innerHTML = ""; // Clear suggestions to prevent immediate display
         this.historyManager.render();
     }
+
 }
   
