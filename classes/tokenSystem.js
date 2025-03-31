@@ -382,8 +382,12 @@ export class TokenSystem {
      */
     showTokenOptions(index, tokenElement) {
         console.log('showTokenOptions called - Index:', index, 'Token:', this.tokens[index]);
-        const currentValue = this.tokens[index];
-
+        // Guard against undefined tokens.
+        const currentValue = this.tokens[index] || "";
+        if (!currentValue) {
+            console.warn("No token value found at index", index);
+            return;
+        }
         // If the token represents testimony (its value is a JSON string), directly open the testimony modal.
         if (currentValue.startsWith('{')) {
             try {
@@ -400,7 +404,6 @@ export class TokenSystem {
                 // Fallback to normal behavior if parsing fails.
             }
         }
-
         // For non-testimony tokens or if testimony parsing failed, use the branch's class-based interface.
         const tempTokens = this.tokens.slice(0, index);
         const branchData = this.getCurrentBranchDataForTokens(tempTokens);
@@ -523,8 +526,14 @@ export class TokenSystem {
         e.stopPropagation();
         // Use the token element on which this event is bound.
         const tokenSpan = e.currentTarget;
+        // Get the token value
+        const tokenValue = tokenSpan.dataset.value;
+        if (!tokenValue) {
+            console.warn("Token value is undefined or empty.");
+            return;
+        }
         // If the token's value starts with '{', assume it's a testimony token.
-        if (tokenSpan.dataset.value.startsWith('{')) {
+        if (tokenValue.startsWith('{')) {
             const tokenElements = Array.from(this.tokenContainer.querySelectorAll(".token"));
             const index = tokenElements.indexOf(tokenSpan);
             if (index !== -1) {
