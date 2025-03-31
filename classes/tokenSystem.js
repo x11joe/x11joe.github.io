@@ -382,8 +382,8 @@ export class TokenSystem {
 
 
     /**
-     * Display editing options for a token at the specified index. If the token represents testimony (i.e. its value is a JSON string),
-     * then directly open the TestimonyModule modal with the prefilled data.
+     * Display editing options for a token at the specified index. If the token represents testimony (i.e. its value is a JSON string
+     * or is exactly "Testimony"), then directly open the TestimonyModule modal with the prefilled data.
      * For other token types, it behaves as before by rendering the module's interface for editing.
      * @param {number} index - The index of the token to edit.
      * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
@@ -396,21 +396,23 @@ export class TokenSystem {
             console.warn("No token value found at index", index);
             return;
         }
-        // If the token represents testimony (its value is a JSON string), directly open the testimony modal.
-        if (currentValue.startsWith('{')) {
+        // If the token represents testimony (its value is a JSON string or exactly "Testimony"), directly open the testimony modal.
+        if (currentValue === "Testimony" || currentValue.startsWith('{')) {
+            let prefillData = null;
             try {
-                const prefillData = JSON.parse(currentValue);
-                // Set prefillData in the testimony module registry for use in openModal.
-                this.classRegistry["Testimony_Module"].prefillData = prefillData;
-                // Set the editing index on the suggestions container so that subsequent edits know the context.
-                this.suggestionsContainer.setAttribute('data-editing-index', index);
-                // Directly call the TestimonyModule's openModal to bring up the modal with prefilled data.
-                this.classRegistry["Testimony_Module"].openModal(this, prefillData);
-                return;
+                // If currentValue is already a JSON string, parse it for prefill data.
+                prefillData = currentValue.startsWith('{') ? JSON.parse(currentValue) : {};
             } catch (e) {
                 console.error("Error parsing testimony token JSON:", e);
-                // Fallback to normal behavior if parsing fails.
+                prefillData = {};
             }
+            // Set prefillData in the TestimonyModule registry for use in openModal.
+            this.classRegistry["Testimony_Module"].prefillData = prefillData;
+            // Set the editing index on the suggestions container so that subsequent edits know the context.
+            this.suggestionsContainer.setAttribute('data-editing-index', index);
+            // Directly call the TestimonyModule's openModal to bring up the modal with prefilled data.
+            this.classRegistry["Testimony_Module"].openModal(this, prefillData);
+            return;
         }
         // For non-testimony tokens or if testimony parsing failed, use the branch's class-based interface.
         const tempTokens = this.tokens.slice(0, index);
@@ -473,6 +475,7 @@ export class TokenSystem {
             }, { once: true });
         }
     }
+
 
     /**
      * Get the possible options for editing a token at a specific index, using class module options where applicable.
