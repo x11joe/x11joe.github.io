@@ -382,9 +382,9 @@ export class TokenSystem {
 
 
     /**
-     * Display editing options for a token at the specified index. If the token represents testimony (i.e. its value is a JSON string
-     * or is exactly "Testimony"), then directly open the TestimonyModule modal with the prefilled data.
-     * For other token types, it behaves as before by rendering the module's interface for editing.
+     * Display editing options for a token at the specified index. If the token represents testimony
+     * (i.e. its value is a JSON string or is exactly "Testimony"), then directly open the TestimonyModule modal
+     * with the prefilled data as a new entry (clearing any editing state).
      * @param {number} index - The index of the token to edit.
      * @param {HTMLElement} tokenElement - The DOM element of the token being edited.
      */
@@ -400,17 +400,14 @@ export class TokenSystem {
         if (currentValue === "Testimony" || currentValue.startsWith('{')) {
             let prefillData = null;
             try {
-                // If currentValue is already a JSON string, parse it for prefill data.
                 prefillData = currentValue.startsWith('{') ? JSON.parse(currentValue) : {};
             } catch (e) {
                 console.error("Error parsing testimony token JSON:", e);
                 prefillData = {};
             }
-            // Set prefillData in the TestimonyModule registry for use in openModal.
+            // Clear any editing state so we force a new testimony entry.
+            this.suggestionsContainer.removeAttribute('data-editing-index');
             this.classRegistry["Testimony_Module"].prefillData = prefillData;
-            // Set the editing index on the suggestions container so that subsequent edits know the context.
-            this.suggestionsContainer.setAttribute('data-editing-index', index);
-            // Directly call the TestimonyModule's openModal to bring up the modal with prefilled data.
             this.classRegistry["Testimony_Module"].openModal(this, prefillData);
             return;
         }
@@ -426,7 +423,7 @@ export class TokenSystem {
             };
             const html = renderer.render([], '', context);
             this.suggestionsContainer.innerHTML = html;
-            this.suggestionsContainer.setAttribute('data-editing-index', index); // Set editing flag
+            this.suggestionsContainer.setAttribute('data-editing-index', index);
             console.log('Set data-editing-index to:', index);
             if (typeof renderer.bindEvents === 'function') {
                 renderer.bindEvents(this.suggestionsContainer, this);
@@ -461,7 +458,7 @@ export class TokenSystem {
                     const newValue = e.target.dataset.value;
                     // Reset suppressSuggestions only if the current token is "LC#" and the user selects "LC#" again
                     if (this.tokens[index] === "LC#" && newValue === "LC#") {
-                        this.suppressSuggestions = false; // Override suppression to bring back LCModule
+                        this.suppressSuggestions = false;
                         console.log('Reset suppressSuggestions to false because "LC#" was reselected');
                     }
                     this.editToken(index, newValue);
@@ -475,7 +472,6 @@ export class TokenSystem {
             }, { once: true });
         }
     }
-
 
     /**
      * Get the possible options for editing a token at a specific index, using class module options where applicable.

@@ -22,45 +22,21 @@ export class TestimonyModule {
     }
 
     /**
-     * Handles post-rendering logic to open the testimony modal for adding/editing testimony.
-     * Always opens the modal (after clearing any suppression flag) so that if a hearing event triggers testimony,
-     * the confirmation questions are asked.
+     * Handles post-rendering logic to open the testimony modal for adding testimony.
+     * Always clears any editing state so that the confirmation prompts are always shown.
      * @param {HTMLElement} container - The container element (suggestions container).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      */
     postRender(container, tokenSystem) {
         this.tokenSystem = tokenSystem;
-        // Clear the suppression flag if it was set.
-        if (this.tokenSystem.suppressTestimonyModule) {
-            this.tokenSystem.suppressTestimonyModule = false;
-        }
-        let editingData = null;
-        const editingIndex = container.getAttribute('data-editing-index');
-        if (editingIndex !== null) {
-            this.editingIndex = parseInt(editingIndex, 10);
-            const tokenValue = this.tokenSystem.tokens[this.editingIndex];
-            // If the token is exactly "Testimony", then treat it as a placeholder (new testimony)
-            if (tokenValue === "Testimony") {
-                editingData = null;
-            } else if (tokenValue && tokenValue !== "undefined") {
-                try {
-                    editingData = JSON.parse(tokenValue);
-                } catch (error) {
-                    console.error("Error parsing testimony token:", tokenValue, error);
-                    editingData = null;
-                }
-            }
-        } else {
-            this.editingIndex = null;
-            if (this.prefillData) {
-                editingData = this.prefillData;
-                this.prefillData = null;
-            }
-        }
+        // Always clear any editing state so we treat this as a new testimony entry.
+        container.removeAttribute('data-editing-index');
+        this.editingIndex = null;
+        // Use any prefillData provided (e.g., from a hearing event) or null.
+        let editingData = this.prefillData || null;
+        this.prefillData = null;
         this.openModal(tokenSystem, editingData);
     }
-
-
 
     /**
      * Opens a modal for adding or editing testimony, pre‐filling data if provided.
