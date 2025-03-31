@@ -88,6 +88,7 @@ export class HistoryManager {
 
     /**
      * Render the history table, sorting groups by the latest entry timestamp to ensure newest entries are at the top.
+     * Constructs procedural clerk text by directly using the pre-formatted entry.time, avoiding calls to undefined methods.
      */
     render() {
         // Sort groups by the latest entry's timestamp, descending, to prioritize newest entries
@@ -140,7 +141,8 @@ export class HistoryManager {
                 if (entry.isRaw) {
                     row.style.backgroundColor = 'red'; // Highlight raw entries in red
                 }
-                const procedureWithTime = entry.isRaw ? entry.rawText : `${TextConstructor.formatTimeForProcedure(entry.time)} ${entry.baseProcedureText}`;
+                // Use entry.time directly as it is already formatted, avoiding undefined method call
+                const procedureWithTime = entry.isRaw ? entry.rawText : `${entry.time} ${entry.baseProcedureText}`;
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">
