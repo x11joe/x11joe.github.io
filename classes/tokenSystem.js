@@ -390,88 +390,86 @@ export class TokenSystem {
      */
     showTokenOptions(index, tokenElement) {
         console.log('showTokenOptions called - Index:', index, 'Token:', this.tokens[index]);
-        // Guard against undefined tokens.
         const currentValue = this.tokens[index] || "";
         if (!currentValue) {
-            console.warn("No token value found at index", index);
-            return;
+        console.warn("No token value found at index", index);
+        return;
         }
-        // If the token represents testimony (its value is a JSON string or exactly "Testimony"), directly open the testimony modal.
         if (currentValue === "Testimony" || currentValue.startsWith('{')) {
-            let prefillData = null;
-            try {
-                prefillData = currentValue.startsWith('{') ? JSON.parse(currentValue) : {};
-            } catch (e) {
-                console.error("Error parsing testimony token JSON:", e);
-                prefillData = {};
-            }
-            // Clear any editing state so we force a new testimony entry.
-            this.suggestionsContainer.removeAttribute('data-editing-index');
-            this.classRegistry["Testimony_Module"].prefillData = prefillData;
-            this.classRegistry["Testimony_Module"].openModal(this, prefillData);
-            return;
+        let prefillData = null;
+        try {
+            prefillData = currentValue.startsWith('{') ? JSON.parse(currentValue) : {};
+        } catch (e) {
+            console.error("Error parsing testimony token JSON in showTokenOptions:", e);
+            prefillData = {};
         }
-        // For non-testimony tokens or if testimony parsing failed, use the branch's class-based interface.
+        console.log("showTokenOptions: Opening testimony modal with prefillData:", prefillData);
+        // Clear any editing state so we force a new testimony entry.
+        this.suggestionsContainer.removeAttribute('data-editing-index');
+        this.classRegistry["Testimony_Module"].prefillData = prefillData;
+        this.classRegistry["Testimony_Module"].openModal(this, prefillData);
+        return;
+        }
+        // For non-testimony tokens, proceed with the normal editing interface.
         const tempTokens = this.tokens.slice(0, index);
         const branchData = this.getCurrentBranchDataForTokens(tempTokens);
         if (branchData["Class"]) {
-            const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
-            const context = {
-                members: this.committeeSelector.getSelectedCommitteeMembers(),
-                allCommittees: Object.keys(this.committeeSelector.committeesData),
-                selectedCommittee: this.committeeSelector.getSelectedCommittee()
-            };
-            const html = renderer.render([], '', context);
-            this.suggestionsContainer.innerHTML = html;
-            this.suggestionsContainer.setAttribute('data-editing-index', index);
-            console.log('Set data-editing-index to:', index);
-            if (typeof renderer.bindEvents === 'function') {
-                renderer.bindEvents(this.suggestionsContainer, this);
-                // For class modules, set the input value to the current token value.
-                const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
-                if (inputElement) {
-                    inputElement.value = currentValue;
-                    inputElement.focus();
-                    if (typeof renderer.postRender === 'function') {
-                        renderer.postRender(this.suggestionsContainer, this);
-                    }
-                }
+        const renderer = this.classRegistry[branchData["Class"]] || this.defaultRenderer;
+        const context = {
+            members: this.committeeSelector.getSelectedCommitteeMembers(),
+            allCommittees: Object.keys(this.committeeSelector.committeesData),
+            selectedCommittee: this.committeeSelector.getSelectedCommittee()
+        };
+        const html = renderer.render([], '', context);
+        this.suggestionsContainer.innerHTML = html;
+        this.suggestionsContainer.setAttribute('data-editing-index', index);
+        console.log('Set data-editing-index to:', index);
+        if (typeof renderer.bindEvents === 'function') {
+            renderer.bindEvents(this.suggestionsContainer, this);
+            const inputElement = this.suggestionsContainer.querySelector('.lc-input') || renderer.inputElement;
+            if (inputElement) {
+            inputElement.value = currentValue;
+            inputElement.focus();
+            if (typeof renderer.postRender === 'function') {
+                renderer.postRender(this.suggestionsContainer, this);
             }
+            }
+        }
         } else {
-            // Fallback: show a simple dropdown with static options.
-            const options = this.getOptionsForToken(index);
-            const dropdown = document.createElement('div');
-            dropdown.className = 'token-dropdown';
-            let html = '<ul>';
-            options.forEach(option => {
-                html += `<li data-value="${option}">${option}</li>`;
-            });
-            html += '</ul>';
-            dropdown.innerHTML = html;
-            document.body.appendChild(dropdown);
-            const rect = tokenElement.getBoundingClientRect();
-            dropdown.style.position = 'absolute';
-            dropdown.style.left = `${rect.left}px`;
-            dropdown.style.top = `${rect.bottom + window.scrollY}px`;
-            dropdown.addEventListener('click', (e) => {
-                if (e.target.tagName === 'LI') {
-                    const newValue = e.target.dataset.value;
-                    // Reset suppressSuggestions only if the current token is "LC#" and the user selects "LC#" again
-                    if (this.tokens[index] === "LC#" && newValue === "LC#") {
-                        this.suppressSuggestions = false;
-                        console.log('Reset suppressSuggestions to false because "LC#" was reselected');
-                    }
-                    this.editToken(index, newValue);
-                    dropdown.remove();
-                }
-            });
-            document.addEventListener('click', (e) => {
-                if (!dropdown.contains(e.target) && e.target !== tokenElement.querySelector('.dropdown-arrow')) {
-                    dropdown.remove();
-                }
-            }, { once: true });
+        // Fallback: show a simple dropdown with static options.
+        const options = this.getOptionsForToken(index);
+        const dropdown = document.createElement('div');
+        dropdown.className = 'token-dropdown';
+        let html = '<ul>';
+        options.forEach(option => {
+            html += `<li data-value="${option}">${option}</li>`;
+        });
+        html += '</ul>';
+        dropdown.innerHTML = html;
+        document.body.appendChild(dropdown);
+        const rect = tokenElement.getBoundingClientRect();
+        dropdown.style.position = 'absolute';
+        dropdown.style.left = `${rect.left}px`;
+        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+        dropdown.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+            const newValue = e.target.dataset.value;
+            if (this.tokens[index] === "LC#" && newValue === "LC#") {
+                this.suppressSuggestions = false;
+                console.log('Reset suppressSuggestions to false because "LC#" was reselected');
+            }
+            this.editToken(index, newValue);
+            dropdown.remove();
+            }
+        });
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== tokenElement.querySelector('.dropdown-arrow')) {
+            dropdown.remove();
+            }
+        }, { once: true });
         }
     }
+  
 
     /**
      * Get the possible options for editing a token at a specific index, using class module options where applicable.

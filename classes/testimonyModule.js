@@ -28,15 +28,18 @@ export class TestimonyModule {
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      */
     postRender(container, tokenSystem) {
+        console.log("TestimonyModule.postRender called. prefillData:", this.prefillData);
         this.tokenSystem = tokenSystem;
         // Always clear any editing state so we treat this as a new testimony entry.
         container.removeAttribute('data-editing-index');
         this.editingIndex = null;
-        // Use any prefillData provided (e.g., from a hearing event) or null.
         let editingData = this.prefillData || null;
+        console.log("TestimonyModule.postRender: Using editingData:", editingData);
+        // Clear prefill data after reading it
         this.prefillData = null;
         this.openModal(tokenSystem, editingData);
     }
+  
 
     /**
      * Opens a modal for adding or editing testimony, pre‐filling data if provided.
@@ -54,14 +57,14 @@ export class TestimonyModule {
         this.modal.remove();
         }
         this.tokenSystem = tokenSystem;
-        // Set editing mode if the suggestions container has a data-editing-index attribute.
+        // Set editing mode if suggestions container has a data-editing-index attribute
         if (tokenSystem.suggestionsContainer.hasAttribute('data-editing-index')) {
         this.editingIndex = parseInt(tokenSystem.suggestionsContainer.getAttribute('data-editing-index'), 10);
         } else {
         this.editingIndex = null;
         }
-    
-        // Process prefillData: split 'name' into firstName and lastName if not provided.
+        
+        // Process prefillData: if no firstName/lastName but a name exists, split it.
         if (prefillData && !prefillData.firstName && !prefillData.lastName && prefillData.name) {
         const parts = prefillData.name.split(',');
         if (parts.length === 2) {
@@ -71,12 +74,14 @@ export class TestimonyModule {
             prefillData.firstName = '';
             prefillData.lastName = prefillData.name;
         }
+        console.log("Pre-fill data processed:", prefillData);
         }
-        // Deduplicate role and organization.
+        // Deduplicate role and organization if they are identical
         if (prefillData && prefillData.role === prefillData.organization) {
         prefillData.role = '';
+        console.log("Role deduplicated, new role:", prefillData.role);
         }
-    
+        
         this.modal = document.createElement('div');
         this.modal.className = 'testimony-modal';
         const title = this.editingIndex !== null ? 'Save Testimony' : 'Add Testimony';
@@ -111,7 +116,7 @@ export class TestimonyModule {
         </div>
         `;
         document.body.appendChild(this.modal);
-    
+        
         const form = this.modal.querySelector('#testimony-form');
         form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -126,16 +131,22 @@ export class TestimonyModule {
             link: formData.get('link') || '',
             format: formData.get('format') || ''
         };
-        // If role indicates Senator/Representative, ask for confirmation.
+        console.log("Testimony form submitted, data:", testimonyData);
         const roleLower = testimonyData.role.toLowerCase();
         if (roleLower.includes("senator") || roleLower.includes("representative")) {
+            console.log("Role contains senator or representative, prompting confirmation");
             const isSpecial = await this.showConfirmationModal("Is this person a Senator or Representative? (yes or no)");
+            console.log("First confirmation result:", isSpecial);
             if (isSpecial) {
             const introducing = await this.showConfirmationModal("Are they introducing a bill? (yes or no)");
+            console.log("Second confirmation result:", introducing);
             testimonyData.introducingBill = introducing;
             }
+        } else {
+            console.log("Role does not contain senator or representative, no confirmation prompted");
         }
         const jsonString = JSON.stringify(testimonyData);
+        console.log("Final testimony token JSON:", jsonString);
         if (this.editingIndex !== null) {
             this.tokenSystem.editToken(this.editingIndex, jsonString);
             this.tokenSystem.suggestionsContainer.removeAttribute('data-editing-index');
@@ -145,13 +156,15 @@ export class TestimonyModule {
         this.modal.remove();
         this.modal = null;
         });
-    
+        
         const cancelBtn = this.modal.querySelector('.cancel-btn');
         cancelBtn.addEventListener('click', () => {
+        console.log("Testimony modal cancelled");
         this.modal.remove();
         this.modal = null;
         });
     }
+  
 
     /**
      * Displays a custom confirmation modal with the provided question.
