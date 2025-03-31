@@ -291,37 +291,25 @@ export class TokenSystem {
     }
 
     /**
-     * Create a token DOM element without modifying the tokens array.
-     * For testimony tokens (JSON string with firstName and lastName), displays "LastName, FirstName" (without the "Testimony:" prefix).
-     * For other tokens, displays the token value as-is.
-     * @param {string} value - The value of the token to create.
-     * @returns {HTMLElement} The created token element.
+     * Creates a token element for display in the token container with a click listener to edit it.
+     * Customizes display for testimony tokens to show 'Firstname Lastname - Position'.
+     * @param {string} value - The token value (string or JSON string for testimony).
+     * @returns {HTMLElement} - The created token span element.
      */
     createTokenElement(value) {
-        const tokenSpan = document.createElement("span");
-        tokenSpan.className = "token";
-        let displayText;
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'token';
         if (value.startsWith('{')) {
             try {
                 const data = JSON.parse(value);
-                // Get firstName and lastName, leaving out "undefined" values
-                const firstName = (data.firstName && data.firstName !== "undefined") ? data.firstName : "";
-                const lastName = (data.lastName && data.lastName !== "undefined") ? data.lastName : "";
-                if (lastName || firstName) {
-                    displayText = `${lastName}${firstName ? ", " + firstName : ""}`;
-                } else {
-                    displayText = value;
-                }
+                tokenSpan.textContent = `${data.firstName} ${data.lastName} - ${data.position}`;
             } catch (e) {
-                console.error("Error parsing testimony token in createTokenElement:", e);
-                displayText = value;
+                tokenSpan.textContent = value; // Fallback to raw value if parsing fails
             }
         } else {
-            displayText = value;
+            tokenSpan.textContent = value;
         }
-        tokenSpan.innerHTML = `${displayText} <span class="dropdown-arrow">▾</span>`;
-        tokenSpan.dataset.value = value;
-        tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
+        tokenSpan.addEventListener('click', () => this.editToken(this.tokens.indexOf(value)));
         return tokenSpan;
     }
 

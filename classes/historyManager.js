@@ -167,16 +167,17 @@ export class HistoryManager {
             <td contenteditable="true" class="time">${entry.time}</td>
             <td class="statements">
                 ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${
+                // Within the render method, replace the tokens mapping:
                 entry.tokens.map(token => {
                     if (token.startsWith('{')) {
-                    try {
-                        const data = JSON.parse(token);
-                        return `<span class="history-token">Testimony: ${data.lastName}, ${data.firstName}</span>`;
-                    } catch (e) {
-                        return `<span class="history-token">${token}</span>`;
-                    }
+                        try {
+                            const data = JSON.parse(token);
+                            return `<span class="history-token">${data.firstName} ${data.lastName} - ${data.position}</span>`;
+                        } catch (e) {
+                            return `<span class="history-token">${token}</span>`;
+                        }
                     } else {
-                    return `<span class="history-token">${token}</span>`;
+                        return `<span class="history-token">${token}</span>`;
                     }
                 }).join('')
                 }</div>`}

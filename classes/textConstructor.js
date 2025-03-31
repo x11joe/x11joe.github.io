@@ -49,31 +49,22 @@ export class TextConstructor {
         }
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
         return tokens[1];
-        } else if (tokens[0] === "Testimony" && tokens.length === 2) {
-        try {
-            const data = JSON.parse(tokens[1]);
-            let parts = [];
-            if (data.firstName || data.lastName) {
-            parts.push(`${data.firstName || ""} ${data.lastName || ""}`.trim());
+        } else if (tokens[0] === 'Testimony' && tokens[1] && tokens[1].startsWith('{')) {
+            try {
+                const data = JSON.parse(tokens[1]);
+                let name = `${data.firstName} ${data.lastName}`;
+                if (data.isMember) {
+                    name = `${data.title} ${data.lastName}`;
+                }
+                const testimonyPart = data.testimonyNo ? ` - Testimony#${data.testimonyNo}` : '';
+                if (data.isMember && data.introducedBill) {
+                    return `${name} introduced the bill${testimonyPart}`;
+                } else {
+                    return `${name} - ${data.position}${testimonyPart}`;
+                }
+            } catch (e) {
+                return 'Invalid testimony data';
             }
-            if (data.role) {
-            parts.push(data.role);
-            }
-            if (data.organization && data.organization !== "undefined") {
-            parts.push(data.organization);
-            }
-            if (data.introducingBill) {
-            parts.push("introduced the bill");
-            } else if (data.position) {
-            parts.push(data.position);
-            }
-            if (data.testimonyNo) {
-            parts.push(`Testimony#${data.testimonyNo}`);
-            }
-            return parts.join(" - ");
-        } catch (e) {
-            return "Invalid testimony data";
-        }
         }
         return "";
     }
@@ -120,34 +111,19 @@ export class TextConstructor {
         }
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
         return tokens[1].toLowerCase();
-        } else if (tokens[0] === "Testimony" && tokens.length === 2) {
-        try {
-            const data = JSON.parse(tokens[1]);
-            let text = `${data.firstName} ${data.lastName}`;
-            if (data.role) {
-            text += `, ${data.role}`;
-            }
-            if (data.organization && data.organization !== "undefined") {
-            text += `, ${data.organization}`;
-            }
-            if (data.introducingBill) {
-            text += ` introduced the bill ${data.position ? data.position.toLowerCase() : ""} and submitted testimony`;
-            } else {
-            if (data.format === "In Person") {
-                text += `, testified ${data.position.toLowerCase()}`;
-            } else {
-                if (data.testimonyNo) {
-                text += `, submitted testimony ${data.position.toLowerCase()}`;
+        } else if (tokens[0] === 'Testimony' && tokens[1] && tokens[1].startsWith('{')) {
+            try {
+                const data = JSON.parse(tokens[1]);
+                let name = `${data.firstName} ${data.lastName}`;
+                if (data.isMember) {
+                    name = `${data.title} ${data.lastName}`;
                 }
+                const action = data.isMember && data.introducedBill ? 'introduced the bill' : 'testified';
+                const testimonyPart = data.testimonyNo ? ` and submitted testimony#${data.testimonyNo}` : '';
+                return `${name} ${action} ${data.position.toLowerCase()}${testimonyPart}`;
+            } catch (e) {
+                return 'Invalid testimony data';
             }
-            }
-            if (data.testimonyNo) {
-            text += ` #${data.testimonyNo}`;
-            }
-            return text;
-        } catch (e) {
-            return "Invalid testimony data";
-        }
         }
         return "";
     }

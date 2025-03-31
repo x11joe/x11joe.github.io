@@ -542,33 +542,41 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 3000;
-  }
-  .confirmation-modal .modal-content {
+}
+.confirmation-modal .modal-content {
     background: #fff;
     padding: 20px;
     border-radius: 4px;
     width: 300px;
     text-align: center;
-  }
-  .confirmation-modal button {
+}
+.confirmation-modal button {
     margin: 8px;
     padding: 8px 12px;
     border: none;
     border-radius: 3px;
     cursor: pointer;
     font-size: 14px;
-  }
-  .confirmation-modal button.yes-btn {
+}
+.confirmation-modal button.senator-btn {
+    background: #2196F3;
+    color: #fff;
+}
+.confirmation-modal button.representative-btn {
+    background: #FFC107;
+    color: #000;
+}
+.confirmation-modal button.yes-btn {
     background: #4CAF50;
     color: #fff;
-  }
-  .confirmation-modal button.no-btn {
+}
+.confirmation-modal button.no-btn {
     background: #f44336;
     color: #fff;
-  }
-  
-  /* (Optional) Special prompt modal style if you wish to use a two-step modal in one popup */
-  .special-prompt-modal {
+}
+
+/* (Optional) Special prompt modal style if you wish to use a two-step modal in one popup */
+.special-prompt-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -579,23 +587,22 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 3100;
-  }
-  .special-prompt-modal .special-prompt-content {
+}
+.special-prompt-modal .special-prompt-content {
     background: #fff;
     padding: 20px;
     border-radius: 4px;
     width: 300px;
     text-align: center;
-  }
-  .special-prompt-modal button {
+}
+.special-prompt-modal button {
     margin: 8px;
     padding: 8px 12px;
     border: none;
     border-radius: 3px;
     cursor: pointer;
     font-size: 14px;
-  }
-  
+}
 
 @media (max-width: 900px) {
     .shortcut-legend {
