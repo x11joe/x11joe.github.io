@@ -48,7 +48,8 @@ export class TestimonyModule {
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
      * The modal includes fields for first name, last name, role, organization, position, testimony number, link, and format.
      * Highlights the role field in red if it’s empty (i.e., after deduplication).
-     * In edit mode, the button now says "Save Testimony" and submission updates the token but does not clear it immediately.
+     * In edit mode, the button now says "Save Testimony". Upon submission the token is updated but not cleared;
+     * the token system will clear tokens when the entry is finalized (i.e. when Enter is pressed in the main input).
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      * @param {Object|null} prefillData - Data to prefill the form (null if adding new without prefill).
      */
@@ -89,10 +90,10 @@ export class TestimonyModule {
             <div class="modal-content">
                 <h2>${title}</h2>
                 <form id="testimony-form">
-                    <label>First Name: <input type="text" name="firstName" value="${prefillData ? prefillData.firstName : ''}"></label>
-                    <label>Last Name: <input type="text" name="lastName" value="${prefillData ? prefillData.lastName : ''}"></label>
-                    <label>Role: <input type="text" name="role" value="${prefillData ? prefillData.role : ''}" ${roleClass}></label>
-                    <label>Organization: <input type="text" name="organization" value="${prefillData ? prefillData.organization : ''}"></label>
+                    <label>First Name: <input type="text" name="firstName" value="${prefillData && prefillData.firstName ? prefillData.firstName : ''}"></label>
+                    <label>Last Name: <input type="text" name="lastName" value="${prefillData && prefillData.lastName ? prefillData.lastName : ''}"></label>
+                    <label>Role: <input type="text" name="role" value="${prefillData && prefillData.role ? prefillData.role : ''}" ${roleClass}></label>
+                    <label>Organization: <input type="text" name="organization" value="${prefillData && prefillData.organization ? prefillData.organization : ''}"></label>
                     <label>Position:
                         <select name="position">
                             <option value="In Favor" ${prefillData && prefillData.position === 'In Favor' ? 'selected' : ''}>In Favor</option>
@@ -100,8 +101,8 @@ export class TestimonyModule {
                             <option value="Neutral" ${prefillData && prefillData.position === 'Neutral' ? 'selected' : ''}>Neutral</option>
                         </select>
                     </label>
-                    <label>Testimony Number: <input type="text" name="testimonyNo" value="${prefillData ? prefillData.testimonyNo : ''}"></label>
-                    <label>Link: <input type="text" name="link" value="${prefillData ? prefillData.link : ''}"></label>
+                    <label>Testimony Number: <input type="text" name="testimonyNo" value="${prefillData && prefillData.testimonyNo ? prefillData.testimonyNo : ''}"></label>
+                    <label>Link: <input type="text" name="link" value="${prefillData && prefillData.link ? prefillData.link : ''}"></label>
                     <label>Format:
                         <select name="format">
                             <option value="In Person" ${prefillData && prefillData.format === 'In Person' ? 'selected' : ''}>In Person</option>
@@ -121,14 +122,14 @@ export class TestimonyModule {
             e.preventDefault();
             const formData = new FormData(form);
             const testimonyData = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                role: formData.get('role'),
-                organization: formData.get('organization'),
-                position: formData.get('position'),
-                testimonyNo: formData.get('testimonyNo'),
-                link: formData.get('link'),
-                format: formData.get('format')
+                firstName: formData.get('firstName') || '',
+                lastName: formData.get('lastName') || '',
+                role: formData.get('role') || '',
+                organization: formData.get('organization') || '',
+                position: formData.get('position') || '',
+                testimonyNo: formData.get('testimonyNo') || '',
+                link: formData.get('link') || '',
+                format: formData.get('format') || ''
             };
             const jsonString = JSON.stringify(testimonyData);
             if (this.editingIndex !== null) {
@@ -137,7 +138,7 @@ export class TestimonyModule {
             } else {
                 this.tokenSystem.addToken(jsonString);
             }
-            // Note: Do NOT clear tokens here; tokens will be cleared later when the token system finalizes the entry.
+            // Note: We do not clear tokens here. The token system will clear tokens when it finalizes the history entry (on Enter).
             this.modal.remove();
             this.modal = null;
         });
@@ -149,6 +150,7 @@ export class TestimonyModule {
             // In cancel mode, do not delete any tokens—user may remove manually if desired.
         });
     }
+
 
 
  

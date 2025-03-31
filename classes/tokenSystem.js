@@ -595,8 +595,9 @@ export class TokenSystem {
         if (e.key === "Enter") {
             this.enterHandled = true; // Indicate that Enter has been handled
             if (this.isEditing) {
-                const {key, id} = this.editingEntry;
+                const { key, id } = this.editingEntry;
                 this.historyManager.updateEntry(key, id, this.tokens);
+                this.setTokens([]); // Clear tokens after updating an edited entry
                 this.cancelEdit();
             } else {
                 const inputText = this.tokenInput.value.trim();
@@ -611,13 +612,23 @@ export class TokenSystem {
                     // Store raw input in history
                     const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
                     const billType = document.getElementById('bill-type').value;
-                    const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                    const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                    });
                     this.historyManager.addRawEntry(inputText, bill, billType, time);
                     this.tokenInput.value = '';
                 } else if (this.tokens.length > 0) {
                     const bill = document.getElementById('bill').value.trim() || "Unnamed Bill";
                     const billType = document.getElementById('bill-type').value;
-                    const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                    const time = this.markedTime || this.startTime || new Date().toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                    });
                     this.historyManager.addEntry(this.tokens, bill, billType, time);
                     this.setTokens([]); // Clear tokens after adding to history
                     this.suggestionsContainer.innerHTML = ""; // Clear suggestions
@@ -669,6 +680,7 @@ export class TokenSystem {
             e.preventDefault();
         }
     }
+
 
     parseTextToTokens(text) {
         const words = text.toLowerCase().split(/\s+/);
