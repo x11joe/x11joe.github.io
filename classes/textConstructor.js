@@ -84,6 +84,7 @@ export class TextConstructor {
      * Constructs the procedural clerk text based on the provided tokens and committee selector.
      * Uses getArticle to ensure grammatical correctness (e.g., "moved an amendment" instead of "moved a amendment").
      * Handles Testimony tokens by parsing JSON data and constructing a detailed testimony statement.
+     * For testimony tokens, it omits the "(In Person)" indicator and adjusts the wording depending on the testimony format.
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed procedural clerk text.
@@ -126,19 +127,24 @@ export class TextConstructor {
         } else if (tokens[0] === "Testimony" && tokens.length === 2) {
             try {
                 const testimonyData = JSON.parse(tokens[1]);
+                // Build the base string with name and optional role/organization
                 let text = `${testimonyData.firstName} ${testimonyData.lastName}`;
                 if (testimonyData.role) {
                     text += `, ${testimonyData.role}`;
                 }
-                if (testimonyData.organization) {
-                    text += ` for ${testimonyData.organization}`;
+                if (testimonyData.organization && testimonyData.organization !== "undefined") {
+                    text += `, ${testimonyData.organization}`;
                 }
-                text += `, testified ${testimonyData.position.toLowerCase()}`;
+                // Depending on the testimony format, adjust the wording:
+                // For In Person, include "testified ... and submitted testimony"
+                // For others, simply use "submitted testimony ..."
+                if (testimonyData.format === "In Person") {
+                    text += `, testified ${testimonyData.position.toLowerCase()} and submitted testimony`;
+                } else {
+                    text += `, submitted testimony ${testimonyData.position.toLowerCase()}`;
+                }
                 if (testimonyData.testimonyNo) {
-                    text += ` with testimony #${testimonyData.testimonyNo}`;
-                }
-                if (testimonyData.format) {
-                    text += ` (${testimonyData.format})`;
+                    text += ` #${testimonyData.testimonyNo}`;
                 }
                 return text;
             } catch (e) {
@@ -147,4 +153,5 @@ export class TextConstructor {
         }
         return "";
     }
+
 }
