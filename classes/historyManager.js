@@ -47,6 +47,25 @@ export class HistoryManager {
     }
 
     /**
+     * Helper method to format a time string.
+     * Expects a time string in the format "9:23:39 AM" (or similar) and returns "9:23 a.m.".
+     * @param {string} timeStr - The original time string.
+     * @returns {string} - The formatted time.
+     */
+    formatTime(timeStr) {
+        const parts = timeStr.split(" ");
+        if (parts.length < 2) return timeStr;
+        // Remove seconds by splitting on colon and taking only hour and minute.
+        const timeParts = parts[0].split(":");
+        if (timeParts.length < 2) return timeStr;
+        const hourMinute = `${timeParts[0]}:${timeParts[1]}`;
+        // Convert period to lowercase with dots.
+        let period = parts[1].toLowerCase();
+        period = period === "am" ? "a.m." : period === "pm" ? "p.m." : period;
+        return `${hourMinute} ${period}`;
+    }
+
+    /**
      * Add a tokenized entry to the history, grouping by bill and bill type if a matching group exists.
      * @param {Array<string>} tokens - The array of tokens representing the entry.
      * @param {string} bill - The bill name (e.g., "HB 2013").
@@ -88,7 +107,7 @@ export class HistoryManager {
 
     /**
      * Render the history table, sorting groups by the latest entry timestamp to ensure newest entries are at the top.
-     * Constructs procedural clerk text by directly using the pre-formatted entry.time, avoiding calls to undefined methods.
+     * Constructs procedural clerk text by formatting the time using the helper formatTime method.
      */
     render() {
         // Sort groups by the latest entry's timestamp, descending, to prioritize newest entries
@@ -141,8 +160,9 @@ export class HistoryManager {
                 if (entry.isRaw) {
                     row.style.backgroundColor = 'red'; // Highlight raw entries in red
                 }
-                // Use entry.time directly as it is already formatted, avoiding undefined method call
-                const procedureWithTime = entry.isRaw ? entry.rawText : `${entry.time} ${entry.baseProcedureText}`;
+                // Use formatted time for procedural clerk text.
+                const formattedTime = this.formatTime(entry.time);
+                const procedureWithTime = entry.isRaw ? entry.rawText : `${formattedTime} ${entry.baseProcedureText}`;
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">

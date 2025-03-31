@@ -48,7 +48,7 @@ export class TestimonyModule {
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
      * The modal includes fields for first name, last name, role, organization, position, testimony number, link, and format.
      * Highlights the role field in red if it’s empty (i.e., after deduplication).
-     * If editing an existing testimony, canceling will simply close the modal without deleting the token.
+     * If editing an existing testimony, canceling will simply close the modal without deleting any tokens.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      * @param {Object|null} prefillData - Data to prefill the form (null if adding new without prefill).
      */
@@ -139,20 +139,10 @@ export class TestimonyModule {
         cancelBtn.addEventListener('click', () => {
             this.modal.remove();
             this.modal = null;
-            // In add mode, remove the "Testimony" token if the user cancels.
-            // In editing mode, do not remove the token.
-            if (this.editingIndex === null) {
-                const testimonyIndex = this.tokenSystem.tokens.indexOf("Testimony");
-                if (testimonyIndex !== -1) {
-                    this.tokenSystem.tokens.splice(testimonyIndex, 1);
-                    const tokenElements = this.tokenSystem.tokenContainer.querySelectorAll('.token');
-                    tokenElements[testimonyIndex].remove();
-                    this.tokenSystem.updateSuggestions();
-                    this.tokenSystem.updateConstructedText();
-                }
-            }
+            // In cancel mode, do not delete any tokens—user may remove manually if desired.
         });
     }
+
 
     
 }

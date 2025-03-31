@@ -14,6 +14,8 @@ export class TextConstructor {
     /**
      * Constructs the tech clerk text based on the provided tokens and committee selector.
      * Dynamically includes LC# values when present in the token sequence, rendering only the last part of the LC number (e.g., ".12345").
+     * For testimony tokens, returns a formatted string like:
+     * "Jaclyn Hall - North Dakota Association for Justice - In Opposition - Testimony#44431"
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed tech clerk text.
@@ -40,7 +42,6 @@ export class TextConstructor {
                         i++;
                     } else if (tokens[i] === "LC#" && i + 1 < tokens.length) {
                         const lcNumber = tokens[i + 1];
-                        // Extract only the last part of the LC number after the second period
                         const lcParts = lcNumber.split('.');
                         const lastPart = lcParts.length === 3 ? `.${lcParts[2]}` : lcNumber;
                         techText += ` LC# ${lastPart}`;
@@ -51,9 +52,33 @@ export class TextConstructor {
             }
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
             return tokens[1];
+        } else if (tokens[0] === "Testimony" && tokens.length === 2) {
+            try {
+                const data = JSON.parse(tokens[1]);
+                let parts = [];
+                if (data.firstName || data.lastName) {
+                    parts.push(`${data.firstName || ""} ${data.lastName || ""}`.trim());
+                }
+                if (data.role) {
+                    parts.push(data.role);
+                }
+                if (data.organization && data.organization !== "undefined") {
+                    parts.push(data.organization);
+                }
+                if (data.position) {
+                    parts.push(data.position);
+                }
+                if (data.testimonyNo) {
+                    parts.push(`Testimony#${data.testimonyNo}`);
+                }
+                return parts.join(" - ");
+            } catch (e) {
+                return "Invalid testimony data";
+            }
         }
         return "";
     }
+
 
     /**
      * Constructs the procedural clerk text based on the provided tokens and committee selector.

@@ -292,7 +292,8 @@ export class TokenSystem {
 
     /**
      * Create a token DOM element without modifying the tokens array.
-     * Displays testimony tokens as "Testimony: LastName, FirstName" by parsing JSON data if present.
+     * Displays testimony tokens in a friendly format, for example:
+     * "Jaclyn Hall - North Dakota Association for Justice - In Opposition - Testimony#44431"
      * @param {string} value - The value of the token to create.
      * @returns {HTMLElement} The created token element.
      */
@@ -303,7 +304,23 @@ export class TokenSystem {
         if (value.startsWith('{')) {
             try {
                 const data = JSON.parse(value);
-                displayText = `Testimony: ${data.lastName}, ${data.firstName}`;
+                let parts = [];
+                if (data.firstName || data.lastName) {
+                    parts.push(`${data.firstName || ""} ${data.lastName || ""}`.trim());
+                }
+                if (data.role) {
+                    parts.push(data.role);
+                }
+                if (data.organization && data.organization !== "undefined") {
+                    parts.push(data.organization);
+                }
+                if (data.position) {
+                    parts.push(data.position);
+                }
+                if (data.testimonyNo) {
+                    parts.push(`Testimony#${data.testimonyNo}`);
+                }
+                displayText = parts.join(" - ");
             } catch (e) {
                 displayText = value;
             }
@@ -315,6 +332,7 @@ export class TokenSystem {
         tokenSpan.addEventListener("click", (e) => this.tokenClickHandler(e));
         return tokenSpan;
     }
+
 
     /**
      * Clear existing tokens and set new ones from an array, ensuring dropdowns for editing and immediate module rendering.
