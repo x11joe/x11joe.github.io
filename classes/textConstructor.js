@@ -84,7 +84,8 @@ export class TextConstructor {
      * Constructs the procedural clerk text based on the provided tokens and committee selector.
      * Uses getArticle to ensure grammatical correctness (e.g., "moved an amendment" instead of "moved a amendment").
      * Handles Testimony tokens by parsing JSON data and constructing a detailed testimony statement.
-     * For testimony tokens, it omits the "(In Person)" indicator and adjusts the wording depending on the testimony format.
+     * For testimony tokens, if a testimony number is provided the phrase "submitted testimony" is appended;
+     * otherwise, for In Person testimony only the "testified" phrase with the position is added.
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed procedural clerk text.
@@ -135,14 +136,16 @@ export class TextConstructor {
                 if (testimonyData.organization && testimonyData.organization !== "undefined") {
                     text += `, ${testimonyData.organization}`;
                 }
-                // Depending on the testimony format, adjust the wording:
-                // For In Person, include "testified ... and submitted testimony"
-                // For others, simply use "submitted testimony ..."
                 if (testimonyData.format === "In Person") {
-                    text += `, testified ${testimonyData.position.toLowerCase()} and submitted testimony`;
+                    // Always include the "testified" phrase for In Person testimony
+                    text += `, testified ${testimonyData.position.toLowerCase()}`;
                 } else {
-                    text += `, submitted testimony ${testimonyData.position.toLowerCase()}`;
+                    // For non In Person, include "submitted testimony" only if a testimony number exists
+                    if (testimonyData.testimonyNo) {
+                        text += `, submitted testimony ${testimonyData.position.toLowerCase()}`;
+                    }
                 }
+                // Append the testimony number if it exists
                 if (testimonyData.testimonyNo) {
                     text += ` #${testimonyData.testimonyNo}`;
                 }
@@ -153,5 +156,6 @@ export class TextConstructor {
         }
         return "";
     }
+
 
 }
