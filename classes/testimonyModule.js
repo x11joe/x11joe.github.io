@@ -48,7 +48,7 @@ export class TestimonyModule {
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
      * The modal includes fields for first name, last name, role, organization, position, testimony number, link, and format.
      * Highlights the role field in red if it’s empty (i.e., after deduplication).
-     * In edit mode, the button now says "Save Testimony" and upon submission, the tokens are cleared.
+     * In edit mode, the button now says "Save Testimony" and submission updates the token but does not clear it immediately.
      * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
      * @param {Object|null} prefillData - Data to prefill the form (null if adding new without prefill).
      */
@@ -137,8 +137,7 @@ export class TestimonyModule {
             } else {
                 this.tokenSystem.addToken(jsonString);
             }
-            // Clear tokens now that testimony is finalized
-            this.tokenSystem.setTokens([]);
+            // Note: Do NOT clear tokens here; tokens will be cleared later when the token system finalizes the entry.
             this.modal.remove();
             this.modal = null;
         });
@@ -150,6 +149,7 @@ export class TestimonyModule {
             // In cancel mode, do not delete any tokens—user may remove manually if desired.
         });
     }
+
 
  
 }
