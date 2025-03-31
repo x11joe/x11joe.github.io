@@ -34,7 +34,6 @@ export class TokenSystem {
         this.enterHandled = false;
         this.techTextField = document.getElementById('tech-text');
         this.procedureTextField = document.getElementById('procedure-text');
-        this.init();
         // Bind updateSuggestions to ensure 'this' refers to the TokenSystem instance
         this.updateSuggestions = this.updateSuggestions.bind(this);
     }
