@@ -57,6 +57,12 @@ export class TestimonyModule {
             this.modal.remove();
         }
         this.tokenSystem = tokenSystem;
+        // If the suggestions container has a data-editing-index, use it to set editing mode.
+        if (tokenSystem.suggestionsContainer.hasAttribute('data-editing-index')) {
+            this.editingIndex = parseInt(tokenSystem.suggestionsContainer.getAttribute('data-editing-index'), 10);
+        } else {
+            this.editingIndex = null;
+        }
 
         // Process prefillData to split 'name' into firstName and lastName if not already provided
         if (prefillData && !prefillData.firstName && !prefillData.lastName && prefillData.name) {
@@ -142,7 +148,5 @@ export class TestimonyModule {
             // In cancel mode, do not delete any tokens—user may remove manually if desired.
         });
     }
-
-
-    
+ 
 }
