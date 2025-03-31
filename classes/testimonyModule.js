@@ -22,22 +22,71 @@ export class TestimonyModule {
     }
 
     /**
-     * Handles post-rendering logic to open the testimony modal for adding testimony.
-     * Always clears any editing state so that the confirmation prompts are always shown.
-     * @param {HTMLElement} container - The container element (suggestions container).
-     * @param {TokenSystem} tokenSystem - The TokenSystem instance for adding/editing tokens.
+     * Opens the testimony modal after rendering and prefills it with data if available from the Chrome extension or manual input.
+     * Ensures form fields have correct 'name' attributes for FormData collection and applies prefill data accurately.
+     * @param {HTMLElement} container - The container element where the modal is rendered.
+     * @param {TokenSystem} tokenSystem - The TokenSystem instance to interact with tokens.
      */
     postRender(container, tokenSystem) {
-        console.log("TestimonyModule.postRender called. prefillData:", this.prefillData);
         this.tokenSystem = tokenSystem;
-        // Always clear any editing state so we treat this as a new testimony entry.
-        container.removeAttribute('data-editing-index');
-        this.editingIndex = null;
-        let editingData = this.prefillData || null;
-        console.log("TestimonyModule.postRender: Using editingData:", editingData);
-        // Clear prefill data after reading it
-        this.prefillData = null;
-        this.openModal(tokenSystem, editingData);
+        const suggestionsContainer = tokenSystem.suggestionsContainer;
+
+        // Create modal HTML with explicit 'name' attributes for FormData
+        const modalHtml = `
+            <div class="testimony-modal">
+                <div class="modal-content">
+                    <h2>Add Testimony</h2>
+                    <form id="testimony-form">
+                        <label>First Name: <input type="text" name="firstName" required></label>
+                        <label>Last Name: <input type="text" name="lastName" required></label>
+                        <label>Role: <input type="text" name="role"></label>
+                        <label>Organization: <input type="text" name="organization"></label>
+                        <label>Format:
+                            <select name="format">
+                                <option value="In Person">In Person</option>
+                                <option value="Online">Online</option>
+                                <option value="Written">Written</option>
+                            </select>
+                        </label>
+                        <label>Link: <input type="text" name="link"></label>
+                        <button type="submit">Add Testimony</button>
+                        <button type="button" class="cancel-btn">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        `;
+        suggestionsContainer.innerHTML = modalHtml;
+        this.modal = suggestionsContainer.querySelector(".testimony-modal");
+
+        const form = this.modal.querySelector("#testimony-form");
+
+        // Prefill form with prefillData if available (e.g., from HEARING_STATEMENT event)
+        if (this.prefillData) {
+            const fields = ["firstName", "lastName", "role", "organization", "format", "link"];
+            fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}"]`);
+                if (input && this.prefillData[field]) {
+                    input.value = this.prefillData[field];
+                }
+            });
+            this.prefillData = null; // Clear after prefill to prevent reuse
+        }
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            this.submitForm();
+        });
+
+        const cancelBtn = this.modal.querySelector(".cancel-btn");
+        cancelBtn.addEventListener("click", () => {
+            this.closeModal();
+        });
+
+        document.addEventListener("click", (e) => {
+            if (this.modal && !this.modal.querySelector(".modal-content").contains(e.target)) {
+                this.closeModal();
+            }
+        });
     }
   
 
@@ -164,7 +213,15 @@ export class TestimonyModule {
         this.modal = null;
         });
     }
-  
+    
+    closeModal() {
+        if (this.modal) {
+            this.modal.remove();
+            this.modal = null;
+            this.tokenSystem.suggestionsContainer.innerHTML = "";
+            this.tokenSystem.tokenInput.focus();
+        }
+    }
 
     /**
      * Displays a custom confirmation modal with the provided question.
@@ -244,5 +301,42 @@ export class TestimonyModule {
         });
     }
 
+    /**
+     * Submits the testimony form data as a JSON token to the TokenSystem.
+     * Explicitly constructs the testimony object from form inputs to ensure all values are captured, avoiding blank JSON.
+     * Handles both adding new tokens and editing existing ones based on the editing context.
+     */
+    submitForm() {
+        const form = this.modal.querySelector("#testimony-form");
+        const formData = new FormData(form);
+        
+        // Explicitly build the testimony object from form inputs
+        const testimonyData = {
+            firstName: formData.get("firstName") || "",
+            lastName: formData.get("lastName") || "",
+            role: formData.get("role") || "",
+            organization: formData.get("organization") || "",
+            format: formData.get("format") || "In Person",
+            link: formData.get("link") || ""
+        };
+
+        // Validate required fields to prevent empty submissions
+        if (!testimonyData.firstName || !testimonyData.lastName) {
+            console.error("First Name and Last Name are required for testimony submission");
+            return;
+        }
+
+        const jsonToken = JSON.stringify(testimonyData);
+        console.log("Submitting testimony token:", jsonToken); // Debug log to verify token content
+
+        if (this.editingIndex !== null) {
+            this.tokenSystem.editToken(this.editingIndex, jsonToken);
+            this.editingIndex = null;
+        } else {
+            this.tokenSystem.addToken(jsonToken);
+        }
+
+        this.closeModal();
+    }
  
 }
