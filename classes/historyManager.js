@@ -110,13 +110,13 @@ export class HistoryManager {
      * Constructs procedural clerk text by formatting the time using the helper formatTime method.
      */
     render() {
-        // Sort groups by the latest entry's timestamp, descending, to prioritize newest entries
+        // Sort groups by the latest entry's timestamp, descending.
         this.historyGroups.sort((a, b) => {
         const latestA = Math.max(...a.entries.map(e => Date.parse("1970-01-01 " + e.time)));
         const latestB = Math.max(...b.entries.map(e => Date.parse("1970-01-01 " + e.time)));
         return latestB - latestA;
         });
-        // Within each group, sort entries by timestamp descending
+        // Within each group, sort entries by timestamp descending.
         for (const group of this.historyGroups) {
         group.entries.sort((a, b) => Date.parse("1970-01-01 " + b.time) - Date.parse("1970-01-01 " + a.time));
         }
@@ -140,6 +140,7 @@ export class HistoryManager {
         } else {
             header.innerHTML = `${group.bill} - ${group.billType} <button class="edit-header-btn">✏️</button>`;
         }
+        groupDiv.appendChild(header);
         const table = document.createElement('table');
         table.innerHTML = `
             <thead>
@@ -207,16 +208,12 @@ export class HistoryManager {
             const deleteBtn = row.querySelector('.delete-btn');
             deleteBtn.addEventListener('click', () => this.deleteEntry(entry.id, group.id));
             
-            // Special copy event for tech clerk and procedural clerk
-            row.querySelectorAll('.tech-clerk, .procedural-clerk').forEach((container) => {
+            row.querySelectorAll('.tech-clerk, .procedural-clerk').forEach(container => {
             container.addEventListener('click', (e) => {
                 if (e.ctrlKey || e.metaKey) {
-                // Special copy mode: build string "TIME | Tech Clerk Text | member-no:XXX;Mic: | LINK"
                 const timeCell = row.querySelector('.time');
                 const timeText = timeCell ? timeCell.textContent : "";
-                const techText = container.classList.contains('tech-clerk')
-                    ? container.querySelector('.copyable').textContent
-                    : "";
+                const techText = container.classList.contains('tech-clerk') ? container.querySelector('.copyable').textContent : "";
                 let memberNo = "";
                 let link = "";
                 if (entry.tokens && entry.tokens[0] === "Testimony" && entry.tokens.length === 2) {
@@ -257,7 +254,9 @@ export class HistoryManager {
             });
             });
         });
+        groupDiv.appendChild(table);
         this.containerElement.appendChild(groupDiv);
+        
         if (this.editingHeaderKey === key) {
             const saveBtn = header.querySelector('.save-header-btn');
             const billInput = header.querySelector('.edit-bill');
@@ -289,6 +288,7 @@ export class HistoryManager {
         });
         }
     }
+  
   
     
     startEditingHeader(key) {
