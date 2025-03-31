@@ -116,60 +116,71 @@ export class CommitteeSelector {
       });
     }
     
+    /**
+     * Renders the committee legend with clickable member items. On Ctrl+click, copies the member's number to the clipboard in the format "member-no:<number>;Mic:".
+     */
     renderLegend() {
-      const members = this.committeesData[this.selectedCommittee] || [];
-      const isSenate = this.selectedCommittee.toLowerCase().startsWith('senate');
-      const header = isSenate ? 'Senators' : 'Representatives';
-  
-      // Function to parse member string into name and title
-      const parseMember = (memberStr) => {
-          if (memberStr.includes(" - ")) {
-              const [name, title] = memberStr.split(" - ");
-              const isFemale = this.femaleNames.includes(name);
-              const adjustedTitle = isFemale
-                  ? title.replace("Chairman", "Chairwoman").replace("Vice Chairman", "Vice Chairwoman")
-                  : title;
-              return { name, title: adjustedTitle };
-          } else {
-              return { name: memberStr, title: null };
-          }
-      };
-  
-      // Identify Chairman/Chairwoman and Vice Chairman/Vice Chairwoman
-      const parsedMembers = members.map(parseMember);
-      const chairman = parsedMembers.find(member => 
-          member.title && (member.title.includes("Chairman") || member.title.includes("Chairwoman"))
-      );
-      const viceChairman = parsedMembers.find(member => 
-          member.title && (member.title.includes("Vice Chairman") || member.title.includes("Vice Chairwoman"))
-      );
-      const others = parsedMembers.filter(member => member !== chairman && member !== viceChairman);
-  
-      // Build the HTML
-      let html = `<h3>${header}</h3><ul>`;
-      if (chairman) {
-          html += `<li class="member-item" data-member="${chairman.name}">${chairman.title} ${chairman.name}</li>`;
-      }
-      if (viceChairman) {
-          html += `<li class="member-item" data-member="${viceChairman.name}">${viceChairman.title} ${viceChairman.name}</li>`;
-      }
-      if (chairman || viceChairman) {
-          html += `<hr class="member-separator">`;
-      }
-      others.forEach(member => {
-          html += `<li class="member-item" data-member="${member.name}">${member.name}</li>`;
-      });
-      html += "</ul>";
-      this.legendElement.innerHTML = html;
-  
-      this.legendElement.addEventListener('click', (e) => {
-          e.stopPropagation(); // Prevent the click from reaching the document listener
-          const memberItem = e.target.closest('.member-item');
-          if (memberItem && this.tokenSystem) {
-              const memberName = memberItem.dataset.member;
-              this.tokenSystem.setTokens(["Member Action", memberName]);
-          }
-      });
+        const members = this.committeesData[this.selectedCommittee] || [];
+        const isSenate = this.selectedCommittee.toLowerCase().startsWith('senate');
+        const header = isSenate ? 'Senators' : 'Representatives';
+
+        const parseMember = (memberObj) => {
+            const memberStr = memberObj.name;
+            if (memberStr.includes(" - ")) {
+                const [name, title] = memberStr.split(" - ");
+                const isFemale = this.femaleNames.includes(name);
+                const adjustedTitle = isFemale
+                    ? title.replace("Chairman", "Chairwoman").replace("Vice Chairman", "Vice Chairwoman")
+                    : title;
+                return { name, title: adjustedTitle, memberNo: memberObj.memberNo };
+            } else {
+                return { name: memberStr, title: null, memberNo: memberObj.memberNo };
+            }
+        };
+
+        const parsedMembers = members.map(parseMember);
+        const chairman = parsedMembers.find(member => 
+            member.title && (member.title.includes("Chairman") || member.title.includes("Chairwoman"))
+        );
+        const viceChairman = parsedMembers.find(member => 
+            member.title && (member.title.includes("Vice Chairman") || member.title.includes("Vice Chairwoman"))
+        );
+        const others = parsedMembers.filter(member => member !== chairman && member !== viceChairman);
+
+        let html = `<h3>${header}</h3><ul>`;
+        if (chairman) {
+            html += `<li class="member-item" data-member="${chairman.name}" data-member-no="${chairman.memberNo}">${chairman.title} ${chairman.name}</li>`;
+        }
+        if (viceChairman) {
+            html += `<li class="member-item" data-member="${viceChairman.name}" data-member-no="${viceChairman.memberNo}">${viceChairman.title} ${viceChairman.name}</li>`;
+        }
+        if (chairman || viceChairman) {
+            html += `<hr class="member-separator">`;
+        }
+        others.forEach(member => {
+            html += `<li class="member-item" data-member="${member.name}" data-member-no="${member.memberNo}">${member.name}</li>`;
+        });
+        html += "</ul>";
+        this.legendElement.innerHTML = html;
+
+        this.legendElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const memberItem = e.target.closest('.member-item');
+            if (memberItem) {
+                const memberName = memberItem.dataset.member;
+                const memberNo = memberItem.dataset.memberNo;
+                if (e.ctrlKey && memberNo) {
+                    const clipboardText = `member-no:${memberNo};Mic:`;
+                    navigator.clipboard.writeText(clipboardText).then(() => {
+                        console.log(`Copied to clipboard: ${clipboardText}`);
+                    }).catch(err => {
+                        console.error('Failed to copy to clipboard:', err);
+                    });
+                } else if (this.tokenSystem) {
+                    this.tokenSystem.setTokens(["Member Action", memberName]);
+                }
+            }
+        });
     }
     
     getSelectedCommittee() {

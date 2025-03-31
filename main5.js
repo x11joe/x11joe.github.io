@@ -44,67 +44,116 @@ const shortcuts = {
     }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  const tokenContainer = document.getElementById("token-container");
-  const tokenInput = document.getElementById("token-input");
-  const suggestionsContainer = document.getElementById("suggestions-container");
+/**
+ * Main entry point for the application. Initializes all components and sets up event listeners.
+ * Loads allMember.xml to associate member numbers with DEFAULT_COMMITTEES.
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+    const tokenContainer = document.getElementById("token-container");
+    const tokenInput = document.getElementById("token-input");
+    const suggestionsContainer = document.getElementById("suggestions-container");
 
-  const committeeSelectorContainer = document.getElementById("committee-selector");
-  const committeeLegend = document.getElementById("committee-legend");
+    const committeeSelectorContainer = document.getElementById("committee-selector");
+    const committeeLegend = document.getElementById("committee-legend");
 
-  const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES, FEMALE_NAMES);
+    // Fetch and parse allMember.xml
+    const response = await fetch("allMember.xml");
+    const xmlText = await response.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const hotKeys = xmlDoc.getElementsByTagName("HotKey");
 
-  const historyContainer = document.getElementById("history-table");
-  const historyManager = new HistoryManager(historyContainer, committeeSelector);
-
-  const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager);
-
-  committeeSelector.setTokenSystem(tokenSystem);
-  historyManager.setTokenSystem(tokenSystem);
-  historyManager.render(); // Call render after setting tokenSystem
-
-  const shortcutLegendContainer = document.getElementById("shortcut-legend");
-  new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
-
-  // Add event listener for the Clear All button
-  const clearHistoryBtn = document.getElementById('clear-history-btn');
-  clearHistoryBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
-      historyManager.clearAllHistory();
-    }
-  });
-
-  document.querySelectorAll('.copy-button').forEach(button => {
-    button.addEventListener('click', () => {
-      const targetId = button.dataset.target;
-      const textField = document.getElementById(targetId);
-      const text = textField.value;
-      Utils.copyWithGlow(textField, text);
+    const memberData = Array.from(hotKeys).map(hotKey => {
+        const lastName = hotKey.getElementsByTagName("Name")[0]?.textContent;
+        const firstNameEl = hotKey.getElementsByTagName("FirstName")[0]?.textContent;
+        const fields = hotKey.getElementsByTagName("Field");
+        let memberNo = null;
+        for (const field of fields) {
+            if (field.getElementsByTagName("Key")[0]?.textContent === "member-no") {
+                memberNo = field.getElementsByTagName("Value")[0]?.textContent;
+                break;
+            }
+        }
+        const titleMatch = firstNameEl?.match(/^(Senator|Representative)(?:\s+([A-Z])\.)?/);
+        return {
+            lastName,
+            title: titleMatch ? titleMatch[1] : null,
+            initial: titleMatch && titleMatch[2] ? titleMatch[2] : null,
+            memberNo
+        };
     });
-  });
 
-  // Add keydown listener for mark time feature
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '`') {
-      tokenSystem.markTime();
+    // Match XML data to DEFAULT_COMMITTEES
+    for (const committee in DEFAULT_COMMITTEES) {
+        DEFAULT_COMMITTEES[committee].forEach(memberObj => {
+            const [fullName] = memberObj.name.split(" - ");
+            const nameParts = fullName.split(" ");
+            const lastName = nameParts[nameParts.length - 1];
+            const firstInitial = nameParts[0][0];
+            const isSenate = committee.toLowerCase().startsWith("senate");
+            const title = isSenate ? "Senator" : "Representative";
+
+            const matches = memberData.filter(md => md.lastName === lastName && md.title === title);
+            if (matches.length === 1) {
+                memberObj.memberNo = matches[0].memberNo;
+            } else if (matches.length > 1) {
+                // Handle duplicates by matching initial
+                const exactMatch = matches.find(md => md.initial === firstInitial);
+                if (exactMatch) {
+                    memberObj.memberNo = exactMatch.memberNo;
+                }
+            }
+        });
     }
-  });
 
-  // Handle saving and loading bill and bill type
-  const billInput = document.getElementById('bill');
-  const billTypeSelect = document.getElementById('bill-type');
+    const committeeSelector = new CommitteeSelector(committeeSelectorContainer, committeeLegend, DEFAULT_COMMITTEES, FEMALE_NAMES);
 
-  // Load from local storage
-  const savedBill = localStorage.getItem('bill');
-  const savedBillType = localStorage.getItem('billType');
-  if (savedBill) billInput.value = savedBill;
-  if (savedBillType) billTypeSelect.value = savedBillType;
+    const historyContainer = document.getElementById("history-table");
+    const historyManager = new HistoryManager(historyContainer, committeeSelector);
 
-  // Save to local storage on change
-  billInput.addEventListener('input', () => {
-    localStorage.setItem('bill', billInput.value);
-  });
-  billTypeSelect.addEventListener('change', () => {
-    localStorage.setItem('billType', billTypeSelect.value);
-  });
+    const tokenSystem = new TokenSystem(tokenContainer, tokenInput, suggestionsContainer, flowData, classRegistry, defaultRenderer, committeeSelector, historyManager);
+
+    committeeSelector.setTokenSystem(tokenSystem);
+    historyManager.setTokenSystem(tokenSystem);
+    historyManager.render();
+
+    const shortcutLegendContainer = document.getElementById("shortcut-legend");
+    new ShortcutLegend(shortcutLegendContainer, tokenSystem, shortcuts);
+
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    clearHistoryBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
+            historyManager.clearAllHistory();
+        }
+    });
+
+    document.querySelectorAll('.copy-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.dataset.target;
+            const textField = document.getElementById(targetId);
+            const text = textField.value;
+            Utils.copyWithGlow(textField, text);
+        });
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '`') {
+            tokenSystem.markTime();
+        }
+    });
+
+    const billInput = document.getElementById('bill');
+    const billTypeSelect = document.getElementById('bill-type');
+
+    const savedBill = localStorage.getItem('bill');
+    const savedBillType = localStorage.getItem('billType');
+    if (savedBill) billInput.value = savedBill;
+    if (savedBillType) billTypeSelect.value = savedBillType;
+
+    billInput.addEventListener('input', () => {
+        localStorage.setItem('bill', billInput.value);
+    });
+    billTypeSelect.addEventListener('change', () => {
+        localStorage.setItem('billType', billTypeSelect.value);
+    });
 });
