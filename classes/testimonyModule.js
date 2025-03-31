@@ -33,7 +33,15 @@ export class TestimonyModule {
         const editingIndex = container.getAttribute('data-editing-index');
         if (editingIndex !== null) {
             this.editingIndex = parseInt(editingIndex, 10);
-            editingData = JSON.parse(this.tokenSystem.tokens[this.editingIndex]);
+            const tokenValue = this.tokenSystem.tokens[this.editingIndex];
+            if (tokenValue && tokenValue !== "undefined") {
+                try {
+                    editingData = JSON.parse(tokenValue);
+                } catch (error) {
+                    console.error("Error parsing testimony token:", tokenValue, error);
+                    editingData = null;
+                }
+            }
         } else {
             this.editingIndex = null;
             if (this.prefillData) {
@@ -43,6 +51,7 @@ export class TestimonyModule {
         }
         this.openModal(tokenSystem, editingData);
     }
+
 
     /**
      * Opens a modal for adding or editing testimony, prefilling data if provided, and binding form events.
