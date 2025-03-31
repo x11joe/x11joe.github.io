@@ -1,6 +1,17 @@
 export class TextConstructor {
 
     /**
+     * Determines the appropriate article ("a" or "an") based on the first letter of a word.
+     * Returns "an" if the word starts with a vowel (a, e, i, o, u), otherwise "a".
+     * @param {string} word - The word to evaluate.
+     * @returns {string} - The correct article ("a" or "an").
+     */
+    static getArticle(word) {
+        const vowels = ['a', 'e', 'i', 'o', 'u'];
+        return vowels.includes(word[0].toLowerCase()) ? 'an' : 'a';
+    }
+
+    /**
      * Constructs the tech clerk text based on the provided tokens and committee selector.
      * Dynamically includes LC# values when present in the token sequence, rendering only the last part of the LC number (e.g., ".12345").
      * @param {Array<string>} tokens - The array of tokens representing the action.
@@ -46,7 +57,8 @@ export class TextConstructor {
 
     /**
      * Constructs the procedural clerk text based on the provided tokens and committee selector.
-     * Dynamically includes LC# values when present in the token sequence.
+     * Uses getArticle to ensure grammatical correctness (e.g., "moved an amendment" instead of "moved a amendment").
+     * Handles Testimony tokens by parsing JSON data and constructing a detailed testimony statement.
      * @param {Array<string>} tokens - The array of tokens representing the action.
      * @param {CommitteeSelector} committeeSelector - The committee selector instance for member and committee data.
      * @returns {string} The constructed procedural clerk text.
@@ -66,7 +78,7 @@ export class TextConstructor {
                 if (action === "withdrew") {
                     procedureText = `${memberTitle} ${lastName} ${action} the ${motion}`;
                 } else {
-                    procedureText = `${memberTitle} ${lastName} ${action} a ${motion}`;
+                    procedureText = `${memberTitle} ${lastName} ${action} ${TextConstructor.getArticle(motion)} ${motion}`;
                 }
                 for (let i = 4; i < tokens.length; i++) {
                     if (tokens[i] === "As Amended") {
@@ -86,15 +98,28 @@ export class TextConstructor {
             }
         } else if (tokens[0] === "Meeting Action" && tokens.length === 2) {
             return tokens[1].toLowerCase();
+        } else if (tokens[0] === "Testimony" && tokens.length === 2) {
+            try {
+                const testimonyData = JSON.parse(tokens[1]);
+                let text = `${testimonyData.firstName} ${testimonyData.lastName}`;
+                if (testimonyData.role) {
+                    text += `, ${testimonyData.role}`;
+                }
+                if (testimonyData.organization) {
+                    text += ` for ${testimonyData.organization}`;
+                }
+                text += `, testified ${testimonyData.position.toLowerCase()}`;
+                if (testimonyData.testimonyNo) {
+                    text += ` with testimony #${testimonyData.testimonyNo}`;
+                }
+                if (testimonyData.format) {
+                    text += ` (${testimonyData.format})`;
+                }
+                return text;
+            } catch (e) {
+                return "Invalid testimony data";
+            }
         }
         return "";
-    }
-
-    static formatTimeForProcedure(time) {
-        const [hours, minutes, seconds, period] = time.split(/[: ]/);
-        const hourNum = parseInt(hours, 10);
-        const formattedHour = hourNum % 12 || 12;
-        const formattedPeriod = period.toLowerCase().replace('m', '.m.');
-        return `${formattedHour}:${minutes} ${formattedPeriod}`;
     }
 }

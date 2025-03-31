@@ -144,7 +144,18 @@ export class HistoryManager {
                 row.innerHTML = `
                     <td contenteditable="true" class="time">${entry.time}</td>
                     <td class="statements">
-                        ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${entry.tokens.map(token => `<span class="history-token">${token}</span>`).join('')}</div>`}
+                        ${entry.isRaw ? `<div class="raw-text">${entry.rawText}</div>` : `<div class="tokens-container">${entry.tokens.map(token => {
+                            if (token.startsWith('{')) {
+                                try {
+                                    const data = JSON.parse(token);
+                                    return `<span class="history-token">Testimony: ${data.lastName}, ${data.firstName}</span>`;
+                                } catch (e) {
+                                    return `<span class="history-token">${token}</span>`;
+                                }
+                            } else {
+                                return `<span class="history-token">${token}</span>`;
+                            }
+                        }).join('')}</div>`}
                         <div class="tech-clerk">
                             <label>Tech Clerk</label>
                             <div class="copyable">${entry.techText || ''}</div>
